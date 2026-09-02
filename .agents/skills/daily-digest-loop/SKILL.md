@@ -9,8 +9,8 @@ description: Run one repeatable daily cycle that collects three current AI/ML/CS
 
 ## 회차 순서
 
-1. Asia/Seoul 기준 `YYYY-MM-DD`를 확정한다. `notes/trends/{날짜}.md`가 이미 있으면 먼저 읽고, 기존 사실과 출처를 보존하면서 필요한 경우에만 갱신한다. 덮어쓸 때는 새 근거가 확인된 부분만 바꾼다.
-2. [paper-search](../paper-search/SKILL.md) 절차로 최신 AI/ML/CS 논문을 검색한다. 논문 3편은 공식 메타데이터와 가능하면 원문 PDF를 확인하고, 각 사실에 섹션·표·식·페이지 근거를 붙인다.
+1. Asia/Seoul 기준 `YYYY-MM-DD`를 확정한다. `notes/trends/{날짜}.md`가 이미 있으면 먼저 읽고, 기존 사실과 출처를 보존하면서 필요한 경우에만 갱신한다. 덮어쓸 때는 새 근거가 확인된 부분만 바꾼다. `notes/trends/{날짜}-plan.md`가 있으면 해당 날짜에만 적용하는 사용자 지정 논문 선정 계획으로 읽고, 논문 슬롯 수와 주제 배분을 우선 준수한다. 계획 파일이 없는 날짜에는 일반적인 최신 논문 선정으로 진행한다.
+2. [paper-search](../paper-search/SKILL.md) 절차로 최신 AI/ML/CS 논문을 검색한다. 논문 3편은 공식 메타데이터와 가능하면 원문 PDF를 확인하고, 각 사실에 섹션·표·식·페이지 근거를 붙인다. 날짜별 계획이 있으면 계획에 적힌 슬롯별 주제를 먼저 검색한다. 사용자 표현이 모호할 때는 검색어를 `domain alignment`, `domain adaptation`, `domain generalization`, `cross-domain disambiguation`처럼 관련 원어로 확장할 수 있지만, 논문이 실제로 다루는 범위만 채택하고 근거 없는 등치는 하지 않는다.
 3. 최신 신뢰 출처로 시사이슈 3건을 확인한다. 회사·정부의 1차 발표와 Reuters/AP 등 권위 매체를 우선하며, 회사의 자체 주장과 독립적으로 검증된 사실을 구분한다.
 4. `notes/trends/{날짜}.md`에 저장한다. 각 논문·이슈에 출처, 원문 링크, 핵심 요약, 중요한 이유를 포함하고, 한국어 본문과 원어 고유명사 표기를 유지한다.
 5. 검색과 원문 확인을 모두 마친 뒤, [paper-summary](../paper-summary/SKILL.md)의 채팅 형식에 따라 논문 3편의 `초록 / 전체적인 주장 / 메소드 / 한계`와 시사이슈 3건을 사용자에게 보여준다. 파일 저장 사실만 보고하고 채팅 요약을 생략하지 않는다.

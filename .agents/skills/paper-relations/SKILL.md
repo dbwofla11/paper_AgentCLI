@@ -26,6 +26,8 @@ description: Use Graphify to discover and verify relationships among the paper P
 
 2. **그래프 생성·갱신** — Graphify를 논문 PDF 폴더에만 적용한다. 출력 그래프가 이미 있으면 변경 파일만 갱신하고, 첫 실행이면 `--mode deep`로 간접적인 관계 후보도 수집한다. 생성된 `graphify-out/graph.json`의 `source_file`, `source_location`, `confidence`를 보존한다.
 
+   기존 `graphify-out/graph.json`이 전체 저장소를 대상으로 만들어졌거나 `graphify-out/.graphify_root`가 현재 저장소의 `papers/`를 가리키지 않으면 기존 그래프를 재사용하지 않고 `papers/`를 대상으로 다시 만든다. `source_file`이 `papers/` 밖인 노드는 논문 관계 판정에 사용하지 않는다.
+
 3. **관계 후보 질의** — 다음 질의를 조합한다.
 
    ```bash

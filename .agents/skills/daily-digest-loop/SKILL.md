@@ -1,11 +1,11 @@
 ---
 name: daily-digest-loop
-description: Run one repeatable daily cycle that collects three current AI/ML/CS papers and three news issues, saves the dated digest, shows the result in chat, and commits only that cycle's changes.
+description: Run one repeatable daily cycle that collects three current AI/ML/CS papers and three news issues, saves the dated digest, shows the result in chat, commits only that cycle's changes, and pushes the commit to its configured remote.
 ---
 
 # Daily Digest Loop
 
-이 스킬의 한 번의 실행은 **오늘의 수집·정리·채팅 보고·Git 커밋**까지 완료하는 한 회차다. 프로세스를 무한히 실행하지 않는다. 다음 호출에서는 Asia/Seoul 기준 새 날짜로 같은 회차를 다시 수행한다.
+이 스킬의 한 번의 실행은 **오늘의 수집·정리·채팅 보고·Git 커밋·원격 push**까지 완료하는 한 회차다. 프로세스를 무한히 실행하지 않는다. 다음 호출에서는 Asia/Seoul 기준 새 날짜로 같은 회차를 다시 수행한다.
 
 ## 회차 순서
 
@@ -22,6 +22,7 @@ description: Run one repeatable daily cycle that collects three current AI/ML/CS
    ```
 
    커밋 성공 여부와 commit hash를 채팅 최종 요약에 포함한다. 변경 사항이 없으면 빈 커밋을 만들지 않는다.
+8. 커밋 직후 설정된 upstream으로 `git push`한다. push 성공 여부와 원격 ref를 채팅 최종 요약에 포함한다. upstream이 없으면 `origin`과 현재 브랜치를 확인해 안전하게 push할 수 있는 경우에만 `git push origin HEAD:<현재 브랜치>`를 사용한다. 원격이 없거나 인증·네트워크·non-fast-forward 오류가 나면 로컬 커밋은 보존하고 push 실패 원인과 재시도 명령을 보고한다. force push는 사용하지 않는다.
 
 ## 커밋 안전 규칙
 
@@ -29,8 +30,10 @@ description: Run one repeatable daily cycle that collects three current AI/ML/CS
 - 실행 후 기존 변경은 stage하지 않는다. 새 다이제스트, 새 PDF, 인덱스·메모리·경로 갱신, 이 스킬처럼 해당 회차에서 만든 파일만 추가한다.
 - 커밋 전 `git diff --cached --name-status`로 staged 범위를 확인한다. 범위가 예상과 다르면 커밋하지 말고 원인을 보고한다.
 - Git 사용자 설정이 없거나 충돌·후크 실패로 커밋할 수 없으면 변경을 보존하고, 실패 원인과 수동 실행 명령을 채팅에 알린다.
+- push 전 `git remote -v`, 현재 브랜치, upstream을 확인한다. push 대상은 해당 회차에서 만든 커밋이며, 원격 이력을 덮어쓰지 않는다.
+- 커밋 후 push가 실패해도 커밋을 되돌리거나 강제 push하지 않는다. 재시도 가능한 오류인지와 현재 로컬/원격 상태를 보고한다.
 - PDF 이동·이름 변경은 날짜 폴더 규칙을 따르되, 기존 리뷰·인덱스 링크를 함께 갱신하고 깨진 링크를 검사한다.
 
 ## 종료 조건
 
-한 회차의 종료 조건은 (a) 논문 3편과 시사이슈 3건을 출처와 함께 파일·채팅에 반영했고, (b) 검증을 마쳤으며, (c) 해당 회차 변경만 커밋한 상태다. 논문이나 이슈를 3건 확보하지 못하면 임의로 채우지 말고 부족한 수와 검색 범위를 보고하며, 그 상태를 커밋할지 여부는 사용자가 정한다.
+한 회차의 종료 조건은 (a) 논문 3편과 시사이슈 3건을 출처와 함께 파일·채팅에 반영했고, (b) 검증을 마쳤으며, (c) 해당 회차 변경만 커밋했고, (d) 해당 커밋을 configured remote에 push한 상태다. 논문이나 이슈를 3건 확보하지 못하면 임의로 채우지 말고 부족한 수와 검색 범위를 보고하며, 그 상태를 커밋·push할지 여부는 사용자가 정한다.

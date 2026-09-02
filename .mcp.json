@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {
+        "x-api-key": "${EXA_API_KEY}"
+      }
+    },
+    "arxiv-mcp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["arxiv-mcp-server", "--storage-path", ".claude/mcp-cache/arxiv"]
+    },
+    "paper-search-mcp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["paper-search-mcp"]
+    }
+  }
+}

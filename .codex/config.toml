@@ -1,0 +1,17 @@
+[mcp_servers.arxiv-mcp]
+command = "uvx"
+args = [
+    "arxiv-mcp-server",
+    "--storage-path",
+    ".claude/mcp-cache/arxiv",
+]
+
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
+
+[mcp_servers.exa.env_http_headers]
+x-api-key = "EXA_API_KEY"
+
+[mcp_servers.paper-search-mcp]
+command = "uvx"
+args = ["paper-search-mcp"]

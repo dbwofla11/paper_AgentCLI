@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "WebSearch",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:export.arxiv.org)",
+      "WebFetch(domain:api.semanticscholar.org)",
+      "WebFetch(domain:www.semanticscholar.org)",
+      "WebFetch(domain:api.openalex.org)",
+      "WebFetch(domain:api.crossref.org)",
+      "WebFetch(domain:doi.org)",
+      "WebFetch(domain:openreview.net)",
+      "WebFetch(domain:api2.openreview.net)",
+      "WebFetch(domain:aclanthology.org)",
+      "WebFetch(domain:proceedings.mlr.press)",
+      "WebFetch(domain:proceedings.neurips.cc)",
+      "WebFetch(domain:openaccess.thecvf.com)",
+      "WebFetch(domain:dblp.org)",
+      "WebFetch(domain:paperswithcode.com)",
+      "WebFetch(domain:huggingface.co)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python scripts/paper.py *)",
+      "Bash(py scripts/paper.py *)",
+      "Edit(reviews/*)",
+      "Edit(notes/*)",
+      "Edit(library/*)"
+    ],
+    "deny": [
+      "Edit(papers/*)"
+    ]
+  }
+}

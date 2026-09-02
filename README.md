@@ -8,6 +8,7 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 /paper-search      transformer 효율화 관련 최근 논문 찾아줘
 /paper-review      1706.03762
 /related-work      1706.03762
+/paper-relations   저장소 논문들의 관계를 Graphify로 맵핑해줘
 /review-index      정리해줘
 /math-derivation   Eq. 5의 softmax 그래디언트가 왜 저렇게 되는지 유도해줘
 ```
@@ -26,9 +27,20 @@ docs/search-protocol.md  논문 탐색 프로토콜 (질의 분해·소스 우�
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 papers/                원문 PDF
 reviews/               최종 리뷰 (논문 1편 = 파일 1개)
-notes/                 작업 메모, 관련 연구 맵, notes/trends/ 일일 트렌드 다이제스트(자동)
+notes/                 작업 메모, 관련 연구 맵, 논문 관계 맵, notes/trends/ 일일 트렌드 다이제스트(자동)
 library/index.md       전체 논문 인덱스
 ```
+
+## 논문 관계 그래프
+
+Graphify를 프로젝트에 설치해 `papers/**/*.pdf` 사이의 인용·공유 방법·공유 데이터·개념적 유사성 후보를 질의할 수 있다. 관계 분석은 `$paper-relations` 스킬을 사용하며, 그래프의 `EXTRACTED`·`INFERRED`·`AMBIGUOUS` 표시를 원문 PDF와 대조해 `notes/paper-relations/{YYYY-MM-DD}.md`에 남긴다.
+
+```bash
+uv tool install 'graphifyy[pdf]'
+graphify install --project --platform codex
+```
+
+Graphify의 프로젝트 설정은 `.codex/skills/graphify/`와 `AGENTS.md`에 기록된다. 그래프를 만들거나 갱신할 때는 논문 PDF 폴더만 대상으로 하며, 관계가 원문에서 확인되지 않으면 `[확인 필요]`로 표시한다.
 
 ## scripts/paper.py
 

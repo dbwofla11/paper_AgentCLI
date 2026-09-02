@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Relations"
+  short_description: "Map relationships among paper PDFs"
+  default_prompt: "Use $paper-relations to map and verify relationships among the papers in this repository."

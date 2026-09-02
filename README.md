@@ -5,10 +5,11 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 ## 빠른 시작
 
 ```
-/paper-search  transformer 효율화 관련 최근 논문 찾아줘
-/paper-review  1706.03762
-/related-work  1706.03762
-/review-index  정리해줘
+/paper-search      transformer 효율화 관련 최근 논문 찾아줘
+/paper-review      1706.03762
+/related-work      1706.03762
+/review-index      정리해줘
+/math-derivation   Eq. 5의 softmax 그래디언트가 왜 저렇게 되는지 유도해줘
 ```
 
 또는 그냥 자연어로 요청해도 된다 — 해당 스킬이 자동으로 걸린다.
@@ -18,14 +19,14 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 ```
 CLAUDE.md              에이전트 규칙 (근거 규칙, 서술 규칙, 품질 기준)
 .claude/settings.json  논문 사이트 WebFetch·스크립트 실행 허용목록
-.claude/skills/        paper-search · paper-review · related-work · review-index
+.claude/skills/        paper-search · paper-review · related-work · review-index · math-derivation
 templates/             review-template.md (심층) · triage-template.md (1차 판정)
 scripts/paper.py       arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
 docs/search-protocol.md  논문 탐색 프로토콜 (질의 분해·소스 우선순위·스노우볼링·실패 처리·MCP 목록)
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 papers/                원문 PDF
 reviews/               최종 리뷰 (논문 1편 = 파일 1개)
-notes/                 작업 메모, 관련 연구 맵
+notes/                 작업 메모, 관련 연구 맵, notes/trends/ 일일 트렌드 다이제스트(자동)
 library/index.md       전체 논문 인덱스
 ```
 
@@ -59,6 +60,10 @@ $env:S2_API_KEY = "..."
 # EXA_API_KEY를 영구적으로 쓰려면 사용자 환경변수로 등록
 setx EXA_API_KEY "your_api_key"
 ```
+
+## 자동화 루틴
+
+매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 AI/ML/CS 기술 트렌드와 컴퓨터 비전 연구 동향 중 가장 중요한 것만 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다 — 논문 3편 + 시사이슈 3편 구성. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
 
 ## 설계 원칙
 

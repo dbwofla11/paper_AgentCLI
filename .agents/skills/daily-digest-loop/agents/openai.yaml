@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Digest Loop"
+  short_description: "Collect, summarize, and commit daily paper and news digests"
+  default_prompt: "Use $daily-digest-loop for the next paper and news digest cycle."

@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2508.12176"
 doi: "10.48550/arXiv.2508.12176"
 code: "https://zhiwei-zzz.github.io/WaveVerse/"
-pdf: "papers/Scalable RF Simulation in Generative 4D Worlds.pdf"
+pdf: "papers/2025-08-16/zheng-scalable-rf-simulation-generative-4d-worlds.pdf"
 read_date: 2026-08-13
 rating: 4
 tags: [RF sensing, ray tracing, motion generation, 4D scene generation, phase coherence, SMPL, data augmentation]

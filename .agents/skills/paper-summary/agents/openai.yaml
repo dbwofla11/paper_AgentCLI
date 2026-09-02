@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Summary"
+  short_description: "Summarize three papers in chat"
+  default_prompt: "Use $paper-summary to summarize three papers in chat."

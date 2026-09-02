@@ -7,6 +7,9 @@
 
 | 상태 | 연도 | 제목 | 제1저자 | venue | 평점 | 리뷰 | 태그 |
 |---|---|---|---|---|---|---|---|
+| 트리아지 | 2026 | Selective Agent Guidance via Entropy… | Merler | EMNLP 2026 Findings | – | [메모](../notes/2026-merler-selective-agent-guidance-entropy.notes.md) | VLM teacher, reinforcement learning, SAGE, agent guidance |
+| 트리아지 | 2026 | Can LLMs Discover Scientific Laws in Real and Parallel Worlds? | Huang | arXiv | – | [메모](../notes/2026-huang-can-llms-discover-scientific-laws.notes.md) | AI for Science, scientific law discovery, SciLaws-Bench, evaluation |
+| 트리아지 | 2026 | EvoSCM: Scientific Belief Revision Through Causal Model… | Zhao | arXiv | – | [메모](../notes/2026-zhao-evoscm-scientific-belief-revision.notes.md) | structural causal model, scientific discovery, belief revision |
 | 완료 | 2026 | ARDY: Autoregressive Diffusion with Hybrid Representation for Interactive Human Motion Generation | Zhao | SIGGRAPH 2026 (ACM TOG) | 4 | [리뷰](../reviews/2026-zhao-ardy-autoregressive-diffusion-hybrid-representation.md) | human motion generation, autoregressive diffusion, real-time animation, SMPL, NVIDIA |
 | 완료 | 2026 | Scalable RF Simulation in Generative 4D Worlds | Zheng | ICML 2026 | 4 | [리뷰](../reviews/2026-zheng-scalable-rf-simulation-4d-worlds.md) | RF sensing, ray tracing, motion generation, SMPL, phase coherence |
 | 완료 | 2026 | J-Space Cognition Suite V3.6 (논문 아님 — GitHub 저장소) | Tiger3807861189 | GitHub (비출판) | – | [메모](../notes/2026-tiger3807861189-j-space-cognition-suite.notes.md) | prompt engineering, agentic scaffolding, global workspace theory, non-paper |

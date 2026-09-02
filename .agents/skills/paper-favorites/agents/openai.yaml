@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Favorites"
+  short_description: "Manage favorite papers in the research library"
+  default_prompt: "Use $paper-favorites to add, remove, or list favorite papers."

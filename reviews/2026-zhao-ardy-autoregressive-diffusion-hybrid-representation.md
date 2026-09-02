@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2607.08741"
 doi: "10.1145/3811284"
 code: "https://github.com/nv-tlabs/ardy"
-pdf: "papers/2026-07-09/zhao-ardy-autoregressive-diffusion-hybrid-representation-interactive-human-motion-generation.pdf"
+pdf: "papers/2026-09-02/zhao-ardy-autoregressive-diffusion-hybrid-representation-interactive-human-motion-generation.pdf"
 read_date: 2026-08-13
 rating: 4
 tags: [human motion generation, autoregressive diffusion, real-time animation, SMPL, interactive control, NVIDIA]

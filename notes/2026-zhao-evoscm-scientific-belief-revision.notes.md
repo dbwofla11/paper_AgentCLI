@@ -1,6 +1,6 @@
 # EvoSCM — 분석 메모
 
-- 대상: [arXiv:2609.01526](https://arxiv.org/abs/2609.01526), [원문 HTML](https://arxiv.org/html/2609.01526v1), [PDF](../papers/2026-09-01/zhao-evoscm-scientific-belief-revision-causal-model-evolution-experimentation.pdf)
+- 대상: [arXiv:2609.01526](https://arxiv.org/abs/2609.01526), [원문 HTML](https://arxiv.org/html/2609.01526v1), [PDF](../papers/2026-09-02/zhao-evoscm-scientific-belief-revision-causal-model-evolution-experimentation.pdf)
 - 저자: Qing Zhao, Haowei Li, Weijian Deng, Pengxu Wei, Liang Lin
 - 연도: 2026 (arXiv v1, 2026-09-01 제출)
 - 조사일: 2026-09-02

@@ -1,6 +1,6 @@
 # Selective Agent Guidance via Entropy — 분석 메모
 
-- 대상: [arXiv:2609.01567](https://arxiv.org/abs/2609.01567), [원문 HTML](https://arxiv.org/html/2609.01567v1), [PDF](../papers/2026-09-01/merler-selective-agent-guidance-entropy-learning-autonomous-policies.pdf)
+- 대상: [arXiv:2609.01567](https://arxiv.org/abs/2609.01567), [원문 HTML](https://arxiv.org/html/2609.01567v1), [PDF](../papers/2026-09-02/merler-selective-agent-guidance-entropy-learning-autonomous-policies.pdf)
 - 저자: Matteo Merler, Giovanni Bonetta, Davide Zago, Rossella Cancelliere, Bernardo Magnini
 - venue / 연도: `EMNLP 2026 Findings` / 2026 (arXiv v1, 2026-09-01 제출)
 - 조사일: 2026-09-02

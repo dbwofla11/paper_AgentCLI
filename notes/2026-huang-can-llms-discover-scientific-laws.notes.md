@@ -1,6 +1,6 @@
 # Can LLMs Discover Scientific Laws in Real and Parallel Worlds? — 분석 메모
 
-- 대상: [arXiv:2609.01552](https://arxiv.org/abs/2609.01552), [원문 HTML](https://arxiv.org/html/2609.01552v1), [PDF](../papers/2026-09-01/huang-can-llms-discover-scientific-laws-real-parallel-worlds.pdf), [프로젝트 페이지](https://yiyihum.github.io/SciLaws-Bench/)
+- 대상: [arXiv:2609.01552](https://arxiv.org/abs/2609.01552), [원문 HTML](https://arxiv.org/html/2609.01552v1), [PDF](../papers/2026-09-02/huang-can-llms-discover-scientific-laws-real-parallel-worlds.pdf), [프로젝트 페이지](https://yiyihum.github.io/SciLaws-Bench/)
 - 저자: Yiming Huang, Ziche Liu, Zhuohang Wu 외 11인
 - 연도: 2026 (arXiv v1, 2026-09-01 제출)
 - 조사일: 2026-09-02

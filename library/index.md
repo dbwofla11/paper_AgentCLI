@@ -7,6 +7,10 @@
 
 | 상태 | 연도 | 제목 | 제1저자 | venue | 평점 | 리뷰 | 태그 |
 |---|---|---|---|---|---|---|---|
+| 읽을 예정 | 2026 | LatentCSI: Real-Time Reconstruction of Physical Scenes from WiFi CSI via Latent Diffusion | Ramesh | ACM MobiCom ’25 Demo | – | – | WiFi CSI, latent diffusion, scene reconstruction |
+| 읽을 예정 | 2026 | Code World Models for General Game Playing | Lehrach | ICLR 2026 | – | – | game AI, code world model, MCTS, general game playing |
+| 읽을 예정 | 2026 | EVA: Efficient Reinforcement Learning for End-to-End Video Agent | Zhang | CVPR 2026 | – | – | computer vision, video agent, reinforcement learning |
+| 완료 | 2026 | Belief-Calibrated Optimization: An Explicit World Model for Agentic… | Chen | arXiv | 4 | [리뷰](../reviews/2026-chen-belief-calibrated-optimization.md) | agentic optimization, world model, persistent memory, LLM agents |
 | 트리아지 | 2026 | Selective Agent Guidance via Entropy… | Merler | EMNLP 2026 Findings | – | [메모](../notes/2026-merler-selective-agent-guidance-entropy.notes.md) | VLM teacher, reinforcement learning, SAGE, agent guidance |
 | 트리아지 | 2026 | Can LLMs Discover Scientific Laws in Real and Parallel Worlds? | Huang | arXiv | – | [메모](../notes/2026-huang-can-llms-discover-scientific-laws.notes.md) | AI for Science, scientific law discovery, SciLaws-Bench, evaluation |
 | 트리아지 | 2026 | EvoSCM: Scientific Belief Revision Through Causal Model… | Zhao | arXiv | – | [메모](../notes/2026-zhao-evoscm-scientific-belief-revision.notes.md) | structural causal model, scientific discovery, belief revision |

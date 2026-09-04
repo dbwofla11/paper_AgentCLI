@@ -10,6 +10,7 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 /related-work      1706.03762
 /paper-relations   저장소 논문들의 관계를 Graphify로 맵핑해줘
 /review-index      정리해줘
+/paper-scheduler   2026-09-05 논문을 게임 AI 1편과 컴퓨터 비전 2편으로 예약해줘
 /math-derivation   Eq. 5의 softmax 그래디언트가 왜 저렇게 되는지 유도해줘
 ```
 
@@ -75,7 +76,9 @@ setx EXA_API_KEY "your_api_key"
 
 ## 자동화 루틴
 
-매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 AI/ML/CS 기술 트렌드와 컴퓨터 비전 연구 동향 중 가장 중요한 것만 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다 — 논문 3편 + 시사이슈 3편 구성. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
+매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 아래 허용 카테고리에서 **학회 발표·게재가 확인된 논문 3편**과 시사이슈 3건을 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다. 허용 카테고리는 `WiFi CSI`, `게임 AI (Game AI)`, `에이전트 AI (Agent AI)`, `컴퓨터 비전 (Computer Vision)`이며, 회차마다 하나 이상의 카테고리를 선택한다. arXiv에만 올라온 preprint나 공식 발표·게재가 확인되지 않은 `accepted/to appear` 항목은 제외한다. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
+
+미래 회차의 논문 주제는 `$paper-scheduler`로 예약한다. 예약 내용은 `notes/trends/{YYYY-MM-DD}-plan.md`에 저장되고, 해당 날짜의 루프가 이를 읽어 논문 슬롯과 주제 배분을 우선 적용한다. 이 스킬은 루틴 자체의 실행 시각을 바꾸지는 않는다.
 
 ## 설계 원칙
 

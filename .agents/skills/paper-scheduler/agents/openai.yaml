@@ -1,0 +1,7 @@
+interface:
+  display_name: "Paper Scheduler"
+  short_description: "미래 논문 다이제스트의 주제와 슬롯을 예약"
+  default_prompt: "Use $paper-scheduler to schedule a future paper-selection plan."
+
+policy:
+  allow_implicit_invocation: true

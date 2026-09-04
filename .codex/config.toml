@@ -1,10 +1,17 @@
 [mcp_servers.arxiv-mcp]
 command = "uvx"
 args = [
+    "--python",
+    "3.11",
+    "--from",
+    "arxiv-mcp-server==0.7.2",
     "arxiv-mcp-server",
     "--storage-path",
     ".claude/mcp-cache/arxiv",
 ]
+
+[mcp_servers.arxiv-mcp.tools.download_paper]
+approval_mode = "approve"
 
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
@@ -14,4 +21,4 @@ x-api-key = "EXA_API_KEY"
 
 [mcp_servers.paper-search-mcp]
 command = "uvx"
-args = ["paper-search-mcp"]
+args = ["--with", "mcp<2", "paper-search-mcp"]

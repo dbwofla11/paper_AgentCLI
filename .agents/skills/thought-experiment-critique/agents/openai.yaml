@@ -1,0 +1,7 @@
+interface:
+  display_name: "Thought Experiment Critique"
+  short_description: "연구 사고실험의 전제와 반증조건을 비판적으로 검증"
+  default_prompt: "Use $thought-experiment-critique to critically validate this research thought experiment."
+
+policy:
+  allow_implicit_invocation: true

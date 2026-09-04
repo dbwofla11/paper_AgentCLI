@@ -10,12 +10,20 @@
     "arxiv-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["arxiv-mcp-server", "--storage-path", ".claude/mcp-cache/arxiv"]
+      "args": [
+        "--python",
+        "3.11",
+        "--from",
+        "arxiv-mcp-server==0.7.2",
+        "arxiv-mcp-server",
+        "--storage-path",
+        ".claude/mcp-cache/arxiv"
+      ]
     },
     "paper-search-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["paper-search-mcp"]
+      "args": ["--with", "mcp<2", "paper-search-mcp"]
     }
   }
 }

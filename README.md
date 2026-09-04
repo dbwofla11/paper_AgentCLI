@@ -26,8 +26,8 @@ scripts/paper.py       arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설�
 docs/search-protocol.md  논문 탐색 프로토콜 (질의 분해·소스 우선순위·스노우볼링·실패 처리·MCP 목록)
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 papers/                원문 PDF
-reviews/               최종 리뷰 (논문 1편 = 파일 1개)
-notes/                 작업 메모, 관련 연구 맵, 논문 관계 맵, notes/trends/ 일일 트렌드 다이제스트(자동)
+reviews/{category}/    카테고리별 최종 리뷰 (논문 1편 = 파일 1개)
+notes/                 작업 메모, 관련 연구 맵, 논문 관계 맵, notes/trends/ 일일 트렌드 다이제스트(자동)·예약 계획
 library/index.md       전체 논문 인덱스
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: paper-review
-description: 논문 1편을 3패스로 정독하고 templates/review-template.md를 채워 reviews/에 심층 리뷰를 작성한다. 사용자가 논문 PDF·arXiv ID·제목을 주며 "리뷰해줘", "정독해줘", "분석해줘"라고 할 때 사용.
+description: 논문 1편을 3패스로 정독하고 templates/review-template.md를 채워 카테고리별 reviews/에 심층 리뷰를 작성한다. 사용자가 논문 PDF·arXiv ID·제목을 주며 "리뷰해줘", "정독해줘", "분석해줘"라고 할 때 사용.
 ---
 
 # 심층 논문 리뷰
@@ -11,7 +11,7 @@ description: 논문 1편을 3패스로 정독하고 templates/review-template.md
 
 1. PDF가 `papers/`에 있는지 확인. 없으면 `/paper-search`로 확보하거나 사용자에게 경로를 묻는다.
 2. 메타데이터(정식 제목·저자·venue·연도·arXiv·DOI·코드 링크)를 확정한다. PDF 1쪽과 `scripts/paper.py meta`를 교차 확인한다.
-3. `templates/review-template.md`를 읽고 `reviews/{연도}-{제1저자성}-{슬러그}.md`로 복사해 프론트매터부터 채운다.
+3. 카테고리를 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other` 중에서 선택한다. `templates/review-template.md`를 읽고 `reviews/{category}/{연도}-{제1저자성}-{슬러그}.md`로 복사해 프론트매터부터 채운다. 일일 자동 수집의 허용 카테고리와 무관하게, 사용자가 직접 지정한 논문은 가장 가까운 카테고리 또는 `other`에 둔다.
 
 **PDF를 끝내 구하지 못했다면** 리뷰를 쓰지 않는다. 초록만으로 쓸 수 있는 것은 트리아지(`templates/triage-template.md`)뿐이다.
 

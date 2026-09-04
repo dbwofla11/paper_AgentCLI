@@ -7,7 +7,7 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 | 경로 | 용도 |
 |---|---|
 | `papers/` | 원문 PDF (수동 다운로드 또는 `scripts/paper.py pdf`) |
-| `reviews/` | 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
+| `reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
 | `notes/` | 작업 중 메모, 발췌, 수식 정리 |
 | `library/index.md` | 읽은/읽을 논문 인덱스 (한 줄 = 한 편) |
 | `templates/` | 리뷰·트리아지 템플릿 |
@@ -21,7 +21,7 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 
 ```
 papers/2017-vaswani-attention-is-all-you-need.pdf
-reviews/2017-vaswani-attention-is-all-you-need.md
+reviews/{category}/2017-vaswani-attention-is-all-you-need.md
 notes/2017-vaswani-attention-is-all-you-need.notes.md
 ```
 

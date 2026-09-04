@@ -2,6 +2,36 @@
 
 AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 Claude Code 환경.
 
+## 처음 사용하는 사람을 위한 설정
+
+이 공개 템플릿은 개인 논문 PDF·리뷰·메모를 제외한 `public-template` 브랜치다. 처음 clone할 때 이 브랜치를 지정한다.
+
+```bash
+git clone --branch public-template https://github.com/dbwofla11/paper_AgentCLI.git
+cd paper_AgentCLI
+```
+
+필수 도구는 Git, Claude Code, Python 3.11 이상, `uv`다. `uv`는 `.mcp.json`의 `arxiv-mcp`와 `paper-search-mcp`를 실행할 때 사용한다. 설치 후 Claude Code로 이 디렉터리를 열고 프로젝트 설정을 검토한 뒤 사용한다.
+
+```bash
+claude
+python scripts/paper.py meta 1706.03762
+```
+
+의미 기반 검색(`exa`)까지 사용하려면 [Exa API key](https://dashboard.exa.ai/api-keys)를 발급하고 환경변수에 등록한다. 키를 설정하지 않아도 `scripts/paper.py`, `arxiv-mcp`, `paper-search-mcp`는 사용할 수 있다.
+
+```bash
+# macOS / Linux
+export EXA_API_KEY="your_api_key"
+
+# Windows PowerShell
+$env:EXA_API_KEY = "your_api_key"
+```
+
+환경변수를 등록한 뒤에는 Claude Code 세션을 다시 시작한다. Semantic Scholar API를 사용할 경우에만 `S2_API_KEY`를 추가로 설정하면 된다.
+
+논문을 추가할 때는 `/paper-search`로 메타데이터를 확인하고 `papers/`, `reviews/{category}/`, `library/index.md`를 함께 갱신한다. 상세한 작성 규칙은 `CLAUDE.md`와 `AGENTS.md`를 따른다.
+
 ## 빠른 시작
 
 ```

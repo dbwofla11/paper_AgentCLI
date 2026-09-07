@@ -5,6 +5,7 @@
 ## WiFi CSI
 
 - [LatentCSI: Real-Time Reconstruction of Physical Scenes from WiFi CSI via Latent Diffusion](wifi-csi/2025-ramesh-latentcsi-wifi-csi-latent-diffusion.md)
+- [CSI-Bench: A Large-Scale In-the-Wild Dataset for Multi-task WiFi Sensing](wifi-csi/2025-zhu-csi-bench-wifi-sensing.md)
 - [Scalable RF Simulation in Generative 4D Worlds](wifi-csi/2026-zheng-scalable-rf-simulation-4d-worlds.md)
 
 ## 게임 AI
@@ -14,6 +15,7 @@
 ## 에이전트 AI
 
 - [Belief-Calibrated Optimization: An Explicit World Model for Agentic Optimization](agent-ai/2026-chen-belief-calibrated-optimization.md)
+- [A Multi-Agent Perception-Action Alliance for Efficient Long Video Reasoning](agent-ai/2026-xu-a4vl-long-video-reasoning.md)
 
 ## 컴퓨터 비전
 

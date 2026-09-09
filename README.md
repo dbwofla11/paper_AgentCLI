@@ -106,7 +106,7 @@ setx EXA_API_KEY "your_api_key"
 
 ## 자동화 루틴
 
-매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 아래 허용 카테고리에서 **학회 발표·게재가 확인된 논문 3편**과 시사이슈 3건을 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다. 허용 카테고리는 `WiFi CSI`, `게임 AI (Game AI)`, `에이전트 AI (Agent AI)`, `컴퓨터 비전 (Computer Vision)`이며, 회차마다 하나 이상의 카테고리를 선택한다. arXiv에만 올라온 preprint나 공식 발표·게재가 확인되지 않은 `accepted/to appear` 항목은 제외한다. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
+매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 아래 허용 카테고리에서 **학회 발표·게재가 확인된 논문 3편**과 시사이슈 3건을 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다. 모든 일일 다이제스트는 [`notes/trends/2026-09-07.md`](notes/trends/2026-09-07.md)의 전체 문서 양식(논문별 핵심 요약·중요한 이유·주장–근거 대응·한계, 시사이슈, 조사·검증 기록)을 따른다. 허용 카테고리는 `WiFi CSI`, `게임 AI (Game AI)`, `에이전트 AI (Agent AI)`, `컴퓨터 비전 (Computer Vision)`이며, 회차마다 하나 이상의 카테고리를 선택한다. arXiv에만 올라온 preprint나 공식 발표·게재가 확인되지 않은 `accepted/to appear` 항목은 제외한다. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
 
 미래 회차의 논문 주제는 `$paper-scheduler`로 예약한다. 예약 내용은 `notes/trends/{YYYY-MM-DD}-plan.md`에 저장되고, 해당 날짜의 루프가 이를 읽어 논문 슬롯과 주제 배분을 우선 적용한다. 이 스킬은 루틴 자체의 실행 시각을 바꾸지는 않는다.
 

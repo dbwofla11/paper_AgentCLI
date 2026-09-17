@@ -17,7 +17,7 @@
         "arxiv-mcp-server==0.7.2",
         "arxiv-mcp-server",
         "--storage-path",
-        ".claude/mcp-cache/arxiv"
+        ".codex/mcp-cache/arxiv"
       ]
     },
     "paper-search-mcp": {

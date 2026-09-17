@@ -1,6 +1,6 @@
 # 논문 탐색 프로토콜 (Paper Search Protocol)
 
-`/paper-search`가 따르는 상세 절차. 스킬 파일(`.claude/skills/paper-search/SKILL.md`)은 이 문서를 요약한 실행 가이드고, 여기가 근거·판정 기준의 원본이다.
+`/paper-search`가 따르는 상세 절차. paper-search 스킬은 이 문서를 요약한 실행 가이드고, 여기가 근거·판정 기준의 원본이다.
 
 ## 0. 목적
 
@@ -68,12 +68,12 @@
 
 ## 7. 연결된 MCP 서버
 
-`.mcp.json`(프로젝트 루트)에 등록됨. 세션을 재시작하면 Claude Code가 신뢰 여부를 묻는 프롬프트를 띄운다 — 처음 한 번은 승인해야 한다.
+Codex는 `.codex/config.toml`의 MCP 설정을 사용한다. `.mcp.json`은 다른 MCP 호환 클라이언트용 동등 설정이다. 설정을 바꾼 뒤에는 새 Codex 세션을 시작한다.
 
 | 서버 | 상태 | 용도 | 비고 |
 |---|---|---|---|
 | **exa** ([Exa MCP](https://exa.ai/docs/reference/exa-mcp), `research_paper_search`) | 연결됨, **API 키 필요** | 키워드가 아니라 **의미 기반**으로 1억 건 이상 논문 전문 검색 — §6의 키워드 검색 한계를 직접 해결 | 원격 HTTP 서버라 로컬 런타임 불필요. [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys)에서 키 발급 후 `EXA_API_KEY` 환경변수로 설정해야 실제로 작동한다. 설정 전까지는 인증 실패로 도구 목록만 뜨고 호출이 막힌다. |
-| **arxiv-mcp** ([blazickjp/arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server), PyPI) | 연결됨, 동작 확인 | 논문 전문을 섹션 단위로 가져오거나 연구 알림 유지 | `uvx`로 실행, 다운로드 캐시는 `.claude/mcp-cache/arxiv/`에 격리(우리 `papers/` 명명 규칙과 안 섞이게). 실제로 채택할 PDF는 여전히 `paper.py pdf`로 `papers/`에 정식 저장한다. |
+| **arxiv-mcp** ([blazickjp/arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server), PyPI) | 연결됨, 동작 확인 | 논문 전문을 섹션 단위로 가져오거나 연구 알림 유지 | `uvx`로 실행, 다운로드 캐시는 `.codex/mcp-cache/arxiv/`에 격리(우리 `01-Papers/pdfs/` 명명 규칙과 안 섞이게). 실제로 채택할 PDF는 여전히 `paper.py pdf`로 `01-Papers/pdfs/`에 정식 저장한다. |
 | **paper-search-mcp** ([openags/paper-search-mcp](https://github.com/openags/paper-search-mcp), PyPI) | 연결됨, 동작 확인 | arXiv 외 PubMed·bioRxiv·Google Scholar·CORE·DOAJ·IEEE·ACM까지 한 번에 — AI/ML을 넘어서는 인접 분야 검색 시 유용 | `uvx`로 실행. CORE/DOAJ/Unpaywall 키는 선택 사항(없으면 경고만 뜨고 낮은 레이트리밋으로 동작) — 필요하면 `.mcp.json`의 `env`에 `PAPER_SEARCH_MCP_*` 변수 추가. |
 
 **Semantic Scholar MCP는 연결하지 않았다.** PyPI의 `semantic-scholar-mcp` 패키지를 실행 검증했더니 `ModuleNotFoundError: mcp.server.fastmcp`로 즉시 죽는다 — 패키지 자체가 깨져 있음. 대안 구현(`JackKuo666/semanticscholar-MCP-Server`)은 git clone + Windows 절대경로 수동 설정이 필요해 번거롭고, `scripts/paper.py`가 이미 S2의 검색/메타데이터/인용망을 다 커버하므로 이득이 적다. 나중에 고쳐지면 재검토.

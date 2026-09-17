@@ -19,6 +19,19 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 | `.scripts/bin/paper.py` | arXiv / Semantic Scholar / OpenAlex 조회 CLI (stdlib만 사용) |
 | `.mcp.json` | 연결된 MCP 서버 — `exa`(의미 검색, API 키 필요), `arxiv-mcp`, `paper-search-mcp` |
 
+## 새 세션 시작 (필수)
+
+이 저장소를 새로 복제했거나 새 Codex 세션에서 첫 사용자 요청을 받으면, 요청을 처리하기 전에 저장소 루트에서 다음 점검을 실행한다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
+```
+
+- 성공하면 사용자 요청을 계속 처리한다. 사용자에게 README를 읽거나 수동 점검을 실행하라고 요구하지 않는다.
+- 실패하면 출력의 `FAIL` 항목과 필요한 설치 명령만 간단히 보고한다. 해당 도구가 필수인 작업은 보류하되, 가능한 범위의 작업은 계속한다.
+- 이 스크립트는 멱등(idempotent)이며 정해진 작업 디렉터리 생성과 환경 검증만 한다. 패키지 설치, API 키 저장, 기존 연구 자료 수정·삭제는 하지 않는다.
+- `README.md`는 사람을 위한 clone·사용 안내다. 사용자가 요청했거나 사람이 읽을 안내가 필요할 때만 참조한다.
+
 ## 학습·연구 하네스
 
 `Home.md`는 전체 MOC다. `00-Inbox/`, `01-Papers/`, `02-Concepts/`, `03-Trends/`, `04-Projects/`, `05-ideas/`, `90-Templates/`, `99-Attachments/`, `.scripts/`는 탐색과 운영을 위한 레이어다.

@@ -1,109 +1,159 @@
-# 논문 리뷰·공부 작업 공간
+# 논문 리뷰·연구 하네스 (Paper Review & Research Harness)
 
-AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 Claude Code 환경.
+AI/ML/CS 논문을 찾고, 원문 근거에 따라 정독하고, 한국어 심층 리뷰와 연구 노트로 축적하는 **Codex 작업 공간**이다. 논문 제목·모델·데이터셋 이름은 원어를 유지하고, 본문은 한국어로 작성한다.
 
-처음에는 [Home.md](Home.md)에서 시작한다. 원문·리뷰 관리는 `01-Papers/`, **내가 공부해서 이해한 내용**은 `02-Concepts/`, 실제 실험·구현은 `04-Projects/`, 검증 전 가설은 `05-ideas/`에 둔다. Keep과 즐겨찾기는 `01-Papers/library/`에 유지한다.
+처음에는 [Home.md](Home.md)에서 시작한다. 이 문서는 작업의 출발점과 환경 설정만 다룬다.
 
-## 빠른 시작
+## 3분 시작
 
-```
-/paper-search      transformer 효율화 관련 최근 논문 찾아줘
-/paper-review      1706.03762
-/related-work      1706.03762
-/paper-relations   저장소 논문들의 관계를 Graphify로 맵핑해줘
-/review-index      정리해줘
-/paper-scheduler   2026-09-05 논문을 게임 AI 1편과 컴퓨터 비전 2편으로 예약해줘
-/math-derivation   Eq. 5의 softmax 그래디언트가 왜 저렇게 되는지 유도해줘
+Windows에서 저장소를 내려받고 Codex에서 루트 폴더를 연다.
+
+```powershell
+git clone https://github.com/dbwofla11/paper_AgentCLI.git
+cd paper_AgentCLI
+codex
 ```
 
-또는 그냥 자연어로 요청해도 된다 — 해당 스킬이 자동으로 걸린다.
+그다음 논문 탐색처럼 원하는 첫 요청을 바로 입력한다. 새 Codex 세션은 작업에 앞서 자동으로 `.scripts/setup.ps1`을 실행해 폴더·Git·Python·`uv`·MCP 설정·논문 조회 CLI를 점검한다. README를 에이전트에게 따로 읽으라고 요청할 필요가 없다.
 
-## 구성
+초기화 스크립트는 안전하게 여러 번 실행할 수 있다. 필요한 작업 폴더를 만들고, Git·Python·`uv`·설정 파일·논문 조회 CLI를 점검한다. MCP 캐시는 각 서버가 처음 실행될 때 생성된다. 패키지 설치, API 키 등록, 논문 다운로드, 기존 노트 수정은 하지 않는다.
 
-```
-CLAUDE.md              에이전트 규칙 (근거 규칙, 서술 규칙, 품질 기준)
-.claude/settings.json  논문 사이트 WebFetch·스크립트 실행 허용목록
-.claude/skills/        paper-search · paper-review · related-work · review-index · math-derivation
-90-Templates/paper/    review-template.md (심층) · triage-template.md (1차 판정)
-.scripts/bin/paper.py  arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
-.scripts/docs/search-protocol.md  논문 탐색 프로토콜
-.mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
-01-Papers/pdfs/        원문 PDF
-01-Papers/reviews/     카테고리별 최종 리뷰 (논문 1편 = 파일 1개)
-01-Papers/triage/      논문별 트리아지·조사 메모
-01-Papers/library/     전체 인덱스 · Keep · 즐겨찾기
-03-Trends/daily/       일일 트렌드 다이제스트·예약 계획
-05-ideas/thought-experiments/  연구 아이디어 메모
+Codex를 통하지 않고 현재 상태만 확인하려면 다음을 사용한다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\.scripts\setup.ps1 -CheckOnly
 ```
 
-## 학습·연구 하네스
+## 필요한 도구
 
-```
-Home.md                전체 대시보드 / MOC
-00-Inbox/              분류 전 빠른 캡처
-01-Papers/             papers·reviews·library로 가는 논문 리딩 관문
-02-Concepts/           내 공부노트 (논문 간 개념 종합)
-03-Trends/             날짜별 트렌드와 daily/ 다이제스트
-04-Projects/           실험·구현·스터디 실행 단위
-05-ideas/              thought-experiments/를 포함한 연구 아이디어
-90-Templates/          공부노트 등 추가 양식
-99-Attachments/        그림·실험 산출물 등 비원문 첨부
-.scripts/              자동화 실행 코드와 탐색 프로토콜
-```
+| 도구 | 용도 | 설치 여부 |
+|---|---|---|
+| Git | 저장소 복제와 버전 관리 | 필수 |
+| Python 3.10+ | `.scripts/bin/paper.py` 실행 | 필수 |
+| [uv](https://docs.astral.sh/uv/) / `uvx` | `arxiv-mcp`, `paper-search-mcp` 실행 | 필수 |
+| Codex Desktop 또는 Codex CLI | 에이전트·프로젝트 설정 사용 | 필수 |
+| `EXA_API_KEY` | Exa 의미 기반 논문 검색 | 선택 |
+| Graphify | 저장소 논문 관계 그래프 | 선택 |
 
-기존 문서는 새 하네스 안으로 이사했다. 루트의 `papers/`, `reviews/`, `notes/`, `library/`, `templates/`, `scripts/`, `docs/`는 과거 링크와 자동화를 유지하기 위한 호환 링크다.
+`uv`가 없다면 Windows에서는 다음처럼 설치할 수 있다. 설치 후 터미널과 Codex를 다시 연다.
 
-## 논문 관계 그래프
-
-Graphify를 프로젝트에 설치해 `01-Papers/pdfs/**/*.pdf` 사이의 인용·공유 방법·공유 데이터·개념적 유사성 후보를 질의할 수 있다. 관계 분석은 `$paper-relations` 스킬을 사용하며, 그래프의 `EXTRACTED`·`INFERRED`·`AMBIGUOUS` 표시를 원문 PDF와 대조해 기록한다.
-
-```bash
-uv tool install 'graphifyy[pdf]'
-graphify install --project --platform codex
+```powershell
+winget install --id Astral-sh.UV -e
 ```
 
-Graphify의 프로젝트 설정은 `.codex/skills/graphify/`와 `AGENTS.md`에 기록된다. 그래프를 만들거나 갱신할 때는 논문 PDF 폴더만 대상으로 하며, 관계가 원문에서 확인되지 않으면 `[확인 필요]`로 표시한다.
+Python 또는 Git이 없다는 진단이 나오면 해당 도구를 먼저 설치한 뒤 초기화 스크립트를 다시 실행한다.
 
-## .scripts/bin/paper.py
+## 첫 작업
 
-```bash
-python .scripts/bin/paper.py search "query" --source s2|arxiv|openalex --limit 10
-python .scripts/bin/paper.py meta  1706.03762
-python .scripts/bin/paper.py pdf   1706.03762 --out 01-Papers/pdfs/other
-python .scripts/bin/paper.py refs  1706.03762
+Codex에서 아래처럼 자연어로 요청하거나 해당 스킬을 호출한다.
+
+```text
+/paper-search transformer 효율화 관련 최근 논문 찾아줘
+/paper-review 1706.03762
+/related-work 1706.03762
+/paper-relations 저장소에 있는 논문의 연구 계보를 정리해줘
+/review-index 인덱스를 정리해줘
+```
+
+표준 흐름은 다음과 같다.
+
+```text
+논문 수집 → 트리아지 → 심층 리뷰 → 관련 연구 맵 → 인덱스 갱신
+```
+
+1. `/paper-search`로 메타데이터를 확인하고 PDF를 `01-Papers/pdfs/{category}/`에 저장한다.
+2. `90-Templates/paper/triage-template.md`로 1차 판정을 `01-Papers/triage/`에 남긴다.
+3. `/paper-review`로 `01-Papers/reviews/{category}/`에 논문 한 편당 리뷰 한 파일을 작성한다.
+4. 필요하면 `/related-work` 또는 `/paper-relations`로 앞뒤 연구와 저장소 내 관계를 확인한다.
+5. `/review-index`로 `01-Papers/library/index.md`를 갱신한다.
+
+## 작업 공간 지도
+
+| 경로 | 정본(source of truth) | 역할 |
+|---|---|---|
+| [Home.md](Home.md) | 예 | 전체 MOC와 현재 연구 맥락 |
+| `00-Inbox/` | 예 | 아직 분류하지 않은 질문·링크·관찰 |
+| `01-Papers/pdfs/` | 예 | 카테고리별 원문 PDF |
+| `01-Papers/triage/` | 예 | 논문별 1차 판정·조사 메모 |
+| `01-Papers/reviews/` | 예 | 카테고리별 최종 심층 리뷰 |
+| `01-Papers/library/` | 예 | 인덱스, Keep, 즐겨찾기 |
+| `02-Concepts/` | 예 | 논문 요약이 아닌 개념 공부노트 |
+| `03-Trends/daily/` | 예 | 날짜별 다이제스트와 예약 계획 |
+| `04-Projects/` | 예 | 실험·구현·스터디 |
+| `05-ideas/thought-experiments/` | 예 | 검증 전 연구 가설과 반증 조건 |
+| `90-Templates/` | 예 | 리뷰·트리아지·공부노트 양식 |
+| `99-Attachments/` | 예 | 그림·로그 등 비원문 첨부 |
+| `.scripts/` | 예 | 자동화와 검색 프로토콜 |
+
+루트의 `papers`, `reviews`, `library`, `notes`, `templates`, `scripts`, `docs`는 과거 링크를 보존하는 호환 경로다. 새 파일은 이 경로들이 아니라 위 정본 디렉터리에 작성한다.
+
+PDF와 리뷰는 다음 이름을 사용한다.
+
+```text
+{연도}-{제1저자성}-{짧은-슬러그}
+01-Papers/pdfs/other/2017-vaswani-attention-is-all-you-need.pdf
+01-Papers/reviews/other/2017-vaswani-attention-is-all-you-need.md
+01-Papers/triage/2017-vaswani-attention-is-all-you-need.notes.md
+```
+
+PDF 카테고리는 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other` 중 하나다.
+
+## Codex와 MCP 설정
+
+Codex용 프로젝트 설정은 [.codex/config.toml](.codex/config.toml)에 있다. 처음 세션을 시작할 때 다음 MCP 구성이 로드된다.
+
+| 서버 | 용도 | 준비 |
+|---|---|---|
+| `arxiv-mcp` | arXiv 섹션 조회·연구 알림 | `uvx` 필요 |
+| `paper-search-mcp` | arXiv·PubMed·bioRxiv·Google Scholar 등 통합 검색 | `uvx` 필요 |
+| `exa` | 의미 기반 논문 전문 검색 | `EXA_API_KEY` 필요 |
+
+Exa는 선택 사항이다. 키를 현재 PowerShell 세션에만 넣으려면 다음을 실행한 뒤 Codex를 같은 세션에서 시작한다.
+
+```powershell
+$env:EXA_API_KEY = "your_api_key"
+```
+
+영구 등록은 본인의 환경 변수 관리 방식으로 설정한 뒤 Codex를 재시작한다. API 키를 저장소나 `.mcp.json`에 직접 넣지 않는다. `.mcp.json`은 다른 MCP 호환 클라이언트를 위한 동등 설정이며, Codex에서는 `.codex/config.toml`이 기준이다.
+
+## 논문 조회 CLI
+
+`.scripts/bin/paper.py`는 추가 Python 패키지 없이 arXiv, Semantic Scholar, OpenAlex를 조회한다.
+
+```powershell
+python .scripts/bin/paper.py search "efficient transformer" --source arxiv --limit 10
+python .scripts/bin/paper.py meta 1706.03762
+python .scripts/bin/paper.py pdf 1706.03762 --out 01-Papers/pdfs/other
+python .scripts/bin/paper.py refs 1706.03762
 python .scripts/bin/paper.py cites 1706.03762
 ```
 
-`--json` 플래그로 원시 JSON 출력. Semantic Scholar는 API 키 없이 쓰면 429(rate limit)가 잦다 — 자동 재시도 후 arXiv/Crossref로 폴백한다. [무료 키](https://www.semanticscholar.org/product/api)를 발급받았다면:
+검색 설계와 소스별 한계는 [.scripts/docs/search-protocol.md](.scripts/docs/search-protocol.md)에 정리돼 있다. 중요한 검색에는 최소 두 소스를 사용하고, API가 실제로 반환한 논문만 기록한다.
+
+## 선택: 논문 관계 그래프
+
+Graphify는 원문 PDF 사이의 인용·공유 방법·공유 데이터 관계 후보를 탐색할 때만 설치한다.
 
 ```powershell
-$env:S2_API_KEY = "..."
+uv tool install "graphifyy[pdf]"
 ```
 
-## MCP 서버
+설치 후 Codex에 `$paper-relations`를 요청한다. 관계는 `EXTRACTED`, `INFERRED`, `AMBIGUOUS` 상태를 원문과 대조하며, 원문에서 확인되지 않은 결론은 `[확인 필요]`로 남긴다.
 
-`.mcp.json`에 3개 연결됨. 자세한 배경은 [.scripts/docs/search-protocol.md](.scripts/docs/search-protocol.md) 참고.
+## 리뷰 원칙
 
-| 서버 | 하는 일 | 설정 필요 |
-|---|---|---|
-| `exa` | 의미 기반 논문 전문 검색 | **필수** — [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys)에서 키 발급 후 `EXA_API_KEY` 환경변수 설정 |
-| `arxiv-mcp` | arXiv 전문 섹션 조회, 연구 알림 | 없음 (`uvx`로 즉시 동작) |
-| `paper-search-mcp` | arXiv/PubMed/bioRxiv/Google Scholar 등 통합 검색 | 없음 (선택적으로 CORE/DOAJ 키 추가 가능) |
+- 초록만으로 방법이나 실험을 추측하지 않는다. 긴 PDF는 본문 → 실험 → 부록 순으로 구간을 나눠 읽는다.
+- 모든 수치·주장·설정에는 `(§4.2, Table 3)`, `(p.7, Eq. 5)`처럼 원문 위치를 붙인다.
+- 원문에 없는 내용은 `[추론]`, `[내 의견]`, `[확인 필요]`로 명시한다. 하이퍼파라미터·컴퓨트가 없으면 `미기재`라고 쓴다.
+- Keep 목록과 즐겨찾기는 독립 목록이다. `keep.md`는 나중에 읽을 대기열이고 `favorites.md`는 선호 기록이다.
 
-```powershell
-# EXA_API_KEY를 영구적으로 쓰려면 사용자 환경변수로 등록
-setx EXA_API_KEY "your_api_key"
-```
+세부 규칙과 리뷰 품질 기준은 [AGENTS.md](AGENTS.md)를 따른다.
 
-## 자동화 루틴
+## 문제 해결
 
-매일 다이제스트는 `03-Trends/daily/{YYYY-MM-DD}.md`에 저장하며, [`03-Trends/daily/2026-09-07.md`](03-Trends/daily/2026-09-07.md) 양식을 따른다.
-
-미래 회차의 논문 주제는 `$paper-scheduler`로 예약한다. 예약 내용은 `03-Trends/daily/{YYYY-MM-DD}-plan.md`에 저장한다.
-
-## 설계 원칙
-
-- **원문 근거 없는 서술 금지.** 모든 수치에 `(§4.2, Table 3)` 형태의 위치를 붙이고, 추론은 `[추론]`/`[내 의견]`/`[확인 필요]`로 표시한다.
-- **PDF를 실제로 읽는다.** 초록만 보고 방법 섹션을 쓰지 않는다. Read 도구의 `pages` 인자로 구간을 나눠 읽는다.
-- **리뷰의 값어치는 3패스에 있다.** 요약이 아니라 주장–증거 대응, 빠진 베이스라인, 혼동 요인, 일반화 조건을 판정하는 부분.
-- **BibTeX와 메타데이터는 지어내지 않는다.** 서버에서 받아오거나 비워 둔다.
+| 증상 | 조치 |
+|---|---|
+| `uvx`를 찾지 못함 | `uv`를 설치하고 터미널·Codex를 다시 연 뒤 `setup.ps1`을 재실행한다. |
+| Exa 인증 실패 | `EXA_API_KEY`가 설정됐는지 확인하고 Codex를 재시작한다. Exa 없이도 나머지 검색 도구는 사용할 수 있다. |
+| Git이 `dubious ownership`을 보고함 | 저장소 소유자가 신뢰할 수 있는지 확인한 뒤 `git config --global --add safe.directory "<저장소 절대 경로>"`를 실행한다. |
+| 초기화 검사 실패 | 출력의 `FAIL` 항목을 해결한 뒤 같은 명령을 다시 실행한다. 스크립트는 기존 연구 자료를 지우지 않는다. |

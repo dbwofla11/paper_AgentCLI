@@ -1,3 +1,4 @@
 # Graphify's machine-generated graph, cache, HTML, and extraction manifests.
 # Paper relationship conclusions are persisted in notes/paper-relations/.
 graphify-out/
+.codex/mcp-cache/

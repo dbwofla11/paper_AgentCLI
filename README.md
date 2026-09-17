@@ -1,6 +1,8 @@
-# 논문 리뷰 작업 공간
+# 논문 리뷰·공부 작업 공간
 
 AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 Claude Code 환경.
+
+처음에는 [Home.md](Home.md)에서 시작한다. 원문·리뷰 관리는 `01-Papers/`, **내가 공부해서 이해한 내용**은 `02-Concepts/`, 실제 실험·구현은 `04-Projects/`, 검증 전 가설은 `05-ideas/`에 둔다. Keep과 즐겨찾기는 `01-Papers/library/`에 유지한다.
 
 ## 빠른 시작
 
@@ -22,19 +24,38 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 CLAUDE.md              에이전트 규칙 (근거 규칙, 서술 규칙, 품질 기준)
 .claude/settings.json  논문 사이트 WebFetch·스크립트 실행 허용목록
 .claude/skills/        paper-search · paper-review · related-work · review-index · math-derivation
-templates/             review-template.md (심층) · triage-template.md (1차 판정)
-scripts/paper.py       arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
-docs/search-protocol.md  논문 탐색 프로토콜 (질의 분해·소스 우선순위·스노우볼링·실패 처리·MCP 목록)
+90-Templates/paper/    review-template.md (심층) · triage-template.md (1차 판정)
+.scripts/bin/paper.py  arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
+.scripts/docs/search-protocol.md  논문 탐색 프로토콜
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
-papers/                원문 PDF
-reviews/{category}/    카테고리별 최종 리뷰 (논문 1편 = 파일 1개)
-notes/                 작업 메모, 관련 연구 맵, 논문 관계 맵, notes/trends/ 일일 트렌드 다이제스트(자동)·예약 계획
-library/index.md       전체 논문 인덱스
+01-Papers/pdfs/        원문 PDF
+01-Papers/reviews/     카테고리별 최종 리뷰 (논문 1편 = 파일 1개)
+01-Papers/triage/      논문별 트리아지·조사 메모
+01-Papers/library/     전체 인덱스 · Keep · 즐겨찾기
+03-Trends/daily/       일일 트렌드 다이제스트·예약 계획
+05-ideas/thought-experiments/  연구 아이디어 메모
 ```
+
+## 학습·연구 하네스
+
+```
+Home.md                전체 대시보드 / MOC
+00-Inbox/              분류 전 빠른 캡처
+01-Papers/             papers·reviews·library로 가는 논문 리딩 관문
+02-Concepts/           내 공부노트 (논문 간 개념 종합)
+03-Trends/             날짜별 트렌드와 daily/ 다이제스트
+04-Projects/           실험·구현·스터디 실행 단위
+05-ideas/              thought-experiments/를 포함한 연구 아이디어
+90-Templates/          공부노트 등 추가 양식
+99-Attachments/        그림·실험 산출물 등 비원문 첨부
+.scripts/              자동화 실행 코드와 탐색 프로토콜
+```
+
+기존 문서는 새 하네스 안으로 이사했다. 루트의 `papers/`, `reviews/`, `notes/`, `library/`, `templates/`, `scripts/`, `docs/`는 과거 링크와 자동화를 유지하기 위한 호환 링크다.
 
 ## 논문 관계 그래프
 
-Graphify를 프로젝트에 설치해 `papers/**/*.pdf` 사이의 인용·공유 방법·공유 데이터·개념적 유사성 후보를 질의할 수 있다. 관계 분석은 `$paper-relations` 스킬을 사용하며, 그래프의 `EXTRACTED`·`INFERRED`·`AMBIGUOUS` 표시를 원문 PDF와 대조해 `notes/paper-relations/{YYYY-MM-DD}.md`에 남긴다.
+Graphify를 프로젝트에 설치해 `01-Papers/pdfs/**/*.pdf` 사이의 인용·공유 방법·공유 데이터·개념적 유사성 후보를 질의할 수 있다. 관계 분석은 `$paper-relations` 스킬을 사용하며, 그래프의 `EXTRACTED`·`INFERRED`·`AMBIGUOUS` 표시를 원문 PDF와 대조해 기록한다.
 
 ```bash
 uv tool install 'graphifyy[pdf]'
@@ -43,14 +64,14 @@ graphify install --project --platform codex
 
 Graphify의 프로젝트 설정은 `.codex/skills/graphify/`와 `AGENTS.md`에 기록된다. 그래프를 만들거나 갱신할 때는 논문 PDF 폴더만 대상으로 하며, 관계가 원문에서 확인되지 않으면 `[확인 필요]`로 표시한다.
 
-## scripts/paper.py
+## .scripts/bin/paper.py
 
 ```bash
-python scripts/paper.py search "query" --source s2|arxiv|openalex --limit 10
-python scripts/paper.py meta  1706.03762          # 메타데이터 + 실제 BibTeX
-python scripts/paper.py pdf   1706.03762          # papers/ 로 다운로드
-python scripts/paper.py refs  1706.03762          # 인용한 문헌
-python scripts/paper.py cites 1706.03762          # 인용된 문헌
+python .scripts/bin/paper.py search "query" --source s2|arxiv|openalex --limit 10
+python .scripts/bin/paper.py meta  1706.03762
+python .scripts/bin/paper.py pdf   1706.03762 --out 01-Papers/pdfs/other
+python .scripts/bin/paper.py refs  1706.03762
+python .scripts/bin/paper.py cites 1706.03762
 ```
 
 `--json` 플래그로 원시 JSON 출력. Semantic Scholar는 API 키 없이 쓰면 429(rate limit)가 잦다 — 자동 재시도 후 arXiv/Crossref로 폴백한다. [무료 키](https://www.semanticscholar.org/product/api)를 발급받았다면:
@@ -61,7 +82,7 @@ $env:S2_API_KEY = "..."
 
 ## MCP 서버
 
-`.mcp.json`에 3개 연결됨 (세션 재시작 후 신뢰 승인 프롬프트가 한 번 뜬다). 자세한 배경과 각 서버를 고른/뺀 이유는 [docs/search-protocol.md §7](docs/search-protocol.md#7-연결된-mcp-서버) 참고.
+`.mcp.json`에 3개 연결됨. 자세한 배경은 [.scripts/docs/search-protocol.md](.scripts/docs/search-protocol.md) 참고.
 
 | 서버 | 하는 일 | 설정 필요 |
 |---|---|---|
@@ -76,9 +97,9 @@ setx EXA_API_KEY "your_api_key"
 
 ## 자동화 루틴
 
-매일 오전 9시(KST) 클라우드 에이전트가 자동으로 돌아 아래 허용 카테고리에서 **학회 발표·게재가 확인된 논문 3편**과 시사이슈 3건을 골라 요약하고, 이 저장소의 `notes/trends/{YYYY-MM-DD}.md`에 커밋한다. 모든 일일 다이제스트는 [`notes/trends/2026-09-07.md`](notes/trends/2026-09-07.md)의 전체 문서 양식(논문별 핵심 요약·중요한 이유·주장–근거 대응·한계, 시사이슈, 조사·검증 기록)을 따른다. 허용 카테고리는 `WiFi CSI`, `게임 AI (Game AI)`, `에이전트 AI (Agent AI)`, `컴퓨터 비전 (Computer Vision)`이며, 회차마다 하나 이상의 카테고리를 선택한다. arXiv에만 올라온 preprint나 공식 발표·게재가 확인되지 않은 `accepted/to appear` 항목은 제외한다. [claude.ai/code/routines](https://claude.ai/code/routines)에서 상태를 확인·일시정지할 수 있다.
+매일 다이제스트는 `03-Trends/daily/{YYYY-MM-DD}.md`에 저장하며, [`03-Trends/daily/2026-09-07.md`](03-Trends/daily/2026-09-07.md) 양식을 따른다.
 
-미래 회차의 논문 주제는 `$paper-scheduler`로 예약한다. 예약 내용은 `notes/trends/{YYYY-MM-DD}-plan.md`에 저장되고, 해당 날짜의 루프가 이를 읽어 논문 슬롯과 주제 배분을 우선 적용한다. 이 스킬은 루틴 자체의 실행 시각을 바꾸지는 않는다.
+미래 회차의 논문 주제는 `$paper-scheduler`로 예약한다. 예약 내용은 `03-Trends/daily/{YYYY-MM-DD}-plan.md`에 저장한다.
 
 ## 설계 원칙
 

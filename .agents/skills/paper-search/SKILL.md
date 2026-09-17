@@ -15,7 +15,7 @@ description: arXiv / Semantic Scholar / OpenAlex에서 논문을 검색하고 �
 python scripts/paper.py search "query" --source arxiv --limit 10   # arXiv 검색
 python scripts/paper.py search "query" --source s2 --limit 10      # Semantic Scholar (인용수 포함)
 python scripts/paper.py meta 1706.03762                            # arXiv ID / DOI / S2 ID → 메타데이터 + BibTeX
-python scripts/paper.py pdf 1706.03762                             # papers/ 로 PDF 다운로드
+python scripts/paper.py pdf 1706.03762 --out papers/other           # 지정 카테고리로 PDF 다운로드
 python scripts/paper.py refs 1706.03762 --limit 30                 # 이 논문이 인용한 문헌
 python scripts/paper.py cites 1706.03762 --limit 30                # 이 논문을 인용한 문헌
 ```
@@ -43,7 +43,7 @@ API가 막히거나 결과가 빈약하면 WebSearch → WebFetch로 보완한�
 
 사용자가 읽을 논문을 고르면:
 
-1. `python scripts/paper.py pdf <id>` 로 `papers/{연도}-{제1저자성}-{슬러그}.pdf` 저장.
+1. 메타데이터와 내용을 바탕으로 주 카테고리(`wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other`)를 먼저 정한다. `python scripts/paper.py pdf <id> --out papers/{category}`로 `papers/{category}/{연도}-{제1저자성}-{슬러그}.pdf`에 저장한다.
 2. `meta`로 BibTeX를 확보해 리뷰 프론트매터에 쓸 필드를 정리한다.
 3. arXiv 버전이 있고 최종 게재본이 따로 있으면 둘 다 기록하고 어느 쪽을 읽는지 명시한다 (버전 간 내용이 다를 수 있다).
 4. PDF가 페이월이면 다운로드를 시도하지 말고 사용자에게 알린다. 우회하지 않는다.

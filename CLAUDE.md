@@ -6,32 +6,34 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 
 | 경로 | 용도 |
 |---|---|
-| `papers/` | 원문 PDF (수동 다운로드 또는 `scripts/paper.py pdf`) |
-| `reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
-| `notes/` | 작업 중 메모, 발췌, 수식 정리 |
-| `library/index.md` | 읽은/읽을 논문 인덱스 (한 줄 = 한 편) |
-| `templates/` | 리뷰·트리아지 템플릿 |
-| `scripts/paper.py` | arXiv / Semantic Scholar / OpenAlex 조회 CLI (stdlib만 사용) |
-| `docs/search-protocol.md` | 논문 탐색 프로토콜 (질의 분해, 소스 우선순위, 스노우볼링, 실패 처리, MCP 목록) |
+| `01-Papers/pdfs/{category}/` | 카테고리별 원문 PDF |
+| `01-Papers/reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 |
+| `01-Papers/triage/` | 논문별 1차 판정·조사 메모 |
+| `01-Papers/library/` | 인덱스·Keep·즐겨찾기 |
+| `02-Concepts/` | 사용자 공부노트 |
+| `03-Trends/daily/` | 날짜별 트렌드 |
+| `05-ideas/thought-experiments/` | 사고실험 |
+| `90-Templates/paper/` | 리뷰·트리아지 템플릿 |
+| `.scripts/bin/paper.py` | arXiv / Semantic Scholar / OpenAlex 조회 CLI |
 | `.mcp.json` | 연결된 MCP 서버 — `exa`(의미 검색, API 키 필요), `arxiv-mcp`, `paper-search-mcp` |
 
 ## 파일 명명 규칙
 
-`{연도}-{제1저자성}-{짧은슬러그}` (소문자, 하이픈)
+`{연도}-{제1저자성}-{짧은슬러그}` (소문자, 하이픈). PDF는 논문의 주 카테고리 폴더인 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other` 중 하나에 저장한다.
 
 ```
-papers/2017-vaswani-attention-is-all-you-need.pdf
-reviews/{category}/2017-vaswani-attention-is-all-you-need.md
-notes/2017-vaswani-attention-is-all-you-need.notes.md
+01-Papers/pdfs/other/2017-vaswani-attention-is-all-you-need.pdf
+01-Papers/reviews/{category}/2017-vaswani-attention-is-all-you-need.md
+01-Papers/triage/2017-vaswani-attention-is-all-you-need.notes.md
 ```
 
 ## 표준 워크플로
 
-1. **수집** — `/paper-search`. 메타데이터 확정(정식 제목·저자·venue·연도·arXiv ID·DOI·코드 링크) 후 PDF를 `papers/`에 저장.
-2. **트리아지** — `templates/triage-template.md`로 1패스. 읽을 가치가 없으면 여기서 끝내고 `library/index.md`에만 기록.
-3. **심층 리뷰** — `/paper-review`. `templates/review-template.md`를 채운다.
+1. **수집** — `/paper-search`. 메타데이터 확정 후 `01-Papers/pdfs/{category}/`에 저장.
+2. **트리아지** — `90-Templates/paper/triage-template.md`로 1패스. 메모는 `01-Papers/triage/`, 상태는 `01-Papers/library/index.md`에 남긴다.
+3. **심층 리뷰** — `/paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다.
 4. **위치 파악** — 필요 시 `/related-work`로 선행/후속 연구 맵핑.
-5. **인덱스 갱신** — `/review-index`로 `library/index.md` 한 줄 추가.
+5. **인덱스 갱신** — `/review-index`로 `01-Papers/library/index.md` 한 줄 추가.
 
 ## 원문 읽기
 
@@ -71,6 +73,6 @@ notes/2017-vaswani-attention-is-all-you-need.notes.md
 ## 하지 말 것
 
 - 논문 전문을 리뷰 파일에 복붙하지 않는다. 리뷰는 원문의 압축·재구성·비판이지 사본이 아니다.
-- `papers/`의 PDF를 수정하지 않는다.
+- `01-Papers/pdfs/`의 PDF를 수정하지 않는다.
 - 저자 홍보 문구를 그대로 옮기지 않는다 (`SOTA를 크게 뛰어넘는 혁신적인` → 실제 수치와 비교 대상으로 환원).
 - 검색 결과 요약만으로 리뷰를 쓰지 않는다. 원문 PDF를 읽지 못했으면 그 사실을 리뷰 최상단에 명시한다.

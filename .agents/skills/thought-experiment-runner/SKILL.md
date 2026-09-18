@@ -24,10 +24,12 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
 
 ## 기본 흐름
 
-1. 대상 사고실험에서 핵심 질문, 고정해야 할 조건, 성공·반증 조건, 금지된 정보 누수를 읽는다. 전제와 설계 비판이 필요하면 `thought-experiment-critique`를 함께 적용한다.
+1. 대상 사고실험에서 핵심 질문, 고정해야 할 조건, 성공·반증 조건, 금지된 정보 누수를 읽는다. 아직 검증 가능한 기획으로 고정되지 않았거나 사용자 기획의 독립 심사가 필요하면 `critical-validation`을 먼저 적용한다. 전제와 설계의 단일 분석이 필요하면 `thought-experiment-critique`를 함께 적용한다.
 2. 관련 논문의 새 방향을 탐색한다. 최신성이나 인용 관계가 결론에 영향을 주면 `paper-search` 절차를 적용한다. 논문은 가설을 지지하는 근거와 반증·대안 모두를 찾고, 확인하지 못한 세부는 `[확인 필요]`로 남긴다.
 3. 기존에 실행 가능한 코드·데이터가 있으면 가장 작은 결정론적 실험을 설계한다. 기본 상한은 단일 가설, 12개 이하 condition, 고정 seed, 짧은 실행이다. 새 의존성 설치·대규모 다운로드·장시간 학습·외부 API 호출은 이 단계에서 하지 않는다.
 4. `04-Projects/thought-experiment-runs/{slug}/`에 다음을 남긴다.
+   - `brief.md` — `critical-validation`을 거친 경우에만 작성. 사용자가 승인한 가설·성공/반증 조건·최소 대조군·제약
+   - `critique-{method,repro,novelty}.md`와 `critique.md` — 독립 비판 검증을 했을 때만 작성. `critique.md`의 미해결 치명적 결함이 있으면 실행하지 않음
    - `manifest.md` — 진척 정본 위치·실행 당시 상태, 조건 ID, 입력, seed, 코드·환경 버전, 성공·반증 기준
    - `results.md` — criterion별 증거, 실행 여부, condition별 결과, 실패·누락, artifact 경로, 해석과 원자료의 구분
    - `progress.md` — backend가 `repository`일 때만 작성. 상태, acceptance criteria, blocker, 결정, 다음 행동을 기록

@@ -5,7 +5,7 @@ description: Schedule, inspect, update, or cancel a future paper-selection plan 
 
 # Paper Scheduler
 
-논문을 미리 확정해 다운로드하는 기능이 아니라, 미래 다이제스트 회차의 논문 선정 기준을 예약하는 스킬이다. 예약 내용은 저장소의 `notes/trends/{YYYY-MM-DD}-plan.md`에 남기며, [daily-digest-loop](../daily-digest-loop/SKILL.md)가 해당 날짜에 이 파일을 읽어 논문 슬롯과 주제 배분을 우선 적용한다.
+논문을 미리 확정해 다운로드하는 기능이 아니라, 미래 다이제스트 회차의 논문 선정 기준을 예약하는 스킬이다. 예약 내용은 저장소의 `03-Trends/daily/{YYYY-MM-DD}-plan.md`에 남기며, [daily-digest-loop](../daily-digest-loop/SKILL.md)가 해당 날짜에 이 파일을 읽어 논문 슬롯과 주제 배분을 우선 적용한다.
 
 ## 예약
 
@@ -43,7 +43,7 @@ description: Schedule, inspect, update, or cancel a future paper-selection plan 
 
 ## 조회와 취소
 
-- “예약 목록”, “예약 확인” 요청에는 `notes/trends/*-plan.md`를 날짜순으로 읽어 계획을 요약한다.
+- “예약 목록”, “예약 확인” 요청에는 `03-Trends/daily/*-plan.md`를 날짜순으로 읽어 계획을 요약한다.
 - “예약 취소” 요청에는 대상 날짜를 확인한 뒤 해당 날짜의 plan 파일만 삭제한다. 날짜가 특정되지 않거나 여러 계획이 해당하면 먼저 대상을 좁힌다.
 - “예약 수정” 요청은 기존 계획을 보존하면서 요청된 항목만 갱신하고, 적용 날짜를 파일 안에서 다시 확인한다.
 

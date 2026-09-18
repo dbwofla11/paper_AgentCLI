@@ -4,6 +4,8 @@
 
 사고실험은 [`thought-experiments/`](thought-experiments/)에 둔다.
 
+사고실험을 실행·구체화할 때는 `thought-experiment-runner`를 적용한다. 첫 실행에는 진척 정본을 저장소 MD 또는 Notion MCP 중에서 반드시 선택한다. 이 스킬은 선택 뒤에만 작은 결정론적 실험과 새 문헌 방향 탐색을 시작하며, 재현 가능한 실행 기록은 `04-Projects/thought-experiment-runs/{slug}/`에 분리한다. 논문 코드의 Paper2Agent MCP화는 공식 코드·튜토리얼 확인 뒤 실제 생성을 요청한 경우에만 수행한다.
+
 ## 진행 중
 
 - [방·작업 조건에 따른 distributed RF sensing configuration](thought-experiments/2026-09-07-room-aware-distributed-rf-configuration.md)

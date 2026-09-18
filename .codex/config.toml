@@ -22,3 +22,13 @@ x-api-key = "EXA_API_KEY"
 [mcp_servers.paper-search-mcp]
 command = "uvx"
 args = ["--with", "mcp<2", "paper-search-mcp"]
+
+[mcp_servers.llmwiki]
+command = "/home/user/.nvm/versions/node/v22.23.2/bin/npx"
+args = [
+    "--yes",
+    "--package",
+    "@llmwiki/core",
+    "llmwiki-mcp",
+    "/home/user/Desktop/논문읽기어시스트/paper_AgentCLI/.wiki",
+]

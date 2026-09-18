@@ -4,6 +4,33 @@
 
 ## 읽을 논문
 
+### VISTA: A Test-Time Self-Improving Video Generation Agent
+
+- 추가일: 2026-09-18
+- 출처: CVPR 2026 · [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Long_VISTA_A_Test-Time_Self-Improving_Video_Generation_Agent_CVPR_2026_paper.html) · [공식 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Long_VISTA_A_Test-Time_Self-Improving_Video_Generation_Agent_CVPR_2026_paper.pdf)
+- PDF: [저장소 PDF](../pdfs/computer-vision/2026-long-vista.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 2026-09-18 다이제스트 1번. 사용자 지정.
+
+### AgentDet: A Shared-Blackboard Multi-Agent Framework for Zero-/Few-Shot Object Detection
+
+- 추가일: 2026-09-18
+- 출처: CVPR 2026 · [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Li_AgentDet_A_Shared-Blackboard_Multi-Agent_Framework_for_Zero-Few-Shot_Object_Detection_CVPR_2026_paper.html) · [공식 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Li_AgentDet_A_Shared-Blackboard_Multi-Agent_Framework_for_Zero-Few-Shot_Object_Detection_CVPR_2026_paper.pdf)
+- PDF: [저장소 PDF](../pdfs/computer-vision/2026-li-agentdet.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 2026-09-18 다이제스트 2번. 사용자 지정.
+
+### AGENTSAFE: Benchmarking the Safety of Embodied Agents on Hazardous Instructions
+
+- 추가일: 2026-09-18
+- 출처: CVPR 2026 · [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Ying_AGENTSAFE_Benchmarking_the_Safety_of_Embodied_Agents_on_Hazardous_Instructions_CVPR_2026_paper.html) · [공식 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Ying_AGENTSAFE_Benchmarking_the_Safety_of_Embodied_Agents_on_Hazardous_Instructions_CVPR_2026_paper.pdf)
+- PDF: [저장소 PDF](../pdfs/agent-ai/2026-ying-agentsafe.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 2026-09-18 다이제스트 3번. 사용자 지정.
+
 ### IPR-1: Interactive Physical Reasoner
 
 - 추가일: 2026-09-17

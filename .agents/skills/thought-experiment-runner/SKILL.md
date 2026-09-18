@@ -9,7 +9,9 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
 
 ## 진척 관리 온보딩
 
-정본은 [`04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md`](../../../04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md)의 `backend` 값으로 정한다. **처음 실행하거나 값이 `unset`이면, 다른 작업을 시작하기 전에 반드시 아래 질문을 하고 답을 기다린다.**
+정본은 [`04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md`](../../../04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md)의 `backend` 값으로 정한다. 비판 검증 기본 정책은 [`CRITICAL_VALIDATION_SETTINGS.md`](../../../04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md)의 `mode` 값으로 정한다.
+
+**처음 실행하거나 `backend` 값이 `unset`이면, 다른 작업을 시작하기 전에 반드시 아래 질문을 하고 답을 기다린다.**
 
 > 사고실험 진척을 어디에서 관리할까요?
 >
@@ -20,11 +22,17 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
 - `notion` 선택: Notion MCP 연결 여부와 대상 페이지 또는 데이터베이스를 확인한 뒤 `backend: notion`과 링크·식별자를 기록한다. Notion이 정본이고 로컬은 실행 증거만 보관한다. MCP가 없거나 인증이 끝나지 않으면 연결 방법을 안내하고 진척 판정은 하지 않는다.
 - 설정이 이미 있으면 질문을 반복하지 않는다. 사용자가 변경을 요청할 때만 backend를 바꾼다.
 
+**`mode`가 `unset`이면 저장 backend와 별개로, 사고실험의 구체화·문헌 탐색·실행 전에 `CRITICAL_VALIDATION_SETTINGS.md`의 질문을 하고 답을 기다린다.** 선택한 `required` / `on-request` / `off`를 파일에 기록하고 사용자가 변경을 요청할 때만 바꾼다.
+
+- `required`: 모든 새 사고실험 기획에 `critical-validation`을 먼저 적용한다. 심사를 통과했다는 표기는 사용자가 최종 결정을 기록한 경우에만 한다.
+- `on-request`: 사용자가 비판 검증을 요청한 경우에만 `critical-validation`을 적용한다.
+- `off`: 기본 흐름에서는 적용하지 않는다. 사용자가 설정 변경을 요청하면 그때 mode를 갱신한다.
+
 어느 backend든 `manifest.md`와 `results.md`에는 정본 위치와 criterion별 증거 경로를 남긴다. 로컬 결과만으로 Notion 상태를 자동 변경하지 않는다.
 
 ## 기본 흐름
 
-1. 대상 사고실험에서 핵심 질문, 고정해야 할 조건, 성공·반증 조건, 금지된 정보 누수를 읽는다. 아직 검증 가능한 기획으로 고정되지 않았거나 사용자 기획의 독립 심사가 필요하면 `critical-validation`을 먼저 적용한다. 전제와 설계의 단일 분석이 필요하면 `thought-experiment-critique`를 함께 적용한다.
+1. 대상 사고실험에서 핵심 질문, 고정해야 할 조건, 성공·반증 조건, 금지된 정보 누수를 읽는다. `mode: required`이면 `critical-validation`을 먼저 적용한다. `mode: on-request`에서 사용자가 독립 심사를 요청했거나, 전제와 설계의 단일 분석이 필요하면 각각 `critical-validation` 또는 `thought-experiment-critique`를 적용한다.
 2. 관련 논문의 새 방향을 탐색한다. 최신성이나 인용 관계가 결론에 영향을 주면 `paper-search` 절차를 적용한다. 논문은 가설을 지지하는 근거와 반증·대안 모두를 찾고, 확인하지 못한 세부는 `[확인 필요]`로 남긴다.
 3. 기존에 실행 가능한 코드·데이터가 있으면 가장 작은 결정론적 실험을 설계한다. 기본 상한은 단일 가설, 12개 이하 condition, 고정 seed, 짧은 실행이다. 새 의존성 설치·대규모 다운로드·장시간 학습·외부 API 호출은 이 단계에서 하지 않는다.
 4. `04-Projects/thought-experiment-runs/{slug}/`에 다음을 남긴다.

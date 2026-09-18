@@ -16,6 +16,6 @@
 
 ## 사고실험 실행 기록
 
-`thought-experiment-runner`가 만든 작은 실험은 `thought-experiment-runs/{slug}/`에 둔다. 첫 사용자는 [`thought-experiment-runs/PROGRESS_BACKEND.md`](thought-experiment-runs/PROGRESS_BACKEND.md)에서 저장소 MD 또는 Notion MCP를 선택한다. 저장소 MD를 고르면 각 실험의 `progress.md`가 상태·acceptance criteria·blocker·결정의 정본이며, Notion을 고르면 그 페이지가 정본이고 로컬은 증거만 보관한다.
+`thought-experiment-runner`가 만든 작은 실험은 `thought-experiment-runs/{slug}/`에 둔다. 첫 사용자는 [`thought-experiment-runs/PROGRESS_BACKEND.md`](thought-experiment-runs/PROGRESS_BACKEND.md)에서 저장소 MD 또는 Notion MCP를, [비판 검증 온보딩 설정](thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md)에서 `required` / `on-request` / `off`를 선택한다. 저장소 MD를 고르면 각 실험의 `progress.md`가 상태·acceptance criteria·blocker·결정의 정본이며, Notion을 고르면 그 페이지가 정본이고 로컬은 증거만 보관한다.
 
 실행 전에 사용자 기획을 검증할 때는 `critical-validation`이 `grill-me → method/repro/novelty 독립 심사 → 사용자 결정` 순서로 처리한다. 전체 현황은 [비판 검증 레지스트리](thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md)에서, 세부 증거는 실행 폴더에서 관리한다. 실행 폴더에는 승인된 기획의 `brief.md`, 역할별 `critique-{method,repro,novelty}.md`, 그리고 [종합 양식](thought-experiment-runs/CRITIQUE_TEMPLATE.md)을 따른 `critique.md`를 둔다. 미해결 치명적 결함이 있으면 `manifest.md`와 `results.md`를 만들기 위한 실험으로 넘어가지 않는다. 논문 코드를 Paper2Agent MCP로 만들 후보·산출물은 `paper-agents/{paper-slug}/`에 분리한다.

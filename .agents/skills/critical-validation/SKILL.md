@@ -10,6 +10,7 @@ description: "사용자의 연구 기획을 grill-me로 구체화한 뒤, 방법
 ## 시작 조건
 
 - `thought-experiment-runner`의 진척 backend 온보딩이 완료된 뒤에 적용한다. backend가 `unset`이면 해당 스킬의 질문을 먼저 하고 기다린다.
+- [`CRITICAL_VALIDATION_SETTINGS.md`](../../../04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md)의 `mode`도 확인한다. `unset`이면 온보딩 질문을 먼저 하고 기다린다. `required`일 때는 모든 새 기획에 적용하고, `on-request`일 때는 사용자가 요청한 기획에만 적용한다. `off`일 때는 사용자가 mode 변경을 요청할 때까지 시작하지 않는다.
 - [`CRITICAL_VALIDATION_REGISTRY.md`](../../../04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md)를 먼저 읽어 대상 기획의 기존 심사 상태와 근거를 확인한다. 항목이 없으면 `미심사`·세 역할 `대기`로 새 행을 등록한다.
 - 사용자가 아직 아이디어만 제시했다면 `grill-me` 단계부터 시작한다. 이미 구체적인 기획이 있더라도 아래 필수 항목이 비어 있으면 이 단계를 생략하지 않는다.
 - 실험 실행, 논문 검색, 외부 API 호출, 의존성 설치는 이 스킬만으로 승인되지 않는다.

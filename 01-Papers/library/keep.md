@@ -4,6 +4,87 @@
 
 ## 읽을 논문
 
+### LLM-Guided RL for Adaptive NPCs [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `01_Nair_Karim_LLM_Guided_RL_Adaptive_NPCs.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/01_Nair_Karim_LLM_Guided_RL_Adaptive_NPCs.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### MASMP for RTS Games [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `02_Qi_et_al_MASMP_RTS_Games.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/02_Qi_et_al_MASMP_RTS_Games.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### PCSP: Infinite NPCs [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `03_Hong_PCSP_Infinite_NPCs.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/03_Hong_PCSP_Infinite_NPCs.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### QuIP# [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `04_Tseng_et_al_QuIP_Sharp.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/04_Tseng_et_al_QuIP_Sharp.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### QTIP [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `05_Tseng_et_al_QTIP.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/05_Tseng_et_al_QTIP.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### QLoRA [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `06_Dettmers_et_al_QLoRA.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/06_Dettmers_et_al_QLoRA.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### DeepSeekMath [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `07_Shao_et_al_DeepSeekMath.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/07_Shao_et_al_DeepSeekMath.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### GSQ [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `08_Dadgarnia_et_al_GSQ.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/08_Dadgarnia_et_al_GSQ.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
+### LLMs and Games Survey [확인 필요]
+
+- 추가일: 2026-09-17
+- 출처: 로컬 제공 PDF `09_Gallotta_et_al_LLMs_and_Games_Survey.pdf` · 서지정보 [확인 필요]
+- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/09_Gallotta_et_al_LLMs_and_Games_Survey.pdf)
+- 리뷰: 없음
+- 상태: 킵
+- 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
+
 ### IPR-1: Interactive Physical Reasoner
 
 - 추가일: 2026-09-17

@@ -1,7 +1,7 @@
 # 사고실험 진척 관리 설정
 
-- backend: unset
-- Notion 페이지 또는 데이터베이스: 미설정
+- backend: repository
+- Notion 페이지 또는 데이터베이스: 미사용 (저장소의 progress.md가 정본)
 
 사고실험을 처음 실행하기 전에 다음 중 하나를 선택한다.
 

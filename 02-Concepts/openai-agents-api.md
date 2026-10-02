@@ -1,7 +1,7 @@
 # OpenAI Agents API — 활용 가능성 조사·검증 메모
 
 - 조사일: 2026-09-14
-- 출발점: `notes/trends/2026-09-13.md`의 “OpenAI, Agents API public beta 발표” 항목. `2026-09-14.md`에는 해당 항목이 없다.
+- 출발점: `03-Trends/daily/2026-09-13.md`의 “OpenAI, Agents API public beta 발표” 항목. `2026-09-14.md`에는 해당 항목이 없다.
 - 검증 범위: OpenAI 공식 개발자 문서. API 표면에 `beta.agents` 네임스페이스와 `OpenAI-Beta: agents=v1` 헤더가 남아 있으므로, 안정된 장기 인터페이스로 가정하면 안 된다.
 
 ## 한 줄 결론
@@ -50,7 +50,7 @@ title, authors, year, venue, arXiv_id, DOI, PDF URL,
 현재 일일 루프의 최종 산출물 규칙(원문 근거, 날짜별 양식, commit/push)은 그대로 둔다. Agent에는 다음만 맡긴다.
 
 - 카테고리별 후보 3편과 이슈 3건을 찾고, 각 주장 옆에 출처 URL을 붙인 초안을 만든다.
-- 주어진 `notes/trends/2026-09-07.md` 양식에 맞춰 빈칸 없이 작성 가능한지 검사한다.
+- 주어진 `03-Trends/daily/2026-09-07.md` 양식에 맞춰 빈칸 없이 작성 가능한지 검사한다.
 - 원문/PDF를 못 읽은 주장에는 `[확인 필요]`를 붙인다.
 
 에이전트 출력은 artifact 또는 응답으로 회수하고, 로컬 에이전트가 출처·중복·형식을 검토한 뒤에만 노트 작성 및 git 작업을 한다. 이 분리는 환각된 인용, 프롬프트 주입, 잘못된 외부 링크가 저장소 변경으로 바로 이어지는 것을 막는다.

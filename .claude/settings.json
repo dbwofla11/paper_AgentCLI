@@ -21,14 +21,18 @@
       "WebFetch(domain:huggingface.co)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(python scripts/paper.py *)",
-      "Bash(py scripts/paper.py *)",
-      "Edit(reviews/*)",
-      "Edit(notes/*)",
-      "Edit(library/*)"
+      "Bash(python .scripts/bin/paper.py *)",
+      "Bash(py .scripts/bin/paper.py *)",
+      "Edit(01-Papers/reviews/*)",
+      "Edit(01-Papers/triage/*)",
+      "Edit(01-Papers/library/*)",
+      "Edit(02-Concepts/*)",
+      "Edit(03-Trends/daily/*)",
+      "Edit(04-Projects/*)",
+      "Edit(05-ideas/*)"
     ],
     "deny": [
-      "Edit(papers/*)"
+      "Edit(01-Papers/pdfs/*)"
     ]
   }
 }

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2609.01861v1",
+  "slug": "2026-chen-belief-calibrated-optimization",
+  "title": "Belief-Calibrated Optimization: An Explicit World Model for Agentic Optimization",
+  "metadata_status": "partial",
+  "authors": [
+    "Chen, Yuhan",
+    "Tian, Zhihua",
+    "Dabas, Mahavir",
+    "Peris, Charith",
+    "Gupta, Rahul",
+    "Jin, Ming",
+    "Kang, Feiyang",
+    "Zhang, Siyuan",
+    "Wang, Nan",
+    "Jia, Ruoxi"
+  ],
+  "year": 2026,
+  "category": "agent-ai",
+  "topics": [
+    "agentic optimization",
+    "world model",
+    "persistent memory",
+    "LLM agents",
+    "scaffold evolution"
+  ],
+  "publication": {
+    "venue": "arXiv preprint",
+    "status": "preprint",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "이 논문은 frozen LLM 자체를 학습하지 않고, coding agent가 agent scaffold를 반복 수정할 때 `world_model_calibration.md`라는 지속 문서에 “어떤 편집이 어떤 환경 반응을 낳는가”에 대한 가설·예측·관측·교정을 기록하게 한다. 다섯 벤치마크에서 vanilla보다 높은 train/held-out passrate를 얻었지만, 주 비교는 방법별 단일 최적화 trajectory이고 memory benchmark의 held-out 선택 및 안정성 스크리닝이 있어, BCO의 일반적 우월성보다 “명시적이고 교정 가능한 상태를 추가하면 이 실험 조건에서 탐색이 개선될 수 있다”는 결론이 더 안전하다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2609.01861v1"
+    ],
+    "pdf_path": "01-Papers/pdfs/agent-ai/chen-belief-calibrated-optimization.pdf",
+    "review_path": "01-Papers/reviews/agent-ai/2026-chen-belief-calibrated-optimization.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

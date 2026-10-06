@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://paper-agentcli.local/schemas/literature-investigation.schema.json",
+  "title": "Verified Literature Investigation",
+  "type": "object",
+  "required": ["task_id", "idea_id", "brief_sha256", "queries", "sources", "solutions", "claims", "excluded_results", "verification", "limitations", "open_questions"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "idea_id": { "type": "string" },
+    "brief_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "queries": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["text", "source", "date", "purpose"], "properties": { "text": { "type": "string", "minLength": 1 }, "source": { "type": "string" }, "date": { "type": "string", "format": "date" }, "purpose": { "type": "string" } } } },
+    "sources": { "type": "array", "minItems": 2, "items": { "type": "object", "required": ["name", "independence_group", "url", "date", "result_count"], "properties": { "name": { "type": "string" }, "independence_group": { "type": "string" }, "url": { "type": "string", "format": "uri" }, "date": { "type": "string", "format": "date" }, "result_count": { "type": "integer", "minimum": 0 } } } },
+    "solutions": { "type": "array", "items": { "type": "object", "required": ["name", "method", "conditions", "comparators", "paper_ids", "supporting_claims", "limitations"], "properties": { "name": { "type": "string" }, "method": { "type": "string" }, "conditions": { "type": "array", "items": { "type": "string" } }, "comparators": { "type": "array", "items": { "type": "string" } }, "paper_ids": { "type": "array", "items": { "type": "string" } }, "supporting_claims": { "type": "array", "items": { "type": "string" } }, "limitations": { "type": "array", "items": { "type": "string" } } } } },
+    "claims": { "type": "array", "items": { "type": "object", "required": ["claim", "polarity", "paper_id", "version", "locator", "source_url", "verification"], "properties": { "claim": { "type": "string" }, "polarity": { "enum": ["supports", "contradicts", "qualifies"] }, "paper_id": { "type": "string" }, "version": { "type": "string" }, "locator": { "type": "string", "minLength": 1 }, "source_url": { "type": "string", "format": "uri" }, "verification": { "enum": ["primary-source-checked", "inference", "unverified"] } } } },
+    "excluded_results": { "type": "array", "items": { "type": "object", "required": ["paper_id_or_title", "reason"], "properties": { "paper_id_or_title": { "type": "string" }, "reason": { "type": "string" } } } },
+    "verification": { "type": "object", "required": ["status", "reviewer", "checked_claims"], "properties": { "status": { "enum": ["complete", "incomplete"] }, "reviewer": { "type": "string" }, "checked_claims": { "type": "integer", "minimum": 0 } } },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" } }
+  }
+}

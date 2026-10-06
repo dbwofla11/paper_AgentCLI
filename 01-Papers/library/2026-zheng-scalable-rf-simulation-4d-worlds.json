@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2508.12176",
+  "slug": "2026-zheng-scalable-rf-simulation-4d-worlds",
+  "title": "Scalable RF Simulation in Generative 4D Worlds",
+  "metadata_status": "partial",
+  "authors": [
+    "Zheng, Zhiwei",
+    "Hu, Dongyin",
+    "Zhao, Mingmin"
+  ],
+  "year": 2026,
+  "category": "wifi-csi",
+  "topics": [
+    "RF sensing",
+    "ray tracing",
+    "motion generation",
+    "4D scene generation",
+    "phase coherence",
+    "SMPL",
+    "data augmentation"
+  ],
+  "publication": {
+    "venue": "ICML 2026 (PMLR 306)",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "LLM으로 실내 3D 환경과 SMPL 인체 모션(WaveVerse)을 자동 생성하고, 여기에 위상(phase)을 공간·시간축으로 일관되게 보존하는 ray tracing을 적용해 RF(전파) 신호를 시뮬레이션하는 파이프라인이다. 학습 없이도 실측·상용 EM 솔버(Ansys HFSS)와 근접한 신호를 만들어내고, 이를 데이터 증강으로 쓰면 RF 이미징·행동 인식 성능이 실측 데이터를 늘리는 것보다도 지속적으로 개선된다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2508.12176",
+      "https://doi.org/10.48550/arXiv.2508.12176"
+    ],
+    "pdf_path": "01-Papers/pdfs/wifi-csi/zheng-scalable-rf-simulation-generative-4d-worlds.pdf",
+    "review_path": "01-Papers/reviews/wifi-csi/2026-zheng-scalable-rf-simulation-4d-worlds.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

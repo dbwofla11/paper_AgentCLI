@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0",
+  "paths": [
+    {
+      "id": "paper",
+      "title": "논문 수집 → 심층 리뷰",
+      "description": "논문 한 편을 등록하고 정독한 뒤 근거와 인덱스를 정리하는 기본 흐름입니다. 트리아지는 스킬이 아닌 읽기 절차입니다.",
+      "steps": [
+        {
+          "skill": "paper-search",
+          "label": "논문 수집",
+          "input": "PDF·링크·제목 또는 채택한 후보",
+          "output": "PDF · Keep · 논문 JSON",
+          "condition": "메타데이터·중복을 확인합니다."
+        },
+        {
+          "kind": "procedure",
+          "label": "트리아지",
+          "input": "수집된 원문",
+          "output": "1패스 메모 · 읽기 판정",
+          "condition": "triage-template.md로 읽을 가치와 정독 범위를 정합니다.",
+          "source": "90-Templates/paper/triage-template.md"
+        },
+        {
+          "skill": "paper-review",
+          "label": "3패스 정독",
+          "input": "원문 PDF · 트리아지 메모",
+          "output": "방법 구조도 · 리뷰 Markdown · 5축 JSON · 개념 후보",
+          "condition": "원문을 실제로 읽고 모든 사실과 수치에 위치 근거를 붙입니다."
+        },
+        {
+          "skill": "review-index",
+          "label": "인덱스 정리",
+          "input": "완료 리뷰 · 논문 JSON",
+          "output": "01-Papers/index.md",
+          "condition": "리뷰 정본 경로와 상태를 대조합니다."
+        },
+        {
+          "skill": "related-work",
+          "label": "선행·후속 연구",
+          "input": "앵커 논문 ID · 원문",
+          "output": "근거가 확인된 relationships",
+          "condition": "문헌 맥락을 더 확인할 때 선택적으로 실행합니다.",
+          "optional": true
+        },
+        {
+          "skill": "graphify",
+          "label": "지식 그래프 동기화",
+          "input": "검증된 논문 JSON 변경",
+          "output": "지식 그래프 · success/pending 기록",
+          "condition": "begin → Graphify 의미 추출 → complete. 실패하면 pending으로 남깁니다."
+        }
+      ]
+    },
+    {
+      "id": "daily",
+      "title": "일일 후보 → 사용자 채택",
+      "description": "후보는 채팅에만 제시합니다. 날짜별 주제 계획과 실제 반복 실행 시각은 서로 다른 관리 대상입니다.",
+      "steps": [
+        {
+          "skill": "paper-scheduler",
+          "label": "날짜별 주제 계획",
+          "input": "사용자가 지정한 날짜·주제·슬롯",
+          "output": "03-Trends/daily/{날짜}-plan.md",
+          "condition": "선정 기준이 필요할 때 사용합니다. Orca 실행 시각을 설정하는 스킬은 아닙니다.",
+          "optional": true
+        },
+        {
+          "skill": "daily-digest-loop",
+          "label": "후보 3편 탐색",
+          "input": "날짜별 계획 · 관심 분야",
+          "output": "CV·멀티모달·관심 분야 후보를 채팅으로 보고",
+          "condition": "학회 발표·게재를 확인합니다. paper-search 탐색 절차와 paper-summary 형식을 내부에서 재사용하지만 채택 전 파일은 저장하지 않습니다."
+        },
+        {
+          "kind": "gate",
+          "label": "사용자 채택",
+          "input": "보고된 후보",
+          "output": "선택한 논문",
+          "condition": "사용자가 채택한 논문만 수집합니다."
+        },
+        {
+          "skill": "paper-search",
+          "label": "선택 논문 등록",
+          "input": "채택한 논문",
+          "output": "PDF · Keep · JSON",
+          "condition": "등록 후 기본 논문 리뷰 흐름으로 이어집니다."
+        }
+      ]
+    },
+    {
+      "id": "concept",
+      "title": "개념 후보 → 공부노트",
+      "description": "논문 리뷰에서 추출한 후보를 사용자의 이해 확인 후 학습 정본으로 승격합니다.",
+      "steps": [
+        {
+          "skill": "paper-review",
+          "label": "개념 후보 추출",
+          "input": "정독한 논문",
+          "output": "00-Inbox/concept-candidates/",
+          "condition": "후보 초안은 사용자의 이해로 간주하지 않습니다."
+        },
+        {
+          "kind": "gate",
+          "label": "이해 확인 · 승격 요청",
+          "input": "후보 초안 · 사용자의 설명·수정",
+          "output": "확인된 이해와 명시적 요청",
+          "condition": "사용자가 자신의 이해를 확인·수정하고 승격을 요청해야 합니다."
+        },
+        {
+          "skill": "concept-note",
+          "label": "공부노트 작성",
+          "input": "사용자가 확인한 설명 · 원문 근거",
+          "output": "02-Concepts/ 학습 정본",
+          "condition": "논문 요약을 자동 복사하지 않고 공부한 내용을 정리합니다."
+        },
+        {
+          "skill": "graphify",
+          "label": "개념 그래프 갱신",
+          "input": "확인된 개념 정본",
+          "output": "지식 그래프 · 동기화 기록",
+          "condition": "정본 변경 후 begin → 의미 추출 → complete를 수행합니다."
+        }
+      ]
+    },
+    {
+      "id": "idea",
+      "title": "아이디어 → 독립 심사 → 실험",
+      "description": "문헌 조사와 비판 심사는 별개입니다. 세 심사는 같은 동결 근거를 받으며, 최종 실험 진행 결정은 사용자에게 있습니다.",
+      "steps": [
+        {
+          "skill": "thought-experiment-critique",
+          "label": "가설·반증 조건 점검",
+          "input": "연구 아이디어 · 제안 파이프라인",
+          "output": "전제 · 누수 위험 · 평가 설계",
+          "condition": "초기 타당성 점검이 필요한 경우 사용합니다.",
+          "optional": true
+        },
+        {
+          "skill": "critical-validation",
+          "label": "기획 고정 · 심사 준비",
+          "input": "아이디어 · backend/mode 설정",
+          "output": "brief · 문헌 검색 · 동결 근거 묶음",
+          "condition": "시작 설정 확인 → grill-me → 사용자 brief 승인 → 최소 두 문헌 소스 검색 → SHA-256 동결이 필요합니다."
+        },
+        {
+          "kind": "parallel",
+          "label": "3역할 독립 심사",
+          "input": "동일한 bundle · 동일 SHA-256",
+          "output": "method / repro / novelty 심사 결과",
+          "condition": "세 역할은 병렬·읽기 전용으로 수행하고 다른 심사자의 초안을 보지 않습니다. 독립 실행이 불가능하면 심사 대기입니다.",
+          "source": ".agents/skills/critical-validation/SKILL.md",
+          "members": [
+            "방법 심사",
+            "재현성 심사",
+            "새로움 심사"
+          ]
+        },
+        {
+          "kind": "gate",
+          "label": "종합 검증 · 사용자 결정",
+          "input": "세 심사 결과 · analysis.json",
+          "output": "진행 / 보류 / 폐기 결정",
+          "condition": "모든 심사·해시·상태 검증 뒤 사용자 결정을 기록합니다. 조건부·치명 판정은 실험 가능으로 자동 전환하지 않습니다.",
+          "source": ".scripts/bin/idea_analysis.py"
+        },
+        {
+          "skill": "thought-experiment-runner",
+          "label": "승인된 작은 실험",
+          "input": "사용자 승인 · 가설 · 성공/반증 기준",
+          "output": "manifest · progress · results · 실행 근거",
+          "condition": "critical-validation의 승인과 실행 범위가 충족된 경우에만 진행합니다."
+        }
+      ]
+    },
+    {
+      "id": "literature",
+      "title": "문헌 조사 · 논문 관계 확인",
+      "description": "조사 질문을 고정하고 근거를 확인합니다. 탐색 역할은 비판 심사의 method/repro/novelty 페르소나와 다릅니다.",
+      "steps": [
+        {
+          "kind": "tool",
+          "label": "연구 TODO 등록",
+          "input": "지정 아이디어 · 조사 질문 · 조건·예산",
+          "output": "queue.json · 고정 brief SHA-256",
+          "condition": "사용자가 지정한 사고실험을 등록하며, queued 작업을 명시적으로 dispatch합니다.",
+          "source": ".scripts/bin/research_todo.py"
+        },
+        {
+          "kind": "parallel",
+          "label": "3역할 문헌 탐색",
+          "input": "같은 고정 조사 컨텍스트",
+          "output": "솔루션 · 레퍼런스 · 반대 근거",
+          "condition": "Orca 준비 상태와 worktree를 확인하고 역할별 출력과 동시성 제한을 적용합니다.",
+          "source": "docs/agent-research-todo.md",
+          "members": [
+            "솔루션 탐색",
+            "레퍼런스 추적",
+            "반대 근거 탐색"
+          ]
+        },
+        {
+          "kind": "procedure",
+          "label": "독립 원문 근거 확인",
+          "input": "세 탐색 결과",
+          "output": "확인된 주장 · 원문 위치",
+          "condition": "별도 verifier가 두 독립 문헌 소스와 주장–근거 대응을 확인합니다.",
+          "source": ".scripts/docs/literature-investigation.schema.json"
+        },
+        {
+          "kind": "tool",
+          "label": "보고서 검증 · 게시",
+          "input": "verifier JSON",
+          "output": "솔루션 비교표 · 지지/반대 문헌 · 남은 질문",
+          "condition": "publish 검증 후 completed로 전환합니다. 문헌 조사 완료가 실험 성공이나 아이디어 승인을 뜻하지 않습니다.",
+          "source": ".scripts/bin/research_todo.py"
+        },
+        {
+          "skill": "paper-relations",
+          "label": "저장소 관계 확인",
+          "input": "논문 ID · Graphify 관계 후보 · 양쪽 원문",
+          "output": "검증된 JSON relationships",
+          "condition": "추가 관계 검증이 필요한 경우 선택적으로 실행합니다. 그래프 연결만으로 영향·인용을 확정하지 않습니다.",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "id": "utilities",
+      "title": "목록 · 요약 · 초안 도구",
+      "description": "아래는 독립적인 요청에 쓰는 도구입니다. 왼쪽부터 모두 실행하는 순서가 아닙니다.",
+      "layout": "choices",
+      "steps": [
+        {
+          "skill": "keep-list",
+          "label": "읽기·조사 대기열",
+          "input": "킵 추가·목록·해제 요청",
+          "output": "01-Papers/keep.md",
+          "condition": "나중에 읽거나 조사할 대상을 관리합니다."
+        },
+        {
+          "skill": "paper-favorites",
+          "label": "선호 논문 기록",
+          "input": "즐겨찾기 추가·해제·목록 요청",
+          "output": "01-Papers/favorites.md",
+          "condition": "사용자의 명시적 선호 기록을 관리합니다."
+        },
+        {
+          "skill": "paper-summary",
+          "label": "논문 3편 요약",
+          "input": "정확히 세 논문 · 원문",
+          "output": "초록 · 주장 · 방법 · 한계를 채팅에 요약",
+          "condition": "심층 리뷰와 별도의 요약 요청에 사용합니다."
+        },
+        {
+          "kind": "playbook",
+          "label": "초안 주장·근거 감사",
+          "input": "논문 초안 · 원문·실험 근거",
+          "output": "주장–근거 연결 · 논리 문제",
+          "condition": "paper-draft-logic-review는 설치 스킬이 아니라 Argument Auditor 안내 문서입니다.",
+          "source": "04-Projects/validation/paper-draft-logic-review.md"
+        }
+      ]
+    }
+  ]
+}

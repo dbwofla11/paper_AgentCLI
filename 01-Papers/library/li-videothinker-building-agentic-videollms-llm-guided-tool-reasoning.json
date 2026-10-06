@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "local:agent-ai:94e7d5fd102266dc",
+  "slug": "li-videothinker-building-agentic-videollms-llm-guided-tool-reasoning",
+  "title": "",
+  "metadata_status": "needs_review",
+  "authors": [],
+  "year": null,
+  "category": "agent-ai",
+  "topics": [],
+  "publication": {
+    "venue": null,
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "",
+  "source": {
+    "urls": [],
+    "pdf_path": "01-Papers/pdfs/agent-ai/li-videothinker-building-agentic-videollms-llm-guided-tool-reasoning.pdf",
+    "review_path": null,
+    "uploaded_filename": null
+  },
+  "reading_status": "candidate",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

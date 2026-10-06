@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2505.21866",
+  "slug": "2025-zhu-csi-bench-wifi-sensing",
+  "title": "CSI-Bench: A Large-Scale In-the-Wild Dataset for Multi-task WiFi Sensing",
+  "metadata_status": "partial",
+  "authors": [
+    "Zhu, Guozhen",
+    "Hu, Yuqian",
+    "Gao, Weihang",
+    "Wang, Wei-Hsiang",
+    "Wang, Beibei",
+    "Liu, K. J. Ray"
+  ],
+  "year": 2025,
+  "category": "wifi-csi",
+  "topics": [
+    "WiFi CSI",
+    "dataset",
+    "multi-task learning",
+    "domain generalization",
+    "wireless sensing"
+  ],
+  "publication": {
+    "venue": "Advances in Neural Information Processing Systems 38 (NeurIPS 2025), Datasets and Benchmarks Track",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "`CSI-Bench`는 26개 실내 환경, 35명 사용자, 16종 상용 WiFi edge device에서 461시간 이상의 Channel State Information(CSI)을 수집하고, 7개 분류 태스크와 표준 split·baseline을 제공하는 benchmark다 (§1, Table 2, pp.1–7). 데이터 다양성과 OOD 평가를 갖춘 점은 강하지만, multi-task 성능 향상은 Transformer 하나의 비교에 의존하고, cross-user·cross-environment·cross-device 분할이 각각 한정된 도메인만 홀드아웃하므로 “현실 배포에 일반화한다”는 주장은 아직 데이터셋이 제시한 문제 정의보다 좁은 실험으로만 뒷받침된다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2505.21866",
+      "https://doi.org/10.52202/085713-5648"
+    ],
+    "pdf_path": "01-Papers/pdfs/wifi-csi/2025-zhu-csi-bench-wifi-sensing.pdf",
+    "review_path": "01-Papers/reviews/wifi-csi/2025-zhu-csi-bench-wifi-sensing.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

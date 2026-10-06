@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2510.04542",
+  "slug": "2026-lehrach-code-world-models-general-game-playing",
+  "title": "Code World Models for General Game Playing",
+  "metadata_status": "partial",
+  "authors": [
+    "Lehrach, Wolfgang",
+    "Hennes, Daniel",
+    "Lázaro-Gredilla, Miguel",
+    "Lou, Xinghua",
+    "Wendelken, Carter",
+    "Li, Zun",
+    "Dedieu, Antoine",
+    "Grau-Moya, Jordi",
+    "Lanctot, Marc",
+    "Iscen, Atil",
+    "Schultz, John",
+    "Chiam, Marcus",
+    "Gemp, Ian",
+    "Zielinski, Piotr",
+    "Singh, Satinder",
+    "Murphy, Kevin P."
+  ],
+  "year": 2026,
+  "category": "game-ai",
+  "topics": [
+    "general game playing",
+    "code world model",
+    "LLM",
+    "MCTS",
+    "ISMCTS",
+    "imperfect information"
+  ],
+  "publication": {
+    "venue": "ICLR 2026 (PDF는 arXiv preprint v1)",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "이 논문은 LLM에게 매번 수를 직접 고르게 하는 대신, 자연어 규칙과 짧은 플레이 궤적을 Python 게임 엔진(CWM)으로 번역하게 하고 그 엔진 위에서 MCTS/ISMCTS로 탐색한다. 10개 게임에서 Gemini 2.5 Pro를 대체로 이겼지만, 이는 “임의의 게임을 사람처럼 이해한다”는 증거라기보다, 제한된 규칙 기반 게임에서 LLM의 언어 이해와 고전적 탐색을 결합할 수 있다는 증거다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2510.04542"
+    ],
+    "pdf_path": "01-Papers/pdfs/game-ai/lehrach-code-world-models-general-game-playing.pdf",
+    "review_path": "01-Papers/reviews/game-ai/2026-lehrach-code-world-models-general-game-playing.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

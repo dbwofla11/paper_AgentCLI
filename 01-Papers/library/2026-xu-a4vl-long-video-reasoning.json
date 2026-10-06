@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2603.14052",
+  "slug": "2026-xu-a4vl-long-video-reasoning",
+  "title": "A Multi-Agent Perception-Action Alliance for Efficient Long Video Reasoning",
+  "metadata_status": "partial",
+  "authors": [
+    "Xu, Yichang",
+    "Liu, Gaowen",
+    "Kompella, Ramana Rao",
+    "Huang, Tiansheng",
+    "Hu, Sihao",
+    "Ilhan, Fatih",
+    "Tekin, Selim Furkan",
+    "Yahn, Zachary",
+    "Liu, Ling"
+  ],
+  "year": 2026,
+  "category": "agent-ai",
+  "topics": [
+    "agent AI",
+    "video reasoning",
+    "VideoQA",
+    "multi-agent",
+    "frame selection",
+    "VLM"
+  ],
+  "publication": {
+    "venue": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) 2026",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "`A4VL`은 여러 vision-language model(VLM) agent가 질의에 맞는 perception clue를 만들고, 영상 block을 선택하고, 답변 불일치 시 서로를 평가해 낮은 점수의 agent를 제거하면서 최대 3라운드 재탐색하는 training-free long-video VideoQA framework다 (§1–2.3, pp.1–6). 다섯 benchmark에서 높은 정확도와 짧은 평균 지연시간을 보였지만, agent 선택이 정답이 아니라 agent 간 다수 합의에 기반하고, baseline별 실행 조건이 완전히 통제됐는지 불명확하며, Video-MME 결과의 본문 서술과 표에도 수치 해석 불일치가 있다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2603.14052",
+      "https://doi.org/공식 CVF 페이지에 DOI 미기재"
+    ],
+    "pdf_path": "01-Papers/pdfs/agent-ai/2026-xu-a4vl-long-video-reasoning.pdf",
+    "review_path": "01-Papers/reviews/agent-ai/2026-xu-a4vl-long-video-reasoning.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

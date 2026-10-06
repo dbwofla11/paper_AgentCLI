@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2608.27763",
+  "slug": "2026-zhang-fast-weight-attention-continual-learning",
+  "title": "Fast Weight Attention for Continual Learning",
+  "metadata_status": "partial",
+  "authors": [
+    "Zhang, Yifan",
+    "Ta, Steve",
+    "Zhang, Jasper",
+    "Feng, Jichen",
+    "Li, Shuzhen",
+    "Zhang, Yongxin",
+    "Liu, Yifeng",
+    "Yuan, Huizhuo",
+    "Wang, Mengdi",
+    "Gu, Quanquan",
+    "Yao, Andrew Chi-Chih"
+  ],
+  "year": 2026,
+  "category": "other",
+  "topics": [
+    "continual learning",
+    "fast weights",
+    "linear attention",
+    "DeltaNet",
+    "state space models"
+  ],
+  "publication": {
+    "venue": "arXiv preprint",
+    "status": "preprint",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "이 논문은 긴 문맥을 전부 저장하는 Transformer 대신, 고정 크기 행렬을 토큰마다 조금씩 업데이트하는 fast-weight attention을 “온라인 학습” 문제로 다시 설명한다. 핵심은 현재 토큰의 정답을 현재 key가 아니라 정답을 예측할 때 이미 보였던 prefix feature에 연결하는 것이며, 이 원칙으로 Falcon 계열 업데이트를 만들었다. 언어 모델링 성능은 경쟁력 있지만, 핵심인 시간 정렬의 효과를 직접 비교한 실험과 실제 긴 문맥에서의 속도·메모리 측정은 부족하다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2608.27763",
+      "https://doi.org/10.48550/arXiv.2608.27763"
+    ],
+    "pdf_path": "01-Papers/pdfs/other/zhang-fast-weight-attention-continual-learning.pdf",
+    "review_path": "01-Papers/reviews/other/2026-zhang-fast-weight-attention-continual-learning.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

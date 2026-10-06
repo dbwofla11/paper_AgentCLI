@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2506.10605",
+  "slug": "2025-ramesh-latentcsi-wifi-csi-latent-diffusion",
+  "title": "Real-Time Reconstruction of Physical Scenes from WiFi CSI via Latent Diffusion",
+  "metadata_status": "partial",
+  "authors": [
+    "Ramesh, Eshan",
+    "Nishio, Takayuki"
+  ],
+  "year": 2025,
+  "category": "wifi-csi",
+  "topics": [
+    "WiFi CSI",
+    "latent diffusion",
+    "image generation",
+    "wireless sensing",
+    "privacy"
+  ],
+  "publication": {
+    "venue": "ACM MobiCom 2025 Demo",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "이 논문은 카메라 이미지 대신 WiFi CSI를 입력으로 받아, Stable Diffusion이 사용하는 저차원 latent 공간을 먼저 예측한 뒤 이미지를 복원하는 `LatentCSI`를 제안한다. 기존 픽셀 직접 생성 방식보다 FID와 학습 시간이 좋아졌지만, pixel 정확도는 일부 데이터셋에서 baseline이 더 좋고, 데이터 분할·test loss 선택·제한된 실내 데이터 때문에 “일반적인 환경을 잘 복원한다”까지는 증명하지 못했다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2506.10605",
+      "https://doi.org/10.1145/3680207.3765601"
+    ],
+    "pdf_path": "01-Papers/pdfs/wifi-csi/ramesh-latentcsi-wifi-csi-latent-diffusion.pdf",
+    "review_path": "01-Papers/reviews/wifi-csi/2025-ramesh-latentcsi-wifi-csi-latent-diffusion.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

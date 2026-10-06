@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "arxiv:2607.08741",
+  "slug": "2026-zhao-ardy-autoregressive-diffusion-hybrid-representation",
+  "title": "ARDY: Autoregressive Diffusion with Hybrid Representation for Interactive Human Motion Generation",
+  "metadata_status": "partial",
+  "authors": [
+    "Zhao, Kaifeng",
+    "Petrovich, Mathis",
+    "Zhang, Haotian",
+    "Wang, Tingwu",
+    "Tang, Siyu",
+    "Rempe, Davis"
+  ],
+  "year": 2026,
+  "category": "computer-vision",
+  "topics": [
+    "human motion generation",
+    "autoregressive diffusion",
+    "real-time animation",
+    "SMPL",
+    "interactive control",
+    "NVIDIA"
+  ],
+  "publication": {
+    "venue": "ACM Transactions on Graphics (SIGGRAPH 2026), Vol. 45, No. 4, Article 86",
+    "status": "unknown",
+    "verified": false,
+    "verification_sources": []
+  },
+  "abstract": "",
+  "one_line_summary": "텍스트와 운동학적 제약(경로, 웨이포인트, 키프레임, 관절 위치/회전)을 실시간으로 동시에 반영하는 스트리밍 인체 모션 생성 프레임워크. 명시적 root 특성과 잠재(latent) body 임베딩을 결합한 \"hybrid representation\"과, root를 먼저 예측하고 이를 조건으로 body를 예측하는 2단계 자기회귀 diffusion denoiser로, 오프라인 diffusion 모델 수준의 제어력을 33ms 지연시간에 달성했다고 주장한다.",
+  "source": {
+    "urls": [
+      "https://arxiv.org/abs/2607.08741",
+      "https://doi.org/10.1145/3811284"
+    ],
+    "pdf_path": "01-Papers/pdfs/computer-vision/zhao-ardy-autoregressive-diffusion-hybrid-representation-interactive-human-motion-generation.pdf",
+    "review_path": "01-Papers/reviews/computer-vision/2026-zhao-ardy-autoregressive-diffusion-hybrid-representation.md",
+    "uploaded_filename": null
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "",
+      "claims": []
+    },
+    "core_idea_and_difference": {
+      "summary": "",
+      "claims": []
+    },
+    "evaluation_and_evidence": {
+      "summary": "",
+      "claims": []
+    },
+    "limitations_and_future_work": {
+      "summary": "",
+      "claims": []
+    },
+    "related_work": {
+      "summary": "",
+      "claims": []
+    }
+  },
+  "relationships": [],
+  "structured_review_status": "pending"
+}

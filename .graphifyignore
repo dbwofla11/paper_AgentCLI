@@ -1,0 +1,7 @@
+# Independent critic drafts and frozen source packets are audit artifacts, not graph knowledge.
+00-Inbox/concept-candidates/
+04-Projects/thought-experiment-runs/**/critique-method.md
+04-Projects/thought-experiment-runs/**/critique-repro.md
+04-Projects/thought-experiment-runs/**/critique-novelty.md
+04-Projects/thought-experiment-runs/**/analysis.json
+04-Projects/thought-experiment-runs/**/evidence-bundle-v*.json

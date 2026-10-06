@@ -1,0 +1,385 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "doi:10.1109/JMW.2026.3689403",
+  "slug": "2026-werbunat-coherent-radar-networks",
+  "title": "Coherent Radar Networks: Terminology, Synchronization, and Applications",
+  "metadata_status": "verified",
+  "structured_review_status": "complete",
+  "authors": [
+    "David Werbunat",
+    "Lukas Paulus",
+    "Julian Aguilar",
+    "Vinzenz Janoudi",
+    "Julian Kanz",
+    "Max Basler",
+    "Martin Vossiek",
+    "Christian Waldschmidt"
+  ],
+  "year": 2026,
+  "category": "other",
+  "topics": [
+    "coherent radar networks",
+    "synchronization",
+    "phase noise",
+    "distributed radar",
+    "geometry",
+    "JCAS"
+  ],
+  "publication": {
+    "venue": "IEEE Journal of Microwaves 6(4):852–873",
+    "status": "published",
+    "verified": true,
+    "verification_sources": [
+      "https://doi.org/10.1109/JMW.2026.3689403",
+      "https://cris.fau.de/publications/364889834/",
+      "https://www.uni-ulm.de/in/mwt/institut/mitarbeitende/david-werbunat/",
+      "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf#page=1"
+    ]
+  },
+  "abstract": "coherent radar network의 용어·일반 수신 모델·timing/frequency/phase 오차 및 synchronization 전략을 정리하고, distributed DoA, UAV bistatic SAR, JCAS를 문헌 사례로 설명한다. 원문 초록의 한국어 재서술이며 전사가 아니다.",
+  "one_line_summary": "응용별 practical coherency와 network geometry를 연결하는 tutorial/survey. AMF·SAR 예시는 선행 결과이며 commodity CSI의 geometry × drift 검증은 없다.",
+  "source": {
+    "urls": [
+      "https://doi.org/10.1109/JMW.2026.3689403",
+      "https://www.researchgate.net/publication/405360173_Coherent_Radar_Networks_Terminology_Synchronization_and_Applications/fulltext/6a17914dcf365e3ea4eefa2c/Coherent-Radar-Networks-Terminology-Synchronization-and-Applications.pdf"
+    ],
+    "pdf_path": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf",
+    "review_path": "01-Papers/reviews/other/2026-werbunat-coherent-radar-networks.md",
+    "uploaded_filename": "Coherent Radar Networks_ Terminology, Synchronization, and Applications - Coherent_Radar_Networks_Terminology_Synchronizatio.pdf"
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "분산 노드의 시간·주파수·위상 불일치와 태스크별 coherency 요구를 공통 용어로 비교한다.",
+      "claims": [
+        {
+          "statement": "Compact/distributed는 물리적 거리만이 아니라 채널 간 range/velocity spread와 처리 해상도에 따라 구분한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§II-C, pp.3–4",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Synchronization levels는 no interference, trigger, frequency, phase의 계층이며 앞선 조건을 만족한다고 가정한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§II-F, p.6, Table 2",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "단일 coherent 여부보다 태스크·관측 시간·dynamic range를 정의해야 한다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§II-E4, p.6, Table 1",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "core_idea_and_difference": {
+      "summary": "공통 수신 모델과 hardware coupling·signal synchronization 분류를 연결한다.",
+      "claims": [
+        {
+          "statement": "Eq.21은 SFO/TO/CFO/constant phase/phase noise와 정상 bistatic 거리·속도 항을 분리한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§III-D, p.8, Eq.21",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "LF 모델은 REF 및 trigger 공유를 가정해 timing/frequency mismatch를 제거하지만 PLL phase offset/noise가 남는다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§III-E, p.9, Eqs.23–24",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Sampling과 carrier가 동일 REF를 쓰는 전제에서 CFO/SFO는 연동된다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§III-A, pp.7–8; §IV-A/B, pp.9–10, Eqs.29–32",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Geometry-aware AMF는 [37]의 방법을 소개하며 알려진 geometry로 range/velocity spread를 활용한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-A, pp.15–16, Figs.6–7",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "이 논문의 주된 기여는 단일 새 estimator보다 model·classification·design framework의 통합이다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§I, §III, §V, §VII",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "evaluation_and_evidence": {
+      "summary": "오류 예시와 선행 DoA/SAR 결과를 제공하며 동일 조건 synchronization benchmark는 아니다.",
+      "claims": [
+        {
+          "statement": "SFO 예시는 5 m 정지 corner reflector와 500 kHz 인위 오류를 사용한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§IV-A, p.10, Fig.2",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Reference clock 예시는 7.68 MHz oscillator 및 two-stage PLL의 phase/frequency/PSD를 분석한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§IV-F, pp.11–12, Figs.4–5",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Fig.6은 4.9 m의 두 metal pipe, 15 cm/1.9° 간격과 2λ virtual antenna spacing에서 FFT/AMF를 비교한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-A, pp.15–16, Fig.6",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Figs.6–7은 [37], Figs.8–9는 [32]의 결과·그림으로 표시한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "pp.16–17, Figs.6–9 captions",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Fig.9의 combined SAR는 mono/bistatic 복소 영상을 각각 최대값으로 정규화한 뒤 더한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-B, p.17, Fig.9",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Table 3은 서로 다른 waveform·mobility·PN compensation 문헌의 분류여서 성능 순위를 정할 동일 조건 비교가 없다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§V, pp.12–15, Table 3",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "limitations_and_future_work": {
+      "summary": "기하·gain·scatter calibration과 관측 계약이 필요하며 CSI 및 geometry × residual drift 전이는 미검증이다.",
+      "claims": [
+        {
+          "statement": "Synchronization 외에 path length, gain, bistatic RCS, geometry-dependent clutter를 고려해야 한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§IV-G, p.12",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "RL 기반 처리에는 기준 경로의 phase/length calibration이 필요하고 이동 시 경로 변화 보정이 요구된다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§V-D2, pp.14–15",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Waveform-level 모델은 commodity CSI의 pilot estimation·packet phase reset·AGC 등의 관측 계약을 제공하지 않는다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§III, §VI-C, pp.17–18",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Table 1의 인쇄된 SAR CFO 식은 T_int에 대한 정성 설명과 Eq.21 시간 누적 위상에 부합하지 않아 확인이 필요하다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "p.6, Table 1; p.8, Eq.21",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Eq.36은 dBc/Hz PSD와 bandwidth를 곱해 dBc power로 쓰므로 선형/로그 단위 변환을 점검해야 한다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§IV-E2, p.11, Eq.36",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Geometry × residual drift를 고정 solver의 paired 비교로 검증하는 실험은 제시하지 않는다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§IV–VI, Figs.2–9",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "본문에 code/raw data 배포, runtime, 반복 수·CI 안내가 없으며 외부 공개는 미확인이다.",
+          "kind": "unknown",
+          "evidence": [
+            {
+              "locator": "§IV–VI, References, pp.18–21",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "related_work": {
+      "summary": "Aguilar 2024 synchronization을 분류하고 Janoudi 2024 AMF 및 Kanz 2025 SAR 응용을 연결한다.",
+      "claims": [
+        {
+          "statement": "Aguilar 2024 [40]은 practical coherency 기반과 dedicated SFO estimation을 추가한 digital synchronization 사례다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "p.6, Table 1; §V-D1, p.14; Reference[40], p.19",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Janoudi 2024 [37]은 AMF와 Figs.6–7의 직접 출처다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-A, pp.15–16; Reference[37], p.19",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Kanz 2025 [32]는 arXiv:2507.20792로 표기되므로 journal article [31]과 구분한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-B, Figs.8–9; References[31–32], p.19",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "WiFi CSI gain/phase preprocessing은 Ratnam 2024 [113]을 인용한다. 해당 원 논문 정독은 이번 작업에서 실시하지 않았다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VI-C, p.18; Reference[113], p.21",
+              "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "relationships": [
+    {
+      "type": "cites",
+      "target_paper_id": "doi:10.1109/JMW.2024.3405633",
+      "statement": "Practical coherency와 digital radar의 dedicated SFO estimation 사례로 인용한다.",
+      "evidence": [
+        {
+          "locator": "Table 1; §V-D1; Reference[40], p.19",
+          "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+        }
+      ]
+    },
+    {
+      "type": "cites",
+      "target_paper_id": "doi:10.1109/JMW.2024.3414471",
+      "statement": "Geometry-aware AMF 및 Figs.6–7의 원 논문으로 인용한다.",
+      "evidence": [
+        {
+          "locator": "§VI-A; Figs.6–7; Reference[37], p.19",
+          "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+        }
+      ]
+    },
+    {
+      "type": "cites",
+      "target_paper_id": "doi:10.1109/TMTT.2024.3359035",
+      "statement": "PMCW reference-link synchronization의 사례로 인용한다.",
+      "evidence": [
+        {
+          "locator": "§V-D2; Reference[28], p.19",
+          "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+        }
+      ]
+    },
+    {
+      "type": "cites",
+      "target_paper_id": "arxiv:2507.20792",
+      "statement": "UAV multistatic SAR 응용 및 Figs.8–9의 출처로 인용한다.",
+      "evidence": [
+        {
+          "locator": "§VI-B; Figs.8–9; Reference[32], p.19",
+          "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+        }
+      ]
+    },
+    {
+      "type": "cites",
+      "target_paper_id": "doi:10.1109/TWC.2024.3376332",
+      "statement": "WiFi CSI의 hardware-induced gain/phase preprocessing 문헌으로 인용한다.",
+      "evidence": [
+        {
+          "locator": "§VI-C, p.18; Reference[113], p.21",
+          "source": "01-Papers/pdfs/other/2026-werbunat-coherent-radar-networks.pdf"
+        }
+      ]
+    }
+  ]
+}

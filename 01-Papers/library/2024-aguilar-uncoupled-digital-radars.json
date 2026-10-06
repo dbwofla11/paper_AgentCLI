@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0",
+  "paper_id": "doi:10.1109/JMW.2024.3405633",
+  "slug": "2024-aguilar-uncoupled-digital-radars",
+  "title": "Uncoupled Digital Radars Creating a Coherent Sensor Network",
+  "metadata_status": "verified",
+  "structured_review_status": "complete",
+  "authors": [
+    "Julian Aguilar",
+    "David Werbunat",
+    "Vinzenz Janoudi",
+    "Christina Bonfert",
+    "Christian Waldschmidt"
+  ],
+  "year": 2024,
+  "category": "other",
+  "topics": [
+    "OFDM radar",
+    "synchronization",
+    "SFO",
+    "CFO",
+    "STO",
+    "coherent sensing"
+  ],
+  "publication": {
+    "venue": "IEEE Journal of Microwaves 4(3):459–472",
+    "status": "published",
+    "verified": true,
+    "verification_sources": [
+      "https://doi.org/10.1109/JMW.2024.3405633",
+      "https://d-nb.info/1376643758/34",
+      "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf#page=1"
+    ]
+  },
+  "abstract": "독립 REF를 사용하는 OFDM 레이다의 SFO/CFO/STO 허용 조건을 유도하고, 거리 및 거리–도플러 영상에서 오류를 추정해 시간영역 수신 신호를 보정하는 방법을 77 GHz 측정 장치로 검증한다. 한국어 재서술이며 원문 초록 전사가 아니다.",
+  "one_line_summary": "OFDM 레이다의 오류 예산과 영상 기반 digital synchronization을 연결한다. reciprocal CFO/STO 검증은 부호를 뒤집은 별도 측정으로 제한된다.",
+  "source": {
+    "urls": [
+      "https://doi.org/10.1109/JMW.2024.3405633",
+      "https://d-nb.info/1376643758/34"
+    ],
+    "pdf_path": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf",
+    "review_path": "01-Papers/reviews/other/2024-aguilar-uncoupled-digital-radars.md"
+  },
+  "reading_status": "reviewed",
+  "review": {
+    "problem_and_prior_work": {
+      "summary": "RF/LF 배선 없이 쓰는 레이다의 clock mismatch가 coherent processing을 훼손한다.",
+      "claims": [
+        {
+          "statement": "RF coupled와 LF coupled 모두 reference distribution을 요구하며 기존 uncoupled FMCW/PMCW 접근이 있다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§I, pp.459–460, References[16–19]",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "core_idea_and_difference": {
+      "summary": "오류별 조건과 radar-image 기반 추정·raw signal 보정을 연결한다.",
+      "claims": [
+        {
+          "statement": "SFO는 X-ray transform의 range–slow-time slope로 추정하고 Farrow fractional-delay resampling으로 보정한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VIII-A, p.470, Eq.44, Figs.14–15",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "CFO/STO는 reciprocal shift symmetry와 두 1D profile cross-correlation을 이용해 추정하고 시간영역에서 보정한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VIII-B, pp.470–471, Eqs.45–46, Fig.16",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "CSI 관측에서 raw waveform resampling과 reciprocal pair가 자동 확보되지 않아 별도 관측 adapter 및 calibration 계약이 필요하다.",
+          "kind": "inference",
+          "evidence": [
+            {
+              "locator": "§II-C, §VIII-A/B",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "evaluation_and_evidence": {
+      "summary": "단일 Tx/Rx의 77 GHz demonstrator와 인위적 오류로 threshold 및 영상 복구를 검증한다.",
+      "claims": [
+        {
+          "statement": "Table1의 B=1 GHz, subcarrier spacing=500 kHz, N=2000, M=1024, CP samples=500을 사용한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§III, p.462, Table1",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "SFO 1 MHz 주입에서 약 0.9989 MHz를 추정하고 resampling 후 peak가 선명해졌다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VIII-A, p.470, Figs.14–15",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "CFO 6 kHz와 STO 100 ns 주입에서 약 6.00996 kHz와 100.135 ns를 추정했다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VIII-B, p.471, Eqs.45–46, Fig.16",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "RF/LF/uncoupled SNR은 각각 54.984/54.022/50.913 dB다. uncoupled에는 PN 외에 CFO/SFO도 존재한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VII, p.469, Table5, Fig.13",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "limitations_and_future_work": {
+      "summary": "실제 reciprocal 입력과 최종 localization/phase fusion의 검증이 부족하며 estimator 옵션이 불완전하다.",
+      "claims": [
+        {
+          "statement": "측정 장치는 단방향이므로 Fig.16의 두 영상은 오류 부호를 뒤집은 두 별도 측정으로 생성됐다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§VIII-B, pp.470–471, Fig.16",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "동시 양방향·다중 표적·geometry sweep·위치 정확도의 검증으로 결과를 확대할 수 없다.",
+          "kind": "analysis",
+          "evidence": [
+            {
+              "locator": "§III–VIII, Figs.3–16",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "X-ray slope 정규화와 reciprocal correlation lag에서 단일 방향 offset으로 변환하는 구현 정의는 추가 확인이 필요하다.",
+          "kind": "unknown",
+          "evidence": [
+            {
+              "locator": "§VIII, Eq.44, Eqs.45–46",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "본문에는 code/data 배포·runtime·각 조건 반복 수와 confidence interval 안내가 없다. 외부 공개 여부는 미확인이다.",
+          "kind": "unknown",
+          "evidence": [
+            {
+              "locator": "§III–VIII, References",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "related_work": {
+      "summary": "기존 uncoupled FMCW/PMCW와 OFDM radar processing을 OFDM error budget 관점에서 연결한다.",
+      "claims": [
+        {
+          "statement": "Reference[18] Janoudi 2024의 signal model 및 2D cross-correlation을 본문에서 연결한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§I, §VIII-B, Reference[18], p.472",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        },
+        {
+          "statement": "Reference[19] Werbunat의 uncoupled multistatic PMCW synchronization을 SFO/CFO/PN의 관련 사례로 인용한다.",
+          "kind": "paper_fact",
+          "evidence": [
+            {
+              "locator": "§I, §VII, Reference[19], p.472",
+              "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "relationships": [
+    {
+      "type": "cites",
+      "target_paper_id": "doi:10.1109/TMTT.2024.3359035",
+      "statement": "기존 PMCW synchronization과 phase-noise 효과를 관련 연구로 인용한다.",
+      "evidence": [
+        {
+          "locator": "§I, §VII, Reference[19], p.472",
+          "source": "01-Papers/pdfs/other/2024-aguilar-uncoupled-digital-radars.pdf"
+        }
+      ]
+    }
+  ]
+}

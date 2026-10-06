@@ -1,15 +1,15 @@
 ---
 name: review-index
-description: library/index.md에 논문 항목을 추가·갱신하고 papers/·reviews/와의 불일치를 점검한다. 리뷰 완료 후 또는 "인덱스 정리해줘" 요청 시 사용.
+description: 01-Papers/index.md를 갱신하고 정본 PDF·리뷰·논문 JSON 경로를 점검한다. 리뷰 완료 또는 인덱스 정리 요청 시 사용.
 ---
 
 # 라이브러리 인덱스 갱신
 
-`library/index.md`는 이 프로젝트가 다룬 모든 논문의 단일 목록이다. 한 편 = 한 행.
+`01-Papers/index.md`는 사람이 보는 전체 논문 목록이다. 한 편 = 한 행. 기계 판독 메타데이터·분석은 `01-Papers/library/{slug}.json`에 둔다.
 
 ## 항목 추가·갱신
 
-1. `library/index.md`를 읽는다.
+1. `01-Papers/index.md`를 읽는다.
 2. 같은 논문이 이미 있으면 **행을 수정**한다. 중복 행을 만들지 않는다 (arXiv ID 또는 제목으로 대조).
 3. 표 형식:
 
@@ -27,12 +27,12 @@ description: library/index.md에 논문 항목을 추가·갱신하고 papers/·
 
 세 곳을 대조하고 불일치를 보고한다.
 
-- `papers/`에 PDF는 있는데 인덱스에 없는 논문
-- `reviews/{category}/`에 리뷰는 있는데 인덱스 상태가 `완료`가 아닌 논문
-- 인덱스가 가리키는 리뷰 파일이 실제로 없는 경우 (깨진 링크)
+- `01-Papers/pdfs/{category}/`에 PDF는 있는데 인덱스에 없는 논문
+- `01-Papers/reviews/{category}/`에 리뷰는 있는데 인덱스 상태가 `완료`가 아닌 논문
+- 인덱스가 가리키는 리뷰 또는 `{slug}.json` 파일이 실제로 없는 경우
 - 명명 규칙(`{연도}-{제1저자성}-{슬러그}`)을 벗어난 파일
 
-리뷰 파일은 `reviews/` 바로 아래가 아니라 카테고리 하위 폴더를 재귀적으로 검사한다. 카테고리 폴더는 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other`를 사용한다.
+리뷰 파일과 PDF는 카테고리 하위 폴더를 확인한다. 카테고리 폴더는 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other`를 사용한다.
 
 발견한 불일치는 **먼저 보고하고** 인덱스 쪽 수정만 바로 한다. 파일 이름 변경이나 삭제는 사용자 승인을 받는다.
 
@@ -40,3 +40,4 @@ description: library/index.md에 논문 항목을 추가·갱신하고 papers/·
 
 - 메타데이터를 기억으로 채우지 않는다. 리뷰 파일의 프론트매터 또는 `paper.py meta`에서 가져온다.
 - 인덱스에 요약을 쓰지 않는다. 요약이 필요하면 리뷰 파일로 링크한다.
+- 리뷰를 완료한 논문은 `.scripts/docs/paper-record.schema.json`에 맞춰 JSON의 다섯 분석 축과 근거 위치를 보강하고, 모두 채운 뒤 `structured_review_status: complete`로 표시한다. `.scripts/bin/paper_record.py validate`로 확인한다.

@@ -9,9 +9,9 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 | `01-Papers/pdfs/{category}/` | 카테고리별 원문 PDF |
 | `01-Papers/reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
 | `01-Papers/triage/` | 논문별 1차 판정·조사 메모 |
-| `01-Papers/library/index.md` | 읽은/읽을 논문 인덱스 (한 줄 = 한 편) |
-| `01-Papers/library/keep.md` | 나중에 읽거나 조사할 대기열 |
-| `01-Papers/library/favorites.md` | 선호 논문 기록 |
+| `01-Papers/index.md` | 읽은/읽을 논문 인덱스 (한 줄 = 한 편) |
+| `01-Papers/keep.md` | 나중에 읽거나 조사할 대기열 |
+| `01-Papers/favorites.md` | 선호 논문 기록 |
 | `02-Concepts/` | 사용자가 공부해 이해한 내용을 쌓는 공부노트 |
 | `03-Trends/daily/` | 날짜별 다이제스트 |
 | `05-ideas/thought-experiments/` | 연구 아이디어·사고실험 |
@@ -34,13 +34,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
 
 ## 학습·연구 하네스
 
-`Home.md`는 전체 MOC다. `00-Inbox/`, `01-Papers/`, `02-Concepts/`, `03-Trends/`, `04-Projects/`, `05-ideas/`, `90-Templates/`, `99-Attachments/`, `.scripts/`는 탐색과 운영을 위한 레이어다.
+`docs/Home.md`는 전체 MOC다. `00-Inbox/`, `01-Papers/`, `02-Concepts/`, `03-Trends/`, `04-Projects/`, `05-ideas/`, `90-Templates/`, `99-Attachments/`, `.scripts/`는 탐색과 운영을 위한 레이어다.
 
 - `02-Concepts/`는 논문 한 편의 요약이 아니라 사용자가 공부해 이해한 내용을 축적하는 공부노트다.
 - `04-Projects/`는 실행할 실험·구현·스터디를, `05-ideas/`는 검증 전 가설과 반증 조건을 다룬다.
 - 원문 PDF·심층 리뷰·일일 트렌드·사고실험·자동화의 정본은 각각 `01-Papers/pdfs/`, `01-Papers/reviews/`, `03-Trends/daily/`, `05-ideas/thought-experiments/`, `.scripts/bin/`이다.
-- `01-Papers/library/keep.md`(읽기/조사 대기열)와 `01-Papers/library/favorites.md`(선호 논문)는 독립 목록으로 유지한다.
-- 루트의 기존 `papers/`, `reviews/`, `library/`, `notes/`, `templates/`, `scripts/`, `docs/`는 과거 링크와 자동화를 위한 호환 링크다. 새 파일은 여기에 쓰지 않는다.
+- 논문별 기계 판독 레코드는 `01-Papers/library/{slug}.json`에 둔다. 수집 때 메타데이터를 기록하고 심층 리뷰 뒤 5축 분석과 원문 근거를 보강한다. 모든 축 검증 뒤 `structured_review_status: complete`로 표시한다. 형식은 `.scripts/docs/paper-record.schema.json`을 따른다.
+- `01-Papers/keep.md`(읽기/조사 대기열)와 `01-Papers/favorites.md`(선호 논문)는 독립 목록으로 유지한다. `01-Papers/library/`에는 논문 JSON만 둔다.
+- 루트의 기존 `papers/`, `reviews/`, `library/`, `notes/`, `templates/`, `scripts/`는 과거 링크와 자동화를 위한 호환 링크다. 새 파일은 여기에 쓰지 않는다. 사람용 안내 문서는 `docs/`에 둔다.
+
+- 직접 만든 HTML 화면은 `100-views/`, 공통 화면 자산은 `100-views/assets/`에서 관리한다. 생성기는 `.scripts/bin/`에 유지한다.
 
 ## 파일 명명 규칙
 
@@ -55,10 +58,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
 ## 표준 워크플로
 
 1. **수집** — `/paper-search`. 메타데이터 확정 후 `01-Papers/pdfs/{category}/`에 저장.
-2. **트리아지** — `90-Templates/paper/triage-template.md`로 1패스. 메모는 `01-Papers/triage/`, 상태는 `01-Papers/library/index.md`에 남긴다.
+2. **트리아지** — `90-Templates/paper/triage-template.md`로 1패스. 메모는 `01-Papers/triage/`, 상태는 `01-Papers/index.md`에 남긴다.
 3. **심층 리뷰** — `/paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다.
 4. **위치 파악** — 필요 시 `/related-work`로 선행/후속 연구 맵핑.
-5. **인덱스 갱신** — `/review-index`로 `01-Papers/library/index.md` 한 줄 추가.
+5. **인덱스 갱신** — `/review-index`로 `01-Papers/index.md` 한 줄 추가.
+
+## 연구 하네스 라우팅
+
+- 현재 단계가 수집·업로드·리뷰·문헌 맥락·아이디어·실험·초안·일일 논문 중 하나로 명시되면 `python3 .scripts/bin/research_workflow.py <stage>`의 다음 스킬을 따른다.
+- [Harness-Graph.md](docs/Harness-Graph.md)는 실행 순서를, [Skill-Catalog.md](docs/Skill-Catalog.md)는 보기 전용 목록을 제공한다. 카탈로그로 실행 순서를 결정하지 않는다.
+- 논문 리뷰 뒤 재사용할 개념 후보 초안은 `00-Inbox/concept-candidates/`에 둘 수 있지만, `02-Concepts/` 학습 정본은 사용자가 자신의 이해를 확인·수정하고 승격을 명시적으로 요청한 뒤에만 `concept-note`로 반영한다.
+- 논문 JSON 또는 승인된 개념/아이디어 정본을 갱신한 뒤 `.scripts/bin/graphify_sync.py begin` → Graphify 스킬 `--update` → `complete` 순서로 동기화한다. CLI AST 갱신만으로 문서 의미 추출이 끝났다고 표시하지 않는다. 실패는 원문 작업 실패가 아니라 재시도 가능한 pending으로 기록한다.
+- 아이디어 심사 전 지원·대안·반대 문헌 검색은 필수다. 검색이 부족하면 독립 심사를 시작하지 않는다. 같은 SHA-256 근거 묶음을 세 비판 페르소나에 제공하고 `.scripts/bin/idea_analysis.py validate`로 심사 완결성과 상태 일관성을 검사한다.
+- 아이디어는 `critical-validation`의 승인 전 `thought-experiment-runner`로 실행하지 않는다. 초안은 [Argument Auditor](04-Projects/validation/paper-draft-logic-review.md)로 주장–근거 연결을 점검한다.
+- 사용자가 대화에 올린 논문은 Keep 목록에 등록한다. 일일 후보는 채팅에만 제시하며 사용자가 채택하기 전에는 PDF·Keep·JSON을 저장하지 않는다.
+- 매일 논문 후보는 컴퓨터 비전 1편, 멀티모달 1편, 사용자 관심 분야 1편이며 학회 발표·게재가 확인되어야 한다. 반복 실행 시각은 Orca Automation에서 관리한다.
+- 일일 후보 검색은 뉴스, 자동 Git commit/push, 후보 보고서 파일 생성을 수행하지 않는다. 후보는 채팅으로만 보고하고, 날짜별 사용자 선정 계획만 `03-Trends/daily/{날짜}-plan.md`에 둔다. 과거 다이제스트의 정본도 `03-Trends/daily/`이며 `notes/trends/`는 사용하지 않는다.
 
 ## 원문 읽기
 

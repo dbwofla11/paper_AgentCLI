@@ -22,3 +22,13 @@ x-api-key = "EXA_API_KEY"
 [mcp_servers.paper-search-mcp]
 command = "uvx"
 args = ["--with", "mcp<2", "paper-search-mcp"]
+
+[mcp_servers.llmwiki]
+command = "npx"
+args = [
+    "--yes",
+    "--package",
+    "@llmwiki/core",
+    "llmwiki-mcp",
+    ".wiki",
+]

@@ -1,0 +1,473 @@
+{
+  "parent": "https://app.notion.com/p/3e394f51302781e8b175fdb400f7c3e3",
+  "date": "2026-10-07",
+  "pages": {
+    "reading": {
+      "id": "3f294f51-3027-816e-8e77-e503002f64ac",
+      "url": "https://app.notion.com/p/3f294f513027816e8e77e503002f64ac?pvs=204",
+      "properties": {
+        "title": "논문 읽기"
+      }
+    },
+    "thought": {
+      "id": "3f294f51-3027-8129-8fe7-ce155f114d31",
+      "url": "https://app.notion.com/p/3f294f51302781298fe7ce155f114d31?pvs=204",
+      "properties": {
+        "title": "사고실험"
+      }
+    },
+    "experiment": {
+      "id": "3f294f51-3027-81c7-a0e6-d913d1b32f71",
+      "url": "https://app.notion.com/p/3f294f51302781c7a0e6d913d1b32f71?pvs=204",
+      "properties": {
+        "title": "실험 설계"
+      }
+    },
+    "data": {
+      "id": "3f294f51-3027-818f-b888-f63a654bff90",
+      "url": "https://app.notion.com/p/3f294f513027818fb888f63a654bff90?pvs=204",
+      "properties": {
+        "title": "데이터 저장·관리"
+      }
+    },
+    "ops": {
+      "id": "3f294f51-3027-8194-863b-ca9a04384617",
+      "url": "https://app.notion.com/p/3f294f5130278194863bca9a04384617?pvs=204",
+      "properties": {
+        "title": "루프·운영 설정"
+      }
+    },
+    "views": {
+      "id": "3f294f51-3027-81c4-822f-e2b3720e7f9b",
+      "url": "https://app.notion.com/p/3f294f51302781c4822fe2b3720e7f9b?pvs=204",
+      "properties": {
+        "title": "HTML 화면"
+      }
+    },
+    "skills": {
+      "id": "3f294f51-3027-818a-9e46-ed099777bb18",
+      "url": "https://app.notion.com/p/3f294f513027818a9e46ed099777bb18?pvs=204",
+      "properties": {
+        "title": "스킬 목록"
+      }
+    },
+    "skill-paper-search": {
+      "id": "3f294f51-3027-81b8-98ab-eac95f1b1ccc",
+      "url": "https://app.notion.com/p/3f294f51302781b898abeac95f1b1ccc?pvs=204",
+      "properties": {
+        "title": "논문 검색·수집 · paper-search"
+      }
+    },
+    "skill-paper-review": {
+      "id": "3f294f51-3027-81d4-8d92-ebf2940acf37",
+      "url": "https://app.notion.com/p/3f294f51302781d48d92ebf2940acf37?pvs=204",
+      "properties": {
+        "title": "논문 심층 리뷰 · paper-review"
+      }
+    },
+    "skill-review-index": {
+      "id": "3f294f51-3027-8101-b60b-fe9812543086",
+      "url": "https://app.notion.com/p/3f294f5130278101b60bfe9812543086?pvs=204",
+      "properties": {
+        "title": "논문 인덱스 정리 · review-index"
+      }
+    },
+    "skill-related-work": {
+      "id": "3f294f51-3027-8105-b32e-f2a0f3ae731a",
+      "url": "https://app.notion.com/p/3f294f5130278105b32ef2a0f3ae731a?pvs=204",
+      "properties": {
+        "title": "선행·후속 연구 조사 · related-work"
+      }
+    },
+    "skill-paper-relations": {
+      "id": "3f294f51-3027-81bb-9fd5-e5333765576d",
+      "url": "https://app.notion.com/p/3f294f51302781bb9fd5e5333765576d?pvs=204",
+      "properties": {
+        "title": "저장소 논문 관계 · paper-relations"
+      }
+    },
+    "doc-search-protocol": {
+      "id": "3f294f51-3027-81c6-b5e4-f89ccd84b789",
+      "url": "https://app.notion.com/p/3f294f51302781c6b5e4f89ccd84b789?pvs=204",
+      "properties": {
+        "title": "문헌 검색 프로토콜"
+      }
+    },
+    "doc-review-template": {
+      "id": "3f294f51-3027-8144-84b4-c64e5f18218f",
+      "url": "https://app.notion.com/p/3f294f513027814484b4c64e5f18218f?pvs=204",
+      "properties": {
+        "title": "심층 리뷰 작성 양식"
+      }
+    },
+    "doc-triage-template": {
+      "id": "3f294f51-3027-81ac-bd06-fc411d184748",
+      "url": "https://app.notion.com/p/3f294f51302781acbd06fc411d184748?pvs=204",
+      "properties": {
+        "title": "1패스 판정 양식"
+      }
+    },
+    "skill-thought-experiment-critique": {
+      "id": "3f294f51-3027-8110-9189-e8796a1e8a03",
+      "url": "https://app.notion.com/p/3f294f51302781109189e8796a1e8a03?pvs=204",
+      "properties": {
+        "title": "사고실험 전제 점검 · thought-experiment-critique"
+      }
+    },
+    "skill-critical-validation": {
+      "id": "3f294f51-3027-81fb-ba14-d06990a8fe9d",
+      "url": "https://app.notion.com/p/3f294f51302781fbba14d06990a8fe9d?pvs=204",
+      "properties": {
+        "title": "Grill-me·독립 비판 검증 · critical-validation"
+      }
+    },
+    "doc-critique-template": {
+      "id": "3f294f51-3027-8134-815e-c227f4404236",
+      "url": "https://app.notion.com/p/3f294f5130278134815ec227f4404236?pvs=204",
+      "properties": {
+        "title": "독립 심사 종합 양식"
+      }
+    },
+    "doc-idea-persona": {
+      "id": "3f294f51-3027-81c0-8c00-cef03cd6b852",
+      "url": "https://app.notion.com/p/3f294f51302781c08c00cef03cd6b852?pvs=204",
+      "properties": {
+        "title": "아이디어 검토 관점 · Research Design Skeptic"
+      }
+    },
+    "doc-settings": {
+      "id": "3f294f51-3027-8133-9e25-f46dfb133e31",
+      "url": "https://app.notion.com/p/3f294f51302781339e25f46dfb133e31?pvs=204",
+      "properties": {
+        "title": "비판 검증 정책"
+      }
+    },
+    "doc-registry": {
+      "id": "3f294f51-3027-8136-a1d4-fc7d3424e1a6",
+      "url": "https://app.notion.com/p/3f294f5130278136a1d4fc7d3424e1a6?pvs=204",
+      "properties": {
+        "title": "비판 검증 레지스트리"
+      }
+    },
+    "persona-method": {
+      "id": "3f294f51-3027-81c2-ae2e-ea65b71bc45f",
+      "url": "https://app.notion.com/p/3f294f51302781c2ae2eea65b71bc45f?pvs=204",
+      "properties": {
+        "title": "method critic · 심사 페르소나"
+      }
+    },
+    "persona-repro": {
+      "id": "3f294f51-3027-8181-a501-ec18927a3ea3",
+      "url": "https://app.notion.com/p/3f294f5130278181a501ec18927a3ea3?pvs=204",
+      "properties": {
+        "title": "repro critic · 심사 페르소나"
+      }
+    },
+    "persona-novelty": {
+      "id": "3f294f51-3027-8116-aa2f-c6474c18a41d",
+      "url": "https://app.notion.com/p/3f294f5130278116aa2fc6474c18a41d?pvs=204",
+      "properties": {
+        "title": "novelty critic · 심사 페르소나"
+      }
+    },
+    "skill-thought-experiment-runner": {
+      "id": "3f294f51-3027-8102-9f49-c25ecaf40df7",
+      "url": "https://app.notion.com/p/3f294f51302781029f49c25ecaf40df7?pvs=204",
+      "properties": {
+        "title": "승인된 작은 실험 · thought-experiment-runner"
+      }
+    },
+    "doc-draft-auditor": {
+      "id": "3f294f51-3027-813e-98f6-ccfb773b4b0c",
+      "url": "https://app.notion.com/p/3f294f513027813e98f6ccfb773b4b0c?pvs=204",
+      "properties": {
+        "title": "논문 초안 검토 · Argument Auditor"
+      }
+    },
+    "skill-graphify": {
+      "id": "3f294f51-3027-817d-9b6d-c423fac952b3",
+      "url": "https://app.notion.com/p/3f294f513027817d9b6dc423fac952b3?pvs=204",
+      "properties": {
+        "title": "지식 그래프 탐색·동기화 · graphify"
+      }
+    },
+    "contracts": {
+      "id": "3f294f51-3027-8167-b25c-e0dcb4fa5824",
+      "url": "https://app.notion.com/p/3f294f5130278167b25ce0dcb4fa5824?pvs=204",
+      "properties": {
+        "title": "구조화 데이터·검증 계약"
+      }
+    },
+    "skill-daily-digest-loop": {
+      "id": "3f294f51-3027-8140-8a33-ec952bef89f4",
+      "url": "https://app.notion.com/p/3f294f51302781408a33ec952bef89f4?pvs=204",
+      "properties": {
+        "title": "일일 논문 후보 · daily-digest-loop"
+      }
+    },
+    "skill-paper-scheduler": {
+      "id": "3f294f51-3027-8169-8259-dd2cfc33edba",
+      "url": "https://app.notion.com/p/3f294f51302781698259dd2cfc33edba?pvs=204",
+      "properties": {
+        "title": "날짜별 선정 계획 · paper-scheduler"
+      }
+    },
+    "doc-rules": {
+      "id": "3f294f51-3027-813b-90d3-c89cd90ecf96",
+      "url": "https://app.notion.com/p/3f294f513027813b90d3c89cd90ecf96?pvs=204",
+      "properties": {
+        "title": "공통 실행 규칙 · AGENTS.md"
+      }
+    },
+    "doc-home": {
+      "id": "3f294f51-3027-816e-88ff-f6bbc9934a1e",
+      "url": "https://app.notion.com/p/3f294f513027816e88fff6bbc9934a1e?pvs=204",
+      "properties": {
+        "title": "전체 탐색 지도 · Home"
+      }
+    },
+    "doc-graph": {
+      "id": "3f294f51-3027-81cb-9261-e8c630f8ebb5",
+      "url": "https://app.notion.com/p/3f294f51302781cb9261e8c630f8ebb5?pvs=204",
+      "properties": {
+        "title": "실행 순서 · Harness-Graph"
+      }
+    },
+    "doc-onboarding": {
+      "id": "3f294f51-3027-81cc-9b22-cf23994281eb",
+      "url": "https://app.notion.com/p/3f294f51302781cc9b22cf23994281eb?pvs=204",
+      "properties": {
+        "title": "본인 에이전트 연결 · 온보딩"
+      }
+    },
+    "doc-installer": {
+      "id": "3f294f51-3027-8111-8384-e4cdca0c1f15",
+      "url": "https://app.notion.com/p/3f294f51302781118384e4cdca0c1f15?pvs=204",
+      "properties": {
+        "title": "다른 저장소에 설치"
+      }
+    },
+    "doc-bridge": {
+      "id": "3f294f51-3027-8157-b3da-d4d23dd01ed8",
+      "url": "https://app.notion.com/p/3f294f5130278157b3dad4d23dd01ed8?pvs=204",
+      "properties": {
+        "title": "HTML에서 리뷰 실행 · 로컬 브리지"
+      }
+    },
+    "doc-daily": {
+      "id": "3f294f51-3027-8177-9d19-e30a0ecdbf7c",
+      "url": "https://app.notion.com/p/3f294f51302781779d19e30a0ecdbf7c?pvs=204",
+      "properties": {
+        "title": "일일 예약 운영"
+      }
+    },
+    "doc-todo": {
+      "id": "3f294f51-3027-8156-8819-cf6877ba02dd",
+      "url": "https://app.notion.com/p/3f294f51302781568819cf6877ba02dd?pvs=204",
+      "properties": {
+        "title": "에이전트 문헌 조사 TODO"
+      }
+    },
+    "doc-handoff": {
+      "id": "3f294f51-3027-815d-82c8-eccfdec86ade",
+      "url": "https://app.notion.com/p/3f294f513027815d82c8eccfdec86ade?pvs=204",
+      "properties": {
+        "title": "구현 요구사항·작업 인계"
+      }
+    },
+    "doc-backend": {
+      "id": "3f294f51-3027-811a-a7d1-c351db8c0c4e",
+      "url": "https://app.notion.com/p/3f294f513027811aa7d1c351db8c0c4e?pvs=204",
+      "properties": {
+        "title": "진척 상태 저장 설정"
+      }
+    },
+    "routing": {
+      "id": "3f294f51-3027-810a-8821-e5f01f9e047c",
+      "url": "https://app.notion.com/p/3f294f513027810a8821e5f01f9e047c?pvs=204",
+      "properties": {
+        "title": "단계 라우터·화면 흐름 지도"
+      }
+    },
+    "archive": {
+      "id": "3f294f51-3027-81c4-80d1-f5f775b260e8",
+      "url": "https://app.notion.com/p/3f294f51302781c480d1f5f775b260e8?pvs=204",
+      "properties": {
+        "title": "발표·디자인·문서 원본 묶음"
+      }
+    },
+    "view-dashboard": {
+      "id": "3f294f51-3027-817d-b904-d2b6425e1a27",
+      "url": "https://app.notion.com/p/3f294f513027817db904d2b6425e1a27?pvs=204",
+      "properties": {
+        "title": "하네스 안내 화면"
+      }
+    },
+    "view-library": {
+      "id": "3f294f51-3027-8146-8079-cd4f9353246d",
+      "url": "https://app.notion.com/p/3f294f51302781468079cd4f9353246d?pvs=204",
+      "properties": {
+        "title": "논문 라이브러리 화면"
+      }
+    },
+    "view-ideas": {
+      "id": "3f294f51-3027-8184-8452-c29583cc7690",
+      "url": "https://app.notion.com/p/3f294f51302781848452c29583cc7690?pvs=204",
+      "properties": {
+        "title": "사고실험 목록 화면"
+      }
+    },
+    "skill-concept-note": {
+      "id": "3f294f51-3027-81af-8588-df46aa2b6564",
+      "url": "https://app.notion.com/p/3f294f51302781af8588df46aa2b6564?pvs=204",
+      "properties": {
+        "title": "개념 공부노트 · concept-note"
+      }
+    },
+    "skill-keep-list": {
+      "id": "3f294f51-3027-815a-8648-f6767e1a1e4c",
+      "url": "https://app.notion.com/p/3f294f513027815a8648f6767e1a1e4c?pvs=204",
+      "properties": {
+        "title": "읽기·조사 대기열 · keep-list"
+      }
+    },
+    "skill-paper-favorites": {
+      "id": "3f294f51-3027-8135-81e6-dce994243e35",
+      "url": "https://app.notion.com/p/3f294f513027813581e6dce994243e35?pvs=204",
+      "properties": {
+        "title": "선호 논문 기록 · paper-favorites"
+      }
+    },
+    "skill-paper-summary": {
+      "id": "3f294f51-3027-81cb-ad32-f878e6a161ff",
+      "url": "https://app.notion.com/p/3f294f51302781cbad32f878e6a161ff?pvs=204",
+      "properties": {
+        "title": "논문 3편 요약 · paper-summary"
+      }
+    },
+    "doc-catalog": {
+      "id": "3f294f51-3027-81de-b4b7-e136e6061398",
+      "url": "https://app.notion.com/p/3f294f51302781deb4b7e136e6061398?pvs=204",
+      "properties": {
+        "title": "스킬 찾기 · Skill-Catalog"
+      }
+    },
+    "doc-study-template": {
+      "id": "3f294f51-3027-8143-aa9e-e3fd3a71c794",
+      "url": "https://app.notion.com/p/3f294f5130278143aa9ee3fd3a71c794?pvs=204",
+      "properties": {
+        "title": "공부노트 작성 양식"
+      }
+    },
+    "view-graph": {
+      "id": "3f294f51-3027-8130-b048-c889aefed0b8",
+      "url": "https://app.notion.com/p/3f294f5130278130b048c889aefed0b8?pvs=204",
+      "properties": {
+        "title": "지식 그래프 탐색 화면"
+      }
+    }
+  },
+  "html": {
+    "01-overview": {
+      "file_upload_id": "3f294f51-3027-81f3-8da4-00b216418fa1",
+      "filename": "01-overview.html",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 6333,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81f3-8da4-00b216418fa1",
+      "suggested_markdown": "<embed src=\"file-upload://3f294f51-3027-81f3-8da4-00b216418fa1\"></embed>"
+    },
+    "02-thought-experiment": {
+      "file_upload_id": "3f294f51-3027-8140-80b3-00b2b56ce15d",
+      "filename": "02-thought-experiment.html",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 6964,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-8140-80b3-00b2b56ce15d",
+      "suggested_markdown": "<embed src=\"file-upload://3f294f51-3027-8140-80b3-00b2b56ce15d\"></embed>"
+    },
+    "03-data-flow": {
+      "file_upload_id": "3f294f51-3027-8117-ab41-00b2f365c62f",
+      "filename": "03-data-flow.html",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 6397,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-8117-ab41-00b2f365c62f",
+      "suggested_markdown": "<embed src=\"file-upload://3f294f51-3027-8117-ab41-00b2f365c62f\"></embed>"
+    },
+    "04-operation-loops": {
+      "file_upload_id": "3f294f51-3027-819c-833e-00b2bc2c9565",
+      "filename": "04-operation-loops.html",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 5994,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-819c-833e-00b2bc2c9565",
+      "suggested_markdown": "<embed src=\"file-upload://3f294f51-3027-819c-833e-00b2bc2c9565\"></embed>"
+    }
+  },
+  "files": {
+    "01-overview.png": {
+      "file_upload_id": "3f294f51-3027-8160-bacd-00b28c1f6930",
+      "filename": "01-overview.png",
+      "content_type": "image/png",
+      "content_length": 325277,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-8160-bacd-00b28c1f6930",
+      "suggested_markdown": "<image src=\"file-upload://3f294f51-3027-8160-bacd-00b28c1f6930\"></image>"
+    },
+    "02-thought-experiment.png": {
+      "file_upload_id": "3f294f51-3027-81e0-b307-00b2704c6f67",
+      "filename": "02-thought-experiment.png",
+      "content_type": "image/png",
+      "content_length": 365903,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81e0-b307-00b2704c6f67",
+      "suggested_markdown": "<image src=\"file-upload://3f294f51-3027-81e0-b307-00b2704c6f67\"></image>"
+    },
+    "03-data-flow.png": {
+      "file_upload_id": "3f294f51-3027-81a8-bb12-00b2a171ceb4",
+      "filename": "03-data-flow.png",
+      "content_type": "image/png",
+      "content_length": 337063,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81a8-bb12-00b2a171ceb4",
+      "suggested_markdown": "<image src=\"file-upload://3f294f51-3027-81a8-bb12-00b2a171ceb4\"></image>"
+    },
+    "04-operation-loops.png": {
+      "file_upload_id": "3f294f51-3027-81c5-9193-00b2f9fcc8df",
+      "filename": "04-operation-loops.png",
+      "content_type": "image/png",
+      "content_length": 335289,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81c5-9193-00b2f9fcc8df",
+      "suggested_markdown": "<image src=\"file-upload://3f294f51-3027-81c5-9193-00b2f9fcc8df\"></image>"
+    },
+    "harness-flows.pdf": {
+      "file_upload_id": "3f294f51-3027-81e6-98fd-00b2e403a046",
+      "filename": "harness-flows.pdf",
+      "content_type": "application/pdf",
+      "content_length": 2069831,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81e6-98fd-00b2e403a046",
+      "suggested_markdown": "<pdf src=\"file-upload://3f294f51-3027-81e6-98fd-00b2e403a046\"></pdf>"
+    },
+    "harness-ppt-assets.zip": {
+      "file_upload_id": "3f294f51-3027-81b9-b1fa-00b2f7474986",
+      "filename": "harness-ppt-assets.zip",
+      "content_type": "application/zip",
+      "content_length": 3161454,
+      "status": "uploaded",
+      "markdown_source": "file-upload://3f294f51-3027-81b9-b1fa-00b2f7474986",
+      "suggested_markdown": "<file src=\"file-upload://3f294f51-3027-81b9-b1fa-00b2f7474986\"></file>"
+    }
+  },
+  "sourceZip": {
+    "file_upload_id": "3f294f51-3027-81cd-8fee-00b20046b883",
+    "filename": "harness-documentation-sources.zip",
+    "content_type": "application/zip",
+    "content_length": 128514,
+    "status": "uploaded",
+    "markdown_source": "file-upload://3f294f51-3027-81cd-8fee-00b20046b883",
+    "suggested_markdown": "<file src=\"file-upload://3f294f51-3027-81cd-8fee-00b20046b883\"></file>"
+  }
+}

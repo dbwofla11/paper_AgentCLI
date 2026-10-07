@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "paper-record.schema.json",
+  "title": "Paper record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "paper_id",
+    "slug",
+    "title",
+    "metadata_status",
+    "structured_review_status",
+    "authors",
+    "year",
+    "category",
+    "topics",
+    "publication",
+    "abstract",
+    "one_line_summary",
+    "source",
+    "reading_status",
+    "review",
+    "relationships"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "paper_id": { "type": "string", "minLength": 1 },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "title": { "type": "string" },
+    "metadata_status": { "enum": ["verified", "partial", "needs_review"] },
+    "structured_review_status": { "enum": ["pending", "complete"] },
+    "authors": { "type": "array", "items": { "type": "string" } },
+    "year": { "type": ["integer", "null"], "minimum": 1800, "maximum": 2200 },
+    "category": {
+      "enum": ["wifi-csi", "game-ai", "agent-ai", "computer-vision", "other"]
+    },
+    "topics": { "type": "array", "items": { "type": "string" } },
+    "publication": {
+      "type": "object",
+      "required": ["venue", "status", "verified", "verification_sources"],
+      "properties": {
+        "venue": { "type": ["string", "null"] },
+        "status": { "enum": ["published", "accepted", "preprint", "unknown"] },
+        "verified": { "type": "boolean" },
+        "verification_sources": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "abstract": { "type": "string" },
+    "one_line_summary": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["urls", "pdf_path", "review_path"],
+      "properties": {
+        "urls": { "type": "array", "items": { "type": "string" } },
+        "pdf_path": { "type": ["string", "null"] },
+        "review_path": { "type": ["string", "null"] },
+        "uploaded_filename": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "reading_status": { "enum": ["candidate", "keep", "triage", "reading", "reviewed", "rejected"] },
+    "review": {
+      "type": "object",
+      "required": [
+        "problem_and_prior_work",
+        "core_idea_and_difference",
+        "evaluation_and_evidence",
+        "limitations_and_future_work",
+        "related_work"
+      ],
+      "properties": {
+        "problem_and_prior_work": { "$ref": "#/$defs/review_axis" },
+        "core_idea_and_difference": { "$ref": "#/$defs/review_axis" },
+        "evaluation_and_evidence": { "$ref": "#/$defs/review_axis" },
+        "limitations_and_future_work": { "$ref": "#/$defs/review_axis" },
+        "related_work": { "$ref": "#/$defs/review_axis" }
+      },
+      "additionalProperties": false
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "target_paper_id", "statement", "evidence"],
+        "properties": {
+          "type": { "enum": ["supports", "contradicts", "extends", "compares", "uses", "cites", "related_to"] },
+          "target_paper_id": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string" },
+          "evidence": { "$ref": "#/$defs/evidence_list" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": ["locator", "source"],
+      "properties": {
+        "locator": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "evidence_list": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+    "review_axis": {
+      "type": "object",
+      "required": ["summary", "claims"],
+      "properties": {
+        "summary": { "type": "string" },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["statement", "kind", "evidence"],
+            "properties": {
+              "statement": { "type": "string", "minLength": 1 },
+              "kind": { "enum": ["paper_fact", "analysis", "inference", "unknown"] },
+              "evidence": { "$ref": "#/$defs/evidence_list" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

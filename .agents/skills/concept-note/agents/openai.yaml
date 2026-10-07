@@ -1,0 +1,4 @@
+interface:
+  display_name: "Concept Note"
+  short_description: "요청한 개념 공부노트를 기존 지식과 연결해 작성·갱신"
+  default_prompt: "Use $concept-note to create or update a study note for this concept."

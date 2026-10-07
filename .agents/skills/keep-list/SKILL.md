@@ -5,7 +5,7 @@ description: Manage the separate reading and research keep list when the user as
 
 # Keep List
 
-`library/keep.md`는 나중에 읽거나 다시 검토할 논문과 조사 주제를 위한 대기열이다. `library/favorites.md`와 목적이 다르다. favorites는 선호 논문, keep은 읽기·조사 보류 대상이다.
+`01-Papers/keep.md`는 나중에 읽거나 다시 검토할 논문과 조사 주제를 위한 대기열이다. `01-Papers/favorites.md`와 목적이 다르다. 즐겨찾기는 선호 논문, Keep은 읽기·조사 보류 대상이다. 사용자가 PDF나 논문 자료를 직접 올리면 중복을 확인한 뒤 Keep에도 등록한다.
 
 ## 적용 범위
 
@@ -15,7 +15,7 @@ description: Manage the separate reading and research keep list when the user as
 
 ## 기록 규칙
 
-- 항목은 `library/keep.md`의 `읽을 논문` 또는 `다시 볼 조사 주제` 아래에 둔다.
+- 항목은 `01-Papers/keep.md`의 `읽을 논문` 또는 `다시 볼 조사 주제` 아래에 둔다.
 - 논문은 제목, 추가일, 확인된 출처/식별자, PDF 링크, 리뷰·메모 링크, 상태, 이유를 기록한다. 조사 주제는 자료 링크와 다음에 확인할 질문을 이유에 적는다.
 - 추가일은 요청일을 쓴다. 이유가 없으면 `사용자 지정 이유 없음`이라고 쓴다.
 - 제목·식별자·저장소 경로·자료 링크를 기준으로 중복을 막고, 기존 항목은 보존한다.
@@ -23,7 +23,7 @@ description: Manage the separate reading and research keep list when the user as
 
 ## 작업 방식
 
-- **추가:** 대상이 논문이면 `library/index.md`, `papers/`, `reviews/`를 대조해 현재 경로와 식별자를 확인한다. 조사 주제면 기존 note 또는 사용자가 준 1차 자료를 연결한다.
+- **추가:** 대상이 논문이면 `01-Papers/index.md`, `01-Papers/library/*.json`, `01-Papers/pdfs/`, `01-Papers/reviews/`를 대조해 현재 경로와 식별자를 확인한다. JSON이 없으면 수집 메타데이터로 생성한다. 조사 주제면 기존 Concept 또는 사용자가 준 1차 자료를 연결한다.
 - **목록:** 제목, 유형, 상태, 이유, PDF/자료 링크를 짧게 요약한다. 끊긴 경로는 `[경로 확인 필요]`를 붙인다.
-- **해제:** 지정 항목만 `library/keep.md`에서 제거한다. 원문·리뷰·메모는 건드리지 않는다.
+- **해제:** 지정 항목만 `01-Papers/keep.md`에서 제거한다. 원문·리뷰·메모는 건드리지 않는다.
 - **검증:** 모든 상대 링크의 대상 존재를 확인한다. 이동된 PDF는 현재 카테고리 경로로 고치되, 메타데이터나 이유를 추측해 바꾸지 않는다.

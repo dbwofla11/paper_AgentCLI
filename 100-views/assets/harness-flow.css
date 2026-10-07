@@ -1,0 +1,26 @@
+/* Presentation diagrams · DESIGN-figma.md · standalone HTML embeds this file. */
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; font-family: Inter,"Noto Sans CJK KR","Malgun Gothic",sans-serif; color: #000; }
+.slide { width: 1600px; height: 900px; background: #fff; position: relative; overflow: hidden; margin: 0 auto; }
+.head { position: absolute; left: 58px; top: 36px; right: 58px; }
+.eyebrow { font: 14px/1.3 "JetBrains Mono",Consolas,monospace; letter-spacing: 1px; color: #000; }
+h1 { font-size: 44px; font-weight: 340; line-height: 1.2; margin: 12px 0; letter-spacing: -1.5px; }
+.sub { font-size: 21px; font-weight: 330; color: #000; margin: 0; }
+.band { position: absolute; left: 42px; right: 42px; border-radius: 24px; background: #f7f7f5; border: 0; padding: 16px 18px; color: #000; font-size: 17px; font-weight: 540; }
+.band:nth-of-type(1) { background: #f4ecd6; }
+.node { position: absolute; background: #fff; border: 1px solid #000; border-radius: 24px; padding: 16px 18px; }
+.node h3 { font-size: 25px; font-weight: 540; line-height: 1.35; margin: 0 0 8px; letter-spacing: -.7px; }
+.node p { font-size: 18px; font-weight: 330; line-height: 1.4; margin: 0 0 8px; color: #000; word-break: keep-all; }
+.node code { font-family: inherit; font-size: 14px; line-height: 1.3; color: #000; display: block; overflow-wrap: anywhere; }
+.green { background: #c8e6cd; }
+.purple { background: #c5b0f4; }
+.amber { background: #f4ecd6; }
+.gray { background: #f7f7f5; }
+.blue { background: #dceeb1; }
+.links { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; }
+.edge { fill: none; stroke: #000; stroke-width: 2; stroke-linejoin: round; }
+.dashed { stroke-dasharray: 8 6; }
+.edge-label { font-family: inherit; font-size: 16px; fill: #000; paint-order: stroke; stroke: #fff; stroke-width: 7px; stroke-linejoin: round; }
+.footer { position: absolute; left: 58px; right: 58px; bottom: 27px; border-top: 1px solid #e6e6e6; padding-top: 14px; font-size: 16px; color: #000; line-height: 1.5; display: flex; gap: 24px; }
+.number { margin-left: auto; white-space: nowrap; flex-shrink: 0; color: #000; font: 12px/1.5 Consolas,monospace; }
+@media print { @page { size: 1600px 900px; margin: 0; } body { background: #fff; } .slide { margin: 0; break-after: page; } }

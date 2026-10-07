@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://paper-agentcli.local/schemas/research-todo.schema.json",
+  "title": "Agent Literature Research Task Queue",
+  "type": "object",
+  "required": ["schema_version", "tasks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "fingerprint", "idea_id", "idea_path", "brief_sha256", "question", "conditions", "constraints", "counterfactuals", "existing_paper_ids", "search_scope", "budget", "result_path", "status", "attempts", "created_at", "updated_at", "logs", "partial_results", "dispatches"],
+        "additionalProperties": false,
+        "properties": {
+          "task_id": { "type": "string", "pattern": "^[a-f0-9]{16}$" },
+          "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "idea_id": { "type": "string", "minLength": 1 },
+          "idea_path": { "type": "string", "minLength": 1 },
+          "brief_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "question": { "type": "string", "minLength": 1 },
+          "conditions": { "type": "array", "items": { "type": "string" } },
+          "constraints": { "type": "array", "items": { "type": "string" } },
+          "counterfactuals": { "type": "array", "items": { "type": "string" } },
+          "existing_paper_ids": { "type": "array", "items": { "type": "string" } },
+          "search_scope": { "type": "array", "items": { "type": "string" } },
+          "budget": {
+            "type": "object", "required": ["max_minutes", "max_cost_usd", "max_parallel"], "additionalProperties": false,
+            "properties": { "max_minutes": { "type": "integer", "minimum": 1 }, "max_cost_usd": { "type": "number", "minimum": 0 }, "max_parallel": { "type": "integer", "minimum": 1, "maximum": 3 } }
+          },
+          "result_path": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["todo", "queued", "running", "verifying", "completed", "failed", "needs_input"] },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "logs": { "type": "array", "items": { "type": "object", "required": ["at", "event", "message"], "properties": { "at": { "type": "string", "format": "date-time" }, "event": { "type": "string" }, "message": { "type": "string" } } } },
+          "partial_results": { "type": "array", "items": { "type": "string" } },
+          "dispatches": { "type": "array", "items": { "type": "object", "required": ["run_id", "provider", "agent", "worktree", "started_at", "workers"], "properties": { "run_id": { "type": "string" }, "provider": { "type": "string" }, "agent": { "type": "string" }, "worktree": { "type": "string" }, "started_at": { "type": "string", "format": "date-time" }, "synced_at": { "type": "string", "format": "date-time" }, "workers": { "type": "array", "items": { "type": "object", "required": ["role", "dispatch_id", "orca_task_id"], "properties": { "role": { "enum": ["solution_search", "reference_trace", "counterevidence", "evidence_verifier"] }, "dispatch_id": { "type": "string" }, "orca_task_id": { "type": "string" }, "depends_on": { "type": "array", "items": { "type": "string" } }, "observed_state": { "type": "string" }, "worker_state": { "type": "string" }, "outcome": { "type": ["string", "null"] } } } } } } }
+        }
+      }
+    }
+  }
+}

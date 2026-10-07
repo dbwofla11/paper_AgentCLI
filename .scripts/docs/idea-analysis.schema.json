@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://paper-agentcli.local/schemas/idea-analysis.schema.json",
+  "title": "Research Idea Analysis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "idea_id", "brief", "literature_search", "evidence_bundle", "claims_and_evidence", "critics", "synthesis", "user_decision", "graphify_sync"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "idea_id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "brief": {
+      "type": "object", "additionalProperties": false, "required": ["path", "version"],
+      "properties": { "path": { "type": "string" }, "version": { "type": "string", "minLength": 1 } }
+    },
+    "literature_search": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "search_date", "queries", "sources", "included_papers", "excluded_results", "limitations"],
+      "properties": {
+        "status": { "enum": ["required", "complete", "insufficient"] },
+        "search_date": { "type": ["string", "null"] },
+        "queries": { "type": "array", "items": { "type": "object", "required": ["text", "purpose"], "properties": { "text": { "type": "string", "minLength": 1 }, "purpose": { "enum": ["support", "alternative", "contradiction", "broadening"] } } } },
+        "sources": { "type": "array", "items": { "type": "object", "required": ["name", "searched_at", "result_count"], "properties": { "name": { "type": "string" }, "searched_at": { "type": "string" }, "result_count": { "type": "integer", "minimum": 0 } } } },
+        "included_papers": { "type": "array", "items": { "type": "object", "required": ["paper_id", "title", "rationale", "source_url", "source_record"], "properties": { "paper_id": { "type": "string" }, "title": { "type": "string" }, "rationale": { "type": "string" }, "source_url": { "type": "string", "minLength": 1 }, "source_record": { "type": ["string", "null"] } } } },
+        "excluded_results": { "type": "array", "items": { "type": "object", "required": ["title_or_id", "reason"], "properties": { "title_or_id": { "type": "string" }, "reason": { "type": "string" } } } },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidence_bundle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "version", "sha256", "path", "items"],
+      "properties": {
+        "status": { "enum": ["unfrozen", "frozen"] }, "version": { "type": ["integer", "null"], "minimum": 1 },
+        "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }, "path": { "type": ["string", "null"] },
+        "items": { "type": "array", "items": { "type": "object", "required": ["path", "sha256"], "properties": { "path": { "type": "string" }, "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } } } }
+      }
+    },
+    "claims_and_evidence": { "type": "array", "items": { "type": "object", "required": ["claim", "polarity", "paper_id", "source", "locator", "note"], "properties": { "claim": { "type": "string" }, "polarity": { "enum": ["supports", "contradicts", "qualifies"] }, "paper_id": { "type": "string" }, "source": { "type": "string" }, "locator": { "type": "string" }, "note": { "type": "string" } } } },
+    "critics": {
+      "type": "object", "additionalProperties": false, "required": ["method", "repro", "novelty"],
+      "properties": {
+        "method": { "$ref": "#/$defs/critic" },
+        "repro": { "$ref": "#/$defs/critic" },
+        "novelty": { "$ref": "#/$defs/critic" }
+      }
+    },
+    "synthesis": { "type": "object", "additionalProperties": false, "required": ["status", "recommendation", "unresolved"], "properties": { "status": { "enum": ["pending", "complete"] }, "recommendation": { "enum": ["pending", "revise", "hold", "discard", "experiment_candidate"] }, "unresolved": { "type": "array", "items": { "type": "string" } } } },
+    "user_decision": { "type": "object", "additionalProperties": false, "required": ["decision", "date"], "properties": { "decision": { "enum": ["pending", "proceed", "revise", "hold", "discard"] }, "date": { "type": ["string", "null"] } } },
+    "graphify_sync": { "type": "object", "additionalProperties": false, "required": ["status", "updated_at", "message"], "properties": { "status": { "enum": ["not_applicable", "pending", "success", "failed"] }, "updated_at": { "type": ["string", "null"] }, "message": { "type": ["string", "null"] } } }
+  },
+  "$defs": {
+    "critic": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "evidence_bundle_sha256", "verdict", "fatal_flaws", "evidence_refs", "requests", "recommendation"],
+      "properties": {
+        "status": { "enum": ["pending", "complete"] }, "evidence_bundle_sha256": { "type": ["string", "null"] },
+        "verdict": { "enum": ["pending", "no_fatal_flaw", "conditional", "fatal_flaw"] },
+        "fatal_flaws": { "type": "array", "items": { "type": "string" } }, "evidence_refs": { "type": "array", "items": { "type": "string" } },
+        "requests": { "type": "array", "items": { "type": "string" } }, "recommendation": { "enum": ["pending", "retain", "narrow", "hold", "reject"] }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Daily Digest Loop"
-  short_description: "Collect, summarize, and commit daily paper and news digests"
-  default_prompt: "Use $daily-digest-loop for the next paper and news digest cycle. Before drafting, read 03-Trends/daily/2026-09-07.md and follow its complete document structure for the new dated digest."
+  display_name: "Daily Paper Candidates"
+  short_description: "Find three verified conference papers for today"
+  default_prompt: "Use $daily-digest-loop to find today's three verified conference paper candidates and report them in chat without saving files."

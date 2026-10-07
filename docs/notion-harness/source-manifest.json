@@ -1,0 +1,202 @@
+[
+  {
+    "path": ".agents/skills/concept-note/SKILL.md",
+    "sha256": "3342d703f2fd2e2b2d549f64c7c0bde3ca9bc8de19f2e01e894728cf63017ab1"
+  },
+  {
+    "path": ".agents/skills/critical-validation/SKILL.md",
+    "sha256": "8a3fadd8079adf8ecd2464a13589af6c42336d768e5c29c2bf9f5bfcca8064c7"
+  },
+  {
+    "path": ".agents/skills/daily-digest-loop/SKILL.md",
+    "sha256": "0121ae10d05ca9f5d0c6118683dd8ca36559ba1b24c12485d0d20be8e68d5447"
+  },
+  {
+    "path": ".agents/skills/graphify/SKILL.md",
+    "sha256": "3898b1042721cad27d6f87ca44f638415a7f763203aefd86b90f9358ffea3a43"
+  },
+  {
+    "path": ".agents/skills/keep-list/SKILL.md",
+    "sha256": "28b41d4fcb3c84be0ef9959a83bfc13e5e00e51e92648dd2a793f3cf68f2a949"
+  },
+  {
+    "path": ".agents/skills/paper-favorites/SKILL.md",
+    "sha256": "b8035a73e66152d1ccdc9755f13febb1c9bf1c661275642e8c68d032e3e6c364"
+  },
+  {
+    "path": ".agents/skills/paper-relations/SKILL.md",
+    "sha256": "0612c4ba06bda495f185d22aaf632a765e112096ea973e30d1dc03a2dc613a31"
+  },
+  {
+    "path": ".agents/skills/paper-review/SKILL.md",
+    "sha256": "a9bceb234b3b675c4a45e80f98ba79a0f98a738418785f907c268ebb0b314b09"
+  },
+  {
+    "path": ".agents/skills/paper-scheduler/SKILL.md",
+    "sha256": "67d0e6c2460bcbcccc76f68f5f88ecba6e2a31f8be30c4e2404b541620c6f62a"
+  },
+  {
+    "path": ".agents/skills/paper-search/SKILL.md",
+    "sha256": "e66cb54c9192d684c1ed4f5a351a18abc99844bdb7bc8aa7e96708b34c1bdb8f"
+  },
+  {
+    "path": ".agents/skills/paper-summary/SKILL.md",
+    "sha256": "1131d303a5c01803d5246a3d8ecd671b2e948ac86cafafa72c0e5cf2303e00cd"
+  },
+  {
+    "path": ".agents/skills/related-work/SKILL.md",
+    "sha256": "a1dd1494bbc43e7f4cf48ad5f0e0b78ccb45f93ff98c8e5fc783cbb1ab47cbaa"
+  },
+  {
+    "path": ".agents/skills/review-index/SKILL.md",
+    "sha256": "e22d1c09341f48bdc3608222ce79b22acccdcbd457c8a0e1eca0bf0c04506c89"
+  },
+  {
+    "path": ".agents/skills/thought-experiment-critique/SKILL.md",
+    "sha256": "e507415734db711bc31a810e06282100784b0ca23c60c6502be3ee2c8d052e2d"
+  },
+  {
+    "path": ".agents/skills/thought-experiment-runner/SKILL.md",
+    "sha256": "0d279c40559577e065559cc0415c3bd36d812a9b98a76e9d35944c7313e761b6"
+  },
+  {
+    "path": ".scripts/docs/idea-analysis.schema.json",
+    "sha256": "3c1d8e3b78975247bb84acb10114dea57098b4d7a638e474b0db875eabc6adb5"
+  },
+  {
+    "path": ".scripts/docs/literature-investigation.schema.json",
+    "sha256": "e5c686a34509c6d64ab4aca3586e3b58664fd87c83b763303e1d6e675b5167d0"
+  },
+  {
+    "path": ".scripts/docs/paper-record.schema.json",
+    "sha256": "f3340fb4c65a64bde18f77dd33b5728031fec7f3613e9fee06227459c5899265"
+  },
+  {
+    "path": ".scripts/docs/research-todo.schema.json",
+    "sha256": "45f33280b29bdfc3ff18abc5db1ce26c0e7d19a96cb1e695af0c6347d26155d0"
+  },
+  {
+    "path": ".scripts/docs/research-workflow-map.json",
+    "sha256": "3707b4364337b25cb2e0997d0821cb8aaa18008a4540e1e86092190d4af9f9b2"
+  },
+  {
+    "path": ".scripts/docs/search-protocol.md",
+    "sha256": "a0e3cf4e6ec1ea102cb65c54b1ea94bb16f07f9ff4404645aff89707eef5322f"
+  },
+  {
+    "path": "04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md",
+    "sha256": "7c3eb6a4c6075ee20b75a3685dab3c812b0cfb444b21b9932c03037d6d40a68d"
+  },
+  {
+    "path": "04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md",
+    "sha256": "1367838db8f2822cd0486ad88e72999ae6e2ca7d979f91cccf09f03ce0d0b696"
+  },
+  {
+    "path": "04-Projects/thought-experiment-runs/CRITIQUE_TEMPLATE.md",
+    "sha256": "5b5246ac00765be15b211e0639c9f052ad39bc3085f14fe71e8482aac0ca7d2b"
+  },
+  {
+    "path": "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md",
+    "sha256": "aaad7df8fcf67b629dd71f7972b6c21fb6319823af4482e4adba70638205414a"
+  },
+  {
+    "path": "04-Projects/validation/critic-output.schema.json",
+    "sha256": "8821c719fea5873f0a6fa346761a610c1a7a4ebdff00c7daea662b0f04a47d42"
+  },
+  {
+    "path": "04-Projects/validation/idea-review-persona.md",
+    "sha256": "d6459d92b92af82f4eab1e2d5fe3b507f988eada6bc3fe54d1d6fa918a2ed903"
+  },
+  {
+    "path": "04-Projects/validation/paper-draft-logic-review.md",
+    "sha256": "dc14cbc62157006d244b78dc96bc3601442fbecb7e4cd90476c2e1f43b2f4e15"
+  },
+  {
+    "path": "04-Projects/validation/personas/method-critic.md",
+    "sha256": "c29acf7ed6b187b92ad1a31138c79c0c70761f30666e9577b918f1e4ebe6758d"
+  },
+  {
+    "path": "04-Projects/validation/personas/novelty-critic.md",
+    "sha256": "1f46c0e6c76c7604a767d48f41af65aa4b95e46997c32f92be811937f9d72318"
+  },
+  {
+    "path": "04-Projects/validation/personas/repro-critic.md",
+    "sha256": "fc7fc5e6cbf5ae6f0981515e9091dc8a520f8fb173f1882811f166064ac002cf"
+  },
+  {
+    "path": "100-views/README.md",
+    "sha256": "058c61ee2f1cf76cf081ae645436127f390fa8dda6040a713609d3e1f8acebba"
+  },
+  {
+    "path": "90-Templates/paper/review-template.md",
+    "sha256": "42f860f97ca66667c232720489a79f4cabeaa64d06feecebfb895f79cd77294a"
+  },
+  {
+    "path": "90-Templates/paper/triage-template.md",
+    "sha256": "6067c30da141be2737b33ff24073bcbf135118ae79130f6fbf6feae8b253e93c"
+  },
+  {
+    "path": "90-Templates/study-note-template.md",
+    "sha256": "ce4f3f6661cd2da092bef9ffaaa37b8dfa58df83c9823d15ff8f46c561f2fb57"
+  },
+  {
+    "path": "AGENTS.md",
+    "sha256": "5c0ed22a10454f96dfc610f5dd101ca1836c39ffece33fb6eae784b7f8d983cc"
+  },
+  {
+    "path": "docs/Harness-Graph.md",
+    "sha256": "3050453e5ae0d83394673d6562795cc872afd9840e18939740b2ea64ef00933f"
+  },
+  {
+    "path": "docs/Home.md",
+    "sha256": "07e3943d8e947b8712c3ce9850b6794938ea17fcee555b2a722e6e3d67388a3b"
+  },
+  {
+    "path": "docs/Skill-Catalog.md",
+    "sha256": "6331171cc4e2f384e56de4a784c9a156ab7c71ecde19c4b8276efe9b3914e72b"
+  },
+  {
+    "path": "docs/agent-research-todo.md",
+    "sha256": "64cfeea0bba250a55c87738c0c18f6f723b3654ae94cd621a1ccd0658721a08c"
+  },
+  {
+    "path": "docs/daily-orca-automation.md",
+    "sha256": "074aff7ec2bbdbbc08c4dabff2fbf652c60ee4e843fc319e130cd9e39fcfe0de"
+  },
+  {
+    "path": "docs/design/DESIGN-discord.md",
+    "sha256": "b4be872ea66e4c285aa3c1d9ba954335622913edda916fe035bbd9dfbc545ec9"
+  },
+  {
+    "path": "docs/design/DESIGN-figma.md",
+    "sha256": "716ce8431f47eb8b8135552710e3c4d538bccccf1202e4ceac5428c9aada9972"
+  },
+  {
+    "path": "docs/design/README.md",
+    "sha256": "d49d4af2b7c8371462aae364336b875bc5089575ce0d9533175bf744c8374fea"
+  },
+  {
+    "path": "docs/handoff-paper-harness.md",
+    "sha256": "115997ebd86ccb3741c117640649222ecc4b5213adc4b51db753344e28066819"
+  },
+  {
+    "path": "docs/lab-meeting-presentation-plan.md",
+    "sha256": "72759b08e6c4dffe156842c6b5d968286eaa30881b92662f8c386d47005536c8"
+  },
+  {
+    "path": "docs/lab-meeting-slide-content.md",
+    "sha256": "8be8dfe73445d5d07209630e8381cfd588c2ae54af60d3b46f9fd6ee0e962766"
+  },
+  {
+    "path": "docs/onboarding.md",
+    "sha256": "4295dfd809089d3b43b03ff4029cef5eaaefccb98e9e743dcd17849b1badda9e"
+  },
+  {
+    "path": "docs/paper-review-bridge.md",
+    "sha256": "115997ebd86ccb3741c117640649222ecc4b5213adc4b51db753344e28066819"
+  },
+  {
+    "path": "docs/research-harness-installer.md",
+    "sha256": "916d0de3480fea09f6b2a14378e80f3cdbeaecef76705bdc23b1ddf9462b1f63"
+  }
+]

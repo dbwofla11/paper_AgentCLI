@@ -7,6 +7,7 @@
 
 | 상태 | 연도 | 제목 | 제1저자 | venue | 평점 | 리뷰 | 태그 |
 |---|---|---|---|---|---|---|---|
+| 완료 | 2026 | Motus: A Unified Latent Action World Model | Bi | CVPR 2026 | 4 | [리뷰](reviews/agent-ai/2026-bi-motus-unified-latent-action-world-model.md) | world model, latent action, optical flow, MoT, robotic manipulation |
 | 완료 | 2026 | Coherent Radar Networks: Terminology, Synchronization, and… | Werbunat | IEEE Journal of Microwaves | 4 | [리뷰](reviews/other/2026-werbunat-coherent-radar-networks.md) | coherent radar, synchronization, geometry |
 | 완료 | 2026 | Fast Weight Attention for Continual Learning | Zhang | arXiv preprint | 4 | [리뷰](reviews/other/2026-zhang-fast-weight-attention-continual-learning.md) | continual learning, fast weights, linear attention, state space models |
 | 완료 | 2025 | LatentCSI: Real-Time Reconstruction of Physical Scenes from WiFi CSI via Latent Diffusion | Ramesh | ACM MobiCom ’25 Demo | 4 | [리뷰](reviews/wifi-csi/2025-ramesh-latentcsi-wifi-csi-latent-diffusion.md) | WiFi CSI, latent diffusion, scene reconstruction |

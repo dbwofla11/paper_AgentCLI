@@ -79,9 +79,9 @@ def skill_rows() -> str:
     return "\n".join(rows) or '<tr><td colspan="4">스킬 없음</td></tr>'
 
 
-def main() -> None:
+def main(run_tests: bool = True) -> None:
     state, message = validate()
-    tests, test_message = test_suite()
+    tests, test_message = test_suite() if run_tests else ("미실행", "온보딩은 구조 검사만 실행합니다.")
     validator_rows = "\n".join(
         f'<tr><td>{html.escape(name)}</td><td><a href="{link(path)}">{html.escape(path)}</a></td>'
         f'<td>{"있음" if (ROOT / path).is_file() else "누락"}</td></tr>'
@@ -115,4 +115,8 @@ body{{font:15px system-ui,sans-serif;margin:0;background:#f3f6f2;color:#1c2d24}}
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-tests", action="store_true")
+    args = parser.parse_args()
+    main(run_tests=not args.no_tests)

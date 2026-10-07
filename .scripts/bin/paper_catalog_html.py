@@ -223,7 +223,7 @@ const bridgeInfo=$("bridge-info");
 function connectionHelp(message){
   bridgeInfo.replaceChildren(document.createTextNode(message+" "));
   const link=make("a","","로컬 실행기로 열기 ↗");link.href=bridgeAddress;bridgeInfo.append(link);
-  bridgeInfo.append(document.createTextNode(" · 실행 명령: python3 .scripts/bin/paper_review_bridge.py serve"));
+  bridgeInfo.append(document.createTextNode(" · 실행 명령: python3 .scripts/bin/onboard_research.py"));
 }
 if(location.protocol==="file:")connectionHelp("검색·필터·리뷰 보기는 바로 사용할 수 있습니다. 새 리뷰는 로컬 실행기에서 시작하세요.");
 async function reviewRequest(url,options={}){
@@ -249,8 +249,8 @@ async function startReview(p,statusNode,button){
   update("로컬 리뷰 실행기 연결 중…",true);
   try{
     const status=await reviewRequest("/api/status");
-    if(status.runner!=="codex-cli")throw new Error("리뷰 실행기가 아닌 주소입니다.");
-    if(!status.ready)throw new Error("실행기에 Codex CLI와 pdftotext가 필요합니다.");
+    if(!["codex-cli","claude-cli"].includes(status.runner))throw new Error("리뷰 실행기가 아닌 주소입니다.");
+    if(!status.ready)throw new Error(status.reason||"에이전트 연결이 필요합니다. 온보딩 명령을 실행하세요.");
     const accepted=await reviewRequest("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:p.slug})});
     const job=accepted.job;
     if(!job?.job_id)throw new Error("작업 ID를 받지 못했습니다.");
@@ -268,6 +268,26 @@ async function startReview(p,statusNode,button){
       }catch(error){update(`상태 조회 실패: ${error.message}`,false);}
     };setTimeout(poll,1500);
   }catch(error){update(`실행기 연결 실패: ${error.message}`,false);connectionHelp("리뷰 실행기 연결을 확인하세요.");}
+}
+async function restoreActiveReviews(){
+  if(location.protocol!=="http:"||location.hostname!=="127.0.0.1")return;
+  try{
+    const status=await reviewRequest("/api/status");
+    bridgeInfo.textContent=status.ready?`연결된 에이전트: ${status.agent||status.runner} · 본인 계정으로 리뷰 실행`:`에이전트 연결 필요: ${status.reason||"python3 .scripts/bin/onboard_research.py"}`;
+    const latest=new Map((status.queue?.jobs||[]).map(job=>[job.slug,job]));
+    let active=false,completed=false;
+    for(const job of latest.values()){
+      const busy=job.status==="queued"||job.status==="running";
+      if(busy){reviewStates.set(job.slug,{busy:true,message:`리뷰 진행 중 (${job.status})`});active=true;}
+      else if(reviewStates.get(job.slug)?.busy){
+        reviewStates.set(job.slug,{busy:false,message:job.status==="failed"?`리뷰 실패: ${job.message||"실행 기록을 확인하세요."}`:"리뷰 완료"});
+        if(job.status==="completed")completed=true;
+      }
+    }
+    if(completed){location.reload();return;}
+    render();
+    if(active)setTimeout(restoreActiveReviews,3000);
+  }catch(error){connectionHelp(`실행기 상태를 확인할 수 없습니다: ${error.message}`);}
 }
 function openReview(p){
   $("review-title").textContent=`${p.catalog_display_title||p.title||p.slug} · 리뷰`;
@@ -320,6 +340,7 @@ function render(){
 for(const id of ["search","category-filter","status-filter","year-filter"])$(id).addEventListener("input",render);
 for(const id of ["category-filter","status-filter","year-filter"])$(id).addEventListener("change",render);
 render();
+restoreActiveReviews();
 </script>
 </body>
 </html>

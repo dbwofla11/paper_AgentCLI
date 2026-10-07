@@ -46,6 +46,28 @@ cd paper_AgentCLI
 
 **배포 브랜치:** 이 온보딩과 연결된 하네스는 `personal` 브랜치에서 관리한다. 기본 브랜치가 같은 구성을 포함한다고 가정하지 않도록 위 명령에 브랜치를 명시했다. 배포 전 커밋할 파일만 별도 폴더에 복원해 아래 검사를 수행한다. 신규 사용자는 파일이 없으면 개인 설정을 추측해 만들기보다 제공받은 브랜치가 최신인지 확인한다.
 
+## 자동 연결과 HTML 실행
+
+저장소를 받은 뒤 루트에서 한 번 실행한다:
+
+```bash
+python3 .scripts/bin/onboard_research.py
+```
+
+설치된 Codex·Claude의 로그인과 비대화형 실행 옵션을 검사하고, 준비된 에이전트를 자동으로 선택한다. 기존 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 명령을 자동으로 시작하고, 로그인 뒤 연결을 이어간다. 연결한 에이전트로 로컬 리뷰 서버를 시작하고 라이브러리를 브라우저에서 연다.
+
+연결 파일 `.research-harness-agent.json`에는 에이전트 이름만 저장한다. 본인의 CLI 인증을 그대로 사용하며 계정·토큰·실행 파일 절대 경로를 다른 사용자에게 복사하지 않는다. HTML에 연결한 에이전트와 준비 상태가 표시된다. CLI가 없으면 아래 설치 안내를 따른다. OAuth 로그인에는 본인의 브라우저 인증이 필요하다.
+
+```bash
+python3 .scripts/bin/onboard_research.py --agent claude  # 직접 선택
+python3 .scripts/bin/onboard_research.py --check         # 읽기 전용 진단
+python3 .scripts/bin/onboard_research.py --connect-only  # 연결 설정만 저장
+```
+
+Python 3.10+, Poppler의 `pdftotext`가 필요하다. Claude 자동 리뷰는 `--restricted` 지원 버전과 OS 샌드박스를 사용한다. Linux/WSL은 bubblewrap·socat, macOS는 sandbox-exec를 검사한다. 준비되지 않은 환경은 연결 실패 원인을 표시한다. Windows의 Claude 사용자는 WSL에서 이 흐름을 실행한다.
+
+구현 근거: [Codex 비대화형 실행](https://learn.chatgpt.com/docs/non-interactive-mode), [Codex 인증](https://learn.chatgpt.com/docs/auth), [Claude CLI·인증 명령](https://code.claude.com/docs/en/cli-reference), [Claude 비대화형 실행](https://code.claude.com/docs/en/headless).
+
 ## 4. 에이전트 설치·로그인
 
 ### 경로 A — Codex

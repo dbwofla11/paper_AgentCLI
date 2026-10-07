@@ -77,16 +77,25 @@ def main() -> int:
         if not (ROOT / ".agents/skills" / skill / "SKILL.md").is_file():
             return fail(f"missing installed skill {skill}")
     canonical_skills = ROOT / ".agents/skills"
+    def skill_connected(alias: Path, source: Path) -> bool:
+        if alias.is_symlink():
+            return alias.resolve(strict=False) == source.resolve()
+        manifest_path = ROOT / ".research-harness-manifest.json"
+        if alias.is_dir() and manifest_path.is_file():
+            from install_research_harness import digest_tree
+            tracked = json.loads(manifest_path.read_text()).get("files", {}).get(alias.relative_to(ROOT).as_posix(), {})
+            return tracked.get("kind") == "copy-tree" and digest_tree(alias) == digest_tree(source) == tracked.get("sha256")
+        return False
     claude_skills = ROOT / ".claude/skills"
     for source in sorted(path for path in canonical_skills.iterdir() if path.is_dir()):
         alias = claude_skills / source.name
-        if not alias.is_symlink() or alias.resolve(strict=False) != source.resolve():
+        if not skill_connected(alias, source):
             return fail(f"Claude skill {source.name} must symlink to .agents/skills")
     for alias in claude_skills.iterdir():
         if alias.name not in {path.name for path in canonical_skills.iterdir() if path.is_dir()} and alias.name != "math-derivation":
             return fail(f"unexpected Claude-only skill {alias.name}; keep shared skills in .agents/skills")
     codex_graphify = ROOT / ".codex/skills/graphify"
-    if not codex_graphify.is_symlink() or codex_graphify.resolve(strict=False) != (canonical_skills / "graphify").resolve():
+    if not skill_connected(codex_graphify, canonical_skills / "graphify"):
         return fail(".codex/skills/graphify must symlink to the canonical .agents skill")
     daily_skill = (ROOT / ".agents/skills/daily-digest-loop/SKILL.md").read_text(encoding="utf-8")
     for required_text in ("multimodal", "09:00 KST", "채팅으로만", "학회"):
@@ -121,16 +130,15 @@ def main() -> int:
         if excluded not in ignore:
             return fail(f"Graphify does not exclude transient research artifact {excluded}")
     records = sorted((ROOT / "01-Papers/library").glob("*.json"))
-    if not records:
-        return fail("no paper JSON records exist")
-    validation = subprocess.run(
-        [sys.executable, str(ROOT / ".scripts/bin/paper_record.py"), "validate", *map(str, records)],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if validation.returncode != 0:
-        return fail(f"paper JSON validation failed: {validation.stdout}{validation.stderr}")
+    if records:
+        validation = subprocess.run(
+            [sys.executable, str(ROOT / ".scripts/bin/paper_record.py"), "validate", *map(str, records)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if validation.returncode != 0:
+            return fail(f"paper JSON validation failed: {validation.stdout}{validation.stderr}")
     for page, linked in (
         (ROOT / "100-views/paper-library.html", ("harness-dashboard.html", "thought-experiments.html")),
         (ROOT / "100-views/harness-dashboard.html", ("paper-library.html", "thought-experiments.html")),

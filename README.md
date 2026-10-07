@@ -8,6 +8,59 @@ AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 �
 
 HTML 화면과 공통 디자인 자산은 [100-views/](100-views/README.md)에서 관리한다.
 
+## 하네스 기능 안내
+
+**[공개 Notion 안내 사이트에서 전체 기능과 흐름도 보기](https://delicious-period-09a.notion.site/3e394f51302781e8b175fdb400f7c3e3?source=copy_link)**
+
+이 하네스가 어떤 일을 하고 어떤 순서로 작동하는지 기능별 페이지와 HTML 도식으로 소개한다. 설치 전에 전체 구성을 이해하거나 연구실에서 소개할 때 참고할 수 있다.
+
+- **논문 읽기:** 검색·수집 → 트리아지 → 3패스 심층 리뷰 → 인덱스·관련 연구 정리
+- **사고실험·실험 설계:** Grill-me로 기획 구체화 → 방법·재현성·새로움 독립 심사 → 사용자 결정 → 작은 실험
+- **스킬·운영:** 프로젝트 스킬 15개, 하네스 문서·템플릿·페르소나, 일일 후보 루프와 본인 에이전트 연결
+- **데이터 관리:** PDF·리뷰·논문 JSON·가설·실행 증거의 저장 위치와 연결 흐름
+- **HTML 화면·발표 자료:** 하네스·논문·사고실험 화면의 역할, 발표용 HTML 흐름도와 PNG·PDF 다운로드
+
+Notion은 기능을 설명하는 안내 공간이다. 실제 작업은 이 저장소의 스킬·실행기에서 수행하며, 연구 기록은 각 정본 파일과 지정한 진척 관리 공간에서 관리한다.
+
+## 자동 온보딩
+
+저장소를 받은 뒤 루트에서 실행한다:
+
+```bash
+python3 .scripts/bin/onboard_research.py
+```
+
+**에이전트 감지 → 로그인 확인 → 연결 설정 저장 → HTML 실행** 순서로 진행한다. 설치된 Codex·Claude 중 준비된 에이전트를 자동으로 선택하며, 이전에 연결한 에이전트가 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다. 본인이 인증을 마치면 연결을 이어간다.
+
+Python 3.10 이상, Codex 또는 Claude CLI, PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. Linux/WSL은 bubblewrap·socat, macOS는 sandbox-exec를 검사한다. 설치 방법과 환경별 조건은 [온보딩 안내](docs/onboarding.md)를 따른다.
+
+| 명령 | 용도 |
+|---|---|
+| `python3 .scripts/bin/onboard_research.py --agent codex` | Codex를 선택해 연결·실행 |
+| `python3 .scripts/bin/onboard_research.py --agent claude` | Claude를 선택해 연결·실행 |
+| `python3 .scripts/bin/onboard_research.py --check` | 파일 수정 없이 CLI·로그인·실행 옵션·PDF 도구 준비 상태 확인 |
+| `python3 .scripts/bin/onboard_research.py --connect-only` | 화면을 생성하고 연결 설정을 저장한 뒤 종료 |
+| `python3 .scripts/bin/onboard_research.py --no-browser` | 브라우저 자동 열기 없이 실행 |
+
+기본 화면 주소는 `http://127.0.0.1:8765/100-views/paper-library.html`이다. HTML에서 연결된 에이전트와 준비 상태를 확인하고 **리뷰 시작**을 누르면 본인 계정의 에이전트가 해당 논문을 분석한다. 같은 저장소의 실행기가 이미 켜져 있으면 그 실행기에 연결한다. 다른 포트를 사용하려면 `--port 8766`처럼 지정한다.
+
+연결 파일 `.research-harness-agent.json`에는 에이전트 이름만 저장한다. 인증은 본인의 CLI가 관리하며 계정·토큰·API 키를 저장소에 복사하지 않는다. HTML 파일을 직접 열면 검색·필터·리뷰 보기를 사용할 수 있고, 새 리뷰 실행은 위 명령으로 연 로컬 화면에서 진행한다.
+
+### 다른 저장소에 설치
+
+빈 대상 저장소에 `papers` 프로필을 설치하면 스킬·템플릿·실행기·화면 생성기를 설치하고 사용자 에이전트를 자동 연결한다. 개인 논문·리뷰·JSON·인증 정보는 가져가지 않는다.
+
+```bash
+# 이 저장소 루트에서 실행. 대상 폴더는 미리 만든다.
+python3 .scripts/bin/install_research_harness.py /path/to/new-repo --profile papers --apply
+cd /path/to/new-repo
+python3 .scripts/bin/onboard_research.py
+```
+
+기본 설치 프로필 `skills`는 공통 스킬만 옮긴다. `--apply`를 생략하면 변경 계획만 표시하며, 기존 사용자 파일은 충돌로 보고하고 보존한다. 설치 후 CLI가 없거나 로그인하지 않았다면 준비를 마친 뒤 온보딩 명령을 다시 실행한다. 자세한 옵션은 [설치기 안내](docs/research-harness-installer.md)를 본다.
+
+검증 범위: 별도 사용자 HOME·빈 저장소·가짜 CLI의 설치/연결/빈 화면 생성과 회귀 검사 31개를 확인했다. 현재 환경의 실제 Codex 로그인·실행 옵션 검사도 통과했다. 새 계정 OAuth 로그인과 실제 Claude 모델 실행은 아직 미검증이다.
+
 ## 빠른 시작
 
 처음 설치한다면 **[노트북 온보딩 안내](docs/onboarding.md)**를 따라 Git·Python·에이전트 설치 → 로그인 → 저장소 받기 → 진단 → 첫 요청을 진행한다. 다른 프로젝트로 스킬을 옮기려면 [설치기 안내](docs/research-harness-installer.md)를 사용한다.
@@ -49,6 +102,8 @@ docs/Skill-Catalog.md  스킬 보기 전용 목록
 .codex/skills/graphify Graphify 정본을 가리키는 호환 링크
 90-Templates/paper/    review-template.md (심층) · triage-template.md (1차 판정)
 .scripts/bin/paper.py  arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
+.scripts/bin/onboard_research.py  사용자 에이전트 자동 연결·HTML 실행
+.scripts/bin/research_agent.py    Codex·Claude 감지·인증 확인·실행 어댑터
 .scripts/docs/search-protocol.md  논문 탐색 프로토콜
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 01-Papers/pdfs/        원문 PDF
@@ -58,6 +113,7 @@ docs/Skill-Catalog.md  스킬 보기 전용 목록
 01-Papers/library/     논문별 JSON 레코드
 03-Trends/daily/       일일 트렌드 다이제스트·예약 계획
 05-ideas/thought-experiments/  연구 아이디어 메모
+100-views/             하네스·논문·사고실험 HTML과 공통 디자인 자산
 ```
 
 ## 학습·연구 하네스

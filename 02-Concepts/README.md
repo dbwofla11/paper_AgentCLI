@@ -9,6 +9,9 @@
 - 논문 사실과 내 설명을 구분한다. 논문 수치·주장은 리뷰 또는 원문 위치를 링크한다.
 - 모르는 내용은 채우지 말고 `확인할 것`에 남긴다.
 - 새 공부노트는 [템플릿](../90-Templates/study-note-template.md)을 복사해 시작한다.
+- 개념 노트 생성·수정은 사용자가 명시적으로 요청할 때만 [concept-note 스킬](../.agents/skills/concept-note/SKILL.md)로 수행한다. 논문 리뷰의 자동 후속 작업으로 노트를 만들지 않는다.
+- 논문 리뷰 후 자동으로 생긴 개념 후보는 [Inbox](../00-Inbox/README.md)의 `concept-candidates/`에만 둔다. 사용자가 자신의 이해를 확인·수정하고 승격을 요청해야 이곳의 학습 정본이 된다.
+- 정본을 갱신한 뒤에는 `graphify_sync.py begin` → Graphify 스킬 `--update` → `complete`로 그래프 반영 여부를 추적한다.
 
 ## RF sensing 시작점
 

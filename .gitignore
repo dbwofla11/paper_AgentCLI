@@ -8,3 +8,7 @@ __pycache__/
 .claude/mcp-cache/
 .env
 .env.*
+
+# Per-user agent choice; authentication stays in the CLI credential store.
+.research-harness-agent.json
+.research-harness-agent.tmp

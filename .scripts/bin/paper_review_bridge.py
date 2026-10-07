@@ -16,6 +16,7 @@ import time
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
+import research_agent
 
 ROOT = Path(__file__).resolve().parents[2]
 LIBRARY = ROOT / "01-Papers/library"
@@ -124,6 +125,61 @@ def clone_review_workspace(destination: Path, pdf_path: Path) -> None:
     shutil.copy2(pdf_path, target)
 
 
+def review_command(stage: Path, last_message: Path, prompt: str) -> list[str]:
+    return research_agent.command("codex", stage, last_message, prompt)
+
+
+def runtime_status(requested: str | None = None) -> dict:
+    status = research_agent.resolve(ROOT, requested)
+    status["pdf_reader_ready"] = bool(shutil.which("pdftotext"))
+    status["ready"] = status["ready"] and status["pdf_reader_ready"]
+    if not status["pdf_reader_ready"]:
+        status["reason"] = "PDF 읽기 도구 pdftotext(Poppler) 설치가 필요합니다."
+    return status
+
+
+def publish_review_outputs(stage: Path, changed: set[str], live_before: dict,
+                           record_path: Path, review_path: Path) -> tuple[list[str], str]:
+    """Protect canonical edits; retry shared graph updates without losing a review."""
+    catalog_name = "100-views/paper-library.html"
+    source_name = record_path.relative_to(ROOT).as_posix()
+    state_path = stage / "graphify-out/sync-state.json"
+    state = json.loads(state_path.read_text()) if state_path.is_file() else {}
+    synced = state.get("sources", {}).get(source_name, {}).get("status") == "success"
+    candidates = [name for name in sorted(changed) if name != catalog_name
+                  and allowed_output(name, record_path, review_path) and (stage / name).is_file()]
+    conflicts = []
+    for name in candidates:
+        destination = ROOT / name
+        current = hashlib.sha256(destination.read_bytes()).hexdigest() if destination.is_file() else None
+        if current != live_before.get(name):
+            conflicts.append(name)
+    canonical_conflicts = [name for name in conflicts if not name.startswith("graphify-out/")]
+    if canonical_conflicts:
+        raise RuntimeError("live source files changed; review was not published: " + ", ".join(canonical_conflicts))
+    if any(name.startswith("graphify-out/") for name in conflicts):
+        synced = False
+    publish = [name for name in candidates if synced or not name.startswith("graphify-out/")]
+    for name in publish:
+        destination = ROOT / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(stage / name, destination)
+    if not synced:
+        result = subprocess.run([sys.executable, str(ROOT / ".scripts/bin/graphify_sync.py"),
+                                 "begin", "--source", source_name], cwd=ROOT, capture_output=True, text=True, check=False)
+        if result.returncode:
+            raise RuntimeError("review saved, but could not record pending graph sync: " + result.stderr[-1000:])
+        publish.append("graphify-out/sync-state.json")
+    # The staged workspace contains only the selected PDF. Regenerate against
+    # the live library so other papers retain their canonical local PDF links.
+    catalog = subprocess.run([sys.executable, str(ROOT / ".scripts/bin/paper_catalog_html.py")],
+                             cwd=ROOT, capture_output=True, text=True, check=False)
+    if catalog.returncode:
+        raise RuntimeError("review saved, but catalog regeneration failed: " + catalog.stderr[-1000:])
+    publish.append(catalog_name)
+    return publish, "success" if synced else "pending"
+
+
 def review_worker(job_id: str, slug: str, timeout: int) -> None:
     with LOCK:
         data = load_queue()
@@ -137,32 +193,36 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
         record_path, record = read_record(slug)
         pdf_path = safe_pdf(record)
         target = review_target(record)
-        if shutil.which("codex") is None or shutil.which("pdftotext") is None:
-            raise RuntimeError("Codex CLI or pdftotext is unavailable; no review was started")
+        agent = runtime_status(job.get("agent"))
+        if not agent["ready"]:
+            raise RuntimeError(agent["reason"])
         with tempfile.TemporaryDirectory(prefix=f"paper-review-{slug}-") as tmp:
             stage = Path(tmp) / "workspace"
             live_before = snapshot(ROOT)
             clone_review_workspace(stage, pdf_path)
             before = snapshot(stage)
+            reader_instruction = ("Use the bounded pdftotext fallback because the headless Codex worker has no Read pages tool; "
+                                  if agent["agent"] == "codex" else
+                                  "Use the Read tool with explicit PDF page ranges; stop if actual pages cannot be read; ")
             prompt = (
                 f"Use the installed paper-review skill to review exactly the paper with slug {slug}. "
-                f"Read its SKILL.md and review template. The repository PDF is {record.get('source', {}).get('pdf_path')}. "
-                "Use the bounded pdftotext fallback only because this headless Codex worker has no Read pages tool; "
+                f"Read AGENTS.md, its SKILL.md and review template. The repository PDF is {record.get('source', {}).get('pdf_path')}. "
+                + reader_instruction +
                 "read actual numbered PDF pages in chunks of at most 10. Do not use only the abstract. "
                 "Follow 3 passes, cite all factual claims and numbers, update only this paper's Markdown review, "
                 "its JSON record, 01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
-                "Do not modify any other paper, skill, script, PDF, or user configuration. If a required tool or source is missing, stop and report failure."
+                "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review."
             )
             last_message = Path(tmp) / "last-message.md"
             result = subprocess.run(
-                ["codex", "exec", "--cd", str(stage), "--sandbox", "workspace-write", "--ask-for-approval", "never", "--output-last-message", str(last_message), prompt],
-                capture_output=True, text=True, timeout=timeout, check=False,
+                research_agent.command(agent["agent"], stage, last_message, prompt),
+                cwd=stage, capture_output=True, text=True, timeout=timeout, check=False,
             )
             after = snapshot(stage)
             changed = {name for name in before.keys() | after.keys() if before.get(name) != after.get(name)}
             unexpected = sorted(name for name in changed if not allowed_output(name, record_path, target))
             if result.returncode != 0:
-                raise RuntimeError(f"codex exec exited {result.returncode}: {(result.stderr or result.stdout)[-3000:]}")
+                raise RuntimeError(f"{agent['agent']} worker exited {result.returncode}: {(result.stderr or result.stdout)[-3000:]}")
             if unexpected:
                 raise RuntimeError("staged worker changed files outside allowed outputs: " + ", ".join(unexpected[:20]))
             staged_record_path = stage / record_path.relative_to(ROOT)
@@ -197,43 +257,18 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
                 raise RuntimeError("catalog regeneration failed: " + catalog.stderr[-2000:])
             after = snapshot(stage)
             changed = {name for name in before.keys() | after.keys() if before.get(name) != after.get(name)}
-            publish = []
-            for name in sorted(changed):
-                source = stage / name
-                target_path = ROOT / name
-                if source.is_file() and allowed_output(name, record_path, target):
-                    publish.append((source, target_path))
-            source_name = record_path.relative_to(ROOT).as_posix()
-            sync_state_path = stage / "graphify-out/sync-state.json"
-            if not sync_state_path.is_file():
-                raise RuntimeError("Graphify sync state is missing")
-            sync_state = json.loads(sync_state_path.read_text(encoding="utf-8"))
-            source_state = sync_state.get("sources", {}).get(source_name, {})
-            if source_state.get("status") != "success":
-                raise RuntimeError("Graphify sync is not complete for this paper JSON")
             if "01-Papers/index.md" not in changed or "100-views/paper-library.html" not in changed:
                 raise RuntimeError("index or paper catalog was not regenerated")
-            conflicts = []
-            for source, destination in publish:
-                relative = destination.relative_to(ROOT).as_posix()
-                if destination.is_file():
-                    current = hashlib.sha256(destination.read_bytes()).hexdigest()
-                    if live_before.get(relative) != current:
-                        conflicts.append(relative)
-                elif live_before.get(relative) is not None:
-                    conflicts.append(relative)
-            if conflicts:
-                raise RuntimeError("live files changed while review was running; staged outputs were not published: " + ", ".join(conflicts))
-            for source, destination in publish:
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, destination)
+            publish, sync_status = publish_review_outputs(stage, changed, live_before, record_path, target)
         with LOCK:
             data = load_queue()
             job = next(item for item in data["jobs"] if item["job_id"] == job_id)
             job["status"] = "completed"
             job["completed_at"] = now()
-            job["changed_files"] = [str(path.relative_to(ROOT)) for _, path in publish]
-            job["message"] = "Review artifacts were validated in staging and published. Graphify sync passed."
+            job["changed_files"] = publish
+            job["graphify_sync"] = sync_status
+            job["message"] = ("리뷰 검증과 저장을 완료했습니다. 그래프 동기화도 완료했습니다." if sync_status == "success"
+                              else "리뷰 검증과 저장을 완료했습니다. 그래프 동기화는 재시도 대기 중입니다.")
             save_queue(data)
     except Exception as exc:  # preserve a retryable failure record for the UI
         with LOCK:
@@ -269,7 +304,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Location", "/100-views/" + name)
             self.end_headers()
         elif route == "/api/status":
-            self.send_json(200, {"ok": True, "ready": bool(shutil.which("codex") and shutil.which("pdftotext")), "runner": "codex-cli", "pdf_reader": "pdftotext", "max_parallel": MAX_JOBS, "queue": load_queue()})
+            status = runtime_status()
+            self.send_json(200, {"ok": True, "workspace_id": hashlib.sha256(str(ROOT.resolve()).encode()).hexdigest()[:16], **status, "runner": f"{status.get('agent')}-cli", "pdf_reader": "pdftotext", "max_parallel": MAX_JOBS, "queue": load_queue()})
         elif self.path.startswith("/api/reviews/"):
             slug = self.path.rsplit("/", 1)[-1]
             data = load_queue()
@@ -297,8 +333,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_json(409, {"error": "review is already complete"})
                 return
             safe_pdf(record)
-            if not shutil.which("codex") or not shutil.which("pdftotext"):
-                self.send_json(503, {"error": "Codex CLI and pdftotext are required"})
+            status = runtime_status()
+            if not status["ready"]:
+                self.send_json(503, {"error": status["reason"]})
                 return
             with LOCK:
                 data = load_queue()
@@ -306,7 +343,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     self.send_json(409, {"error": "another paper review is already active"})
                     return
                 job_id = hashlib.sha256(f"{slug}:{time.time_ns()}".encode()).hexdigest()[:16]
-                job = {"job_id": job_id, "slug": slug, "record": str((LIBRARY / f"{slug}.json").relative_to(ROOT)), "status": "queued", "created_at": now(), "message": "accepted"}
+                job = {"job_id": job_id, "slug": slug, "record": str((LIBRARY / f"{slug}.json").relative_to(ROOT)), "status": "queued", "agent": status["agent"], "created_at": now(), "message": "accepted"}
                 data["jobs"].append(job)
                 save_queue(data)
             threading.Thread(target=review_worker, args=(job_id, slug, self.server.review_timeout), daemon=True).start()

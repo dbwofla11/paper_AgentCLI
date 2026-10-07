@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 MANIFEST = ".research-harness-manifest.json"
 SKILL_ROOT = ROOT / ".agents/skills"
 MARKER = "<!-- managed-research-harness:start -->"
@@ -71,7 +71,15 @@ def load_manifest(path: Path) -> dict:
     return data
 
 
-def plan(target: Path, hosts: list[str], link_mode: str, conflict: str) -> tuple[list[dict], list[str]]:
+def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile: str = "skills") -> tuple[list[dict], list[str]]:
+    guidance = GUIDANCE
+    if profile == "papers":
+        guidance = GUIDANCE.replace(END_MARKER, """- Read `docs/Harness-Graph.md` and route each paper request through the installed skills.
+- Store PDFs/reviews/JSON in `01-Papers/pdfs/`, `reviews/`, and `library/`; JSON follows `.scripts/docs/paper-record.schema.json`.
+- Read actual PDF pages and cite source locations; do not complete a review from an abstract alone.
+- Study notes need explicit user promotion. Failed Graphify sync remains retryable pending.
+- Manage generated HTML in `100-views/`. Run `.scripts/bin/onboard_research.py` to connect this user's CLI.
+""" + END_MARKER)
     manifest = load_manifest(target)
     tracked = manifest["files"]
     operations: list[dict] = []
@@ -96,21 +104,33 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str) -> tuple
                     end = text.find(END_MARKER, start)
                     if end >= 0:
                         end += len(END_MARKER)
-                        merged = text[:start] + GUIDANCE.rstrip() + text[end:]
+                        merged = text[:start] + guidance.rstrip() + text[end:]
                     else:
-                        merged = text + "\n" + GUIDANCE
+                        merged = text + "\n" + guidance
                 else:
-                    merged = text.rstrip() + "\n\n" + GUIDANCE
+                    merged = text.rstrip() + "\n\n" + guidance
                 merged_bytes = merged.encode("utf-8")
                 operations.append({"action": "merge", "path": relative, "data": merged_bytes, "sha256": digest_bytes(merged_bytes)})
         else:
             operations.append({"action": "create", "path": relative, "data": data, "sha256": digest_bytes(data)})
 
-    add_file("docs/research-harness/README.md", README.encode())
-    add_file("docs/research-harness/routes.json", (json.dumps(ROUTES, ensure_ascii=False, indent=2) + "\n").encode())
-    add_file("AGENTS.md", GUIDANCE.encode())
+    add_file("docs/research-harness/README.md", (README + ("\nPapers profile: run `python3 .scripts/bin/onboard_research.py` to connect your CLI and launch the local paper UI.\n" if profile == "papers" else "")).encode())
+    add_file("docs/research-harness/routes.json", (json.dumps({**ROUTES, "paper_repository_routes": ".scripts/docs/research-workflow-map.json" if profile == "papers" else "not-installed"}, ensure_ascii=False, indent=2) + "\n").encode())
+    add_file("AGENTS.md", guidance.encode())
     add_file(".scripts/bin/install_research_harness.py", Path(__file__).read_bytes())
     add_file(".scripts/bin/research_harness_check.py", (ROOT / ".scripts/bin/research_harness_check.py").read_bytes())
+    if profile == "papers":
+        resources = []
+        for folder in (".scripts/bin", ".scripts/docs", "90-Templates/paper", "04-Projects/validation"):
+            resources.extend(p for p in (ROOT / folder).rglob("*") if p.is_file() and p.suffix in {".py", ".json", ".md"} and "__pycache__" not in p.parts)
+        resources.extend(ROOT / name for name in ("docs/onboarding.md", "docs/paper-review-bridge.md", "docs/Harness-Graph.md", "docs/Skill-Catalog.md", "docs/agent-research-todo.md", "docs/research-harness-installer.md", "100-views/assets/research-ui.css", "100-views/README.md", ".graphifyignore", "00-Inbox/concept-candidate-template.md", "03-Trends/daily/README.md"))
+        for source in resources:
+            relative = source.relative_to(ROOT).as_posix()
+            if not any(item["path"] == relative for item in operations):
+                add_file(relative, source.read_bytes())
+        for name in ("index", "keep", "favorites"):
+            add_file(f"01-Papers/{name}.md", f"# {name}\n\n".encode())
+        add_file("docs/research-harness/profile.json", b'{"profile":"papers"}\n')
     for skill_dir in sorted(p for p in SKILL_ROOT.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()):
         for source in sorted(p for p in skill_dir.rglob("*") if p.is_file()):
             rel = source.relative_to(ROOT / ".agents").as_posix()
@@ -211,6 +231,8 @@ def remove(target: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("target", type=Path)
+    parser.add_argument("--profile", choices=["skills", "papers"], default="skills")
+    parser.add_argument("--agent", choices=["auto", "codex", "claude"])
     parser.add_argument("--host", action="append", choices=["claude", "codex"], default=[])
     parser.add_argument("--link-mode", choices=["auto", "symlink", "copy"], default="auto")
     parser.add_argument("--conflict", choices=["preserve", "append"], default="preserve")
@@ -231,8 +253,8 @@ def main() -> int:
         result = __import__("subprocess").run([sys.executable, str(check)], capture_output=True, text=True, check=False)
         print(result.stdout + result.stderr, end="")
         return result.returncode
-    hosts = sorted(set(args.host))
-    operations, conflicts = plan(target, hosts, args.link_mode, args.conflict)
+    hosts = sorted(set(args.host or (["codex", "claude"] if args.profile == "papers" else [])))
+    operations, conflicts = plan(target, hosts, args.link_mode, args.conflict, args.profile)
     print(f"Target: {target}\nMode: {'apply' if args.apply else 'dry-run'}\nHosts: {', '.join(hosts) or 'common only'}")
     for item in operations:
         print(f"{item['action']:12} {item['path']}{' -> ' + item['target'] if item.get('target') else ''}")
@@ -241,6 +263,14 @@ def main() -> int:
     if args.apply:
         apply(target, operations, hosts)
         print(f"Manifest: {MANIFEST}")
+        if args.profile == "papers":
+            import subprocess
+            connect_command = [sys.executable, str(target / ".scripts/bin/onboard_research.py"), "--connect-only"]
+            if args.agent:
+                connect_command.extend(["--agent", args.agent])
+            result = subprocess.run(connect_command, cwd=target, check=False)
+            print("HTML 실행: python3 .scripts/bin/onboard_research.py")
+            return result.returncode
     else:
         print("Dry run only. Re-run with --apply to write files.")
     return 0

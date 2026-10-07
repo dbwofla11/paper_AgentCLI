@@ -27,8 +27,10 @@ def check(root: Path, host: str, with_mcp: bool = False,
     report(sys.version_info >= (3, 10), "Python 3.10 이상")
     for command in ("git", host):
         report(shutil.which(command) is not None, f"PATH에서 {command} 실행 파일 탐색")
+    portable_profile = (root / "docs/research-harness/profile.json").is_file()
     for relative in FILES + (("CLAUDE.md",) if host == "claude" else ()):
-        report((root / relative).is_file(), f"저장소 파일: {relative}")
+        optional = portable_profile and relative in {".codex/config.toml", ".mcp.json"} and not with_mcp
+        report((root / relative).is_file(), f"저장소 파일: {relative}", optional=optional)
     skills_root = root / ".agents/skills"
     names = sorted({*SKILLS, *(p.name for p in skills_root.iterdir()
                               if p.is_dir() or p.is_symlink())}) if skills_root.is_dir() else list(SKILLS)

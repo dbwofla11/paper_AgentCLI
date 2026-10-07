@@ -1,6 +1,9 @@
 import importlib.util
 import json
 import sys
+import subprocess
+import shutil
+from types import SimpleNamespace
 from unittest.mock import patch
 from html.parser import HTMLParser
 from urllib.parse import unquote, urlsplit
@@ -74,6 +77,88 @@ class ViewTests(unittest.TestCase):
             self.assertEqual(error.exception.code, 404)
         finally:
             server.shutdown(); server.server_close()
+
+    def test_review_post_launches_worker_and_prevents_duplicate_job(self):
+        done = threading.Event()
+        calls = []
+        def worker(job_id, slug, timeout):
+            calls.append((job_id, slug, timeout)); done.set()
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(review_bridge, "QUEUE", Path(directory) / "queue.json"), \
+                patch.object(review_bridge, "read_record", return_value=(ROOT / "01-Papers/library/example.json", {"slug": "example"})), \
+                patch.object(review_bridge, "safe_pdf", return_value=ROOT / "01-Papers/pdfs/other/example.pdf"), \
+                patch.object(review_bridge, "needs_review", return_value=True), \
+                patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "codex"}), \
+                patch.object(review_bridge, "review_worker", side_effect=worker):
+            server = ThreadingHTTPServer(("127.0.0.1", 0), review_bridge.Handler)
+            server.review_timeout = 123
+            thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            base = f"http://127.0.0.1:{server.server_port}"
+            try:
+                def request():
+                    return Request(base + "/api/reviews", data=b'{"slug":"example"}',
+                                   headers={"Content-Type": "application/json", "Origin": base}, method="POST")
+                with urlopen(request()) as response:
+                    self.assertEqual(response.status, 202)
+                    job = json.load(response)["job"]
+                self.assertTrue(done.wait(2))
+                self.assertEqual(calls, [(job["job_id"], "example", 123)])
+                with urlopen(base + "/api/reviews/example") as response:
+                    self.assertEqual(json.load(response)["jobs"][0]["job_id"], job["job_id"])
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(request())
+                self.assertEqual(error.exception.code, 409)
+            finally:
+                server.shutdown(); server.server_close()
+
+    def test_graph_conflict_preserves_review_and_defers_graph(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "live"; stage = Path(directory) / "stage"
+            record_name = "01-Papers/library/example.json"
+            review_name = "01-Papers/reviews/other/example.md"
+            graph_name = "graphify-out/graph.json"
+            for base, values in ((root, {record_name: "old record", graph_name: "old graph"}),
+                                 (stage, {record_name: "new record", review_name: "new review", graph_name: "staged graph"})):
+                for name, content in values.items():
+                    path = base / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(content)
+            state = stage / "graphify-out/sync-state.json"
+            state.write_text(json.dumps({"sources": {record_name: {"status": "success"}}}))
+            before = review_bridge.snapshot(root)
+            (root / graph_name).write_text("concurrent graph")
+            with patch.object(review_bridge, "ROOT", root), patch.object(review_bridge.subprocess, "run", return_value=SimpleNamespace(returncode=0, stderr="")) as run:
+                published, status = review_bridge.publish_review_outputs(stage, {record_name, review_name, graph_name, "graphify-out/sync-state.json"}, before, root / record_name, root / review_name)
+            self.assertEqual(status, "pending")
+            self.assertEqual((root / record_name).read_text(), "new record")
+            self.assertEqual((root / review_name).read_text(), "new review")
+            self.assertEqual((root / graph_name).read_text(), "concurrent graph")
+            self.assertIn("100-views/paper-library.html", published)
+            self.assertIn("--source", run.call_args_list[0].args[0])
+            self.assertEqual(run.call_args_list[-1].kwargs["cwd"], root)
+
+    def test_canonical_conflict_still_blocks_review_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "live"; stage = Path(directory) / "stage"
+            name = "01-Papers/library/example.json"
+            for base, content in ((root, "original"), (stage, "reviewed")):
+                path = base / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(content)
+            before = review_bridge.snapshot(root)
+            (root / name).write_text("user edit")
+            with patch.object(review_bridge, "ROOT", root), patch.object(review_bridge.subprocess, "run") as run:
+                with self.assertRaisesRegex(RuntimeError, "live source files changed"):
+                    review_bridge.publish_review_outputs(stage, {name}, before, root / name, root / "01-Papers/reviews/other/example.md")
+            self.assertEqual((root / name).read_text(), "user edit")
+            run.assert_not_called()
+
+    def test_review_command_parses_in_installed_codex(self):
+        command = review_bridge.review_command(Path("/tmp/review-stage"), Path("/tmp/review-last.md"), "review prompt")
+        self.assertIn("--skip-git-repo-check", command)
+        self.assertNotIn("--ask-for-approval", command)
+        self.assertIn('approval_policy="never"', command)
+        if not shutil.which("codex"):
+            self.skipTest("Codex CLI is unavailable")
+        # Help parses all supplied options without starting an agent.
+        result = subprocess.run(command + ["--help"], capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_review_publication_uses_new_catalog_path(self):
         record = ROOT / "01-Papers/library/example.json"

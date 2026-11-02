@@ -2,6 +2,8 @@
 """Fast structural checks for the local research harness; no network or writes."""
 from __future__ import annotations
 
+import argparse
+import re
 import subprocess
 import json
 import sys
@@ -39,6 +41,10 @@ REQUIRED = [
     ROOT / "04-Projects/validation/personas/repro-critic.md",
     ROOT / "04-Projects/validation/personas/novelty-critic.md",
     ROOT / "00-Inbox/concept-candidate-template.md",
+    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "idea-critic", "graph-extractor")),
+    ROOT / ".omp/config.example.yml",
+    ROOT / ".research-harness-agent.example.json",
+    ROOT / "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.example.md",
 ]
 CORE_SKILLS = (
     "paper-search", "paper-review", "review-index", "related-work",
@@ -52,7 +58,8 @@ def fail(message: str) -> int:
     return 1
 
 
-def main() -> int:
+def verify() -> int:
+    argparse.ArgumentParser(description=__doc__).parse_args()
     for path in REQUIRED:
         if not path.is_file():
             return fail(f"missing {path.relative_to(ROOT)}")
@@ -77,6 +84,64 @@ def main() -> int:
         if not (ROOT / ".agents/skills" / skill / "SKILL.md").is_file():
             return fail(f"missing installed skill {skill}")
     canonical_skills = ROOT / ".agents/skills"
+    skill_sources = sorted(p for p in canonical_skills.iterdir() if p.is_dir() and (p / "SKILL.md").is_file())
+    if len(skill_sources) != 16:
+        return fail(f"expected 16 shared skills, found {len(skill_sources)}")
+    agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    forbidden = re.compile(r"Read\(|`Read` 도구|WebSearch|WebFetch|spawn_agent|\.Codex/|CLAUDE\.md|\$[a-z]+(?:-[a-z]+)+|(?:^|[\s(`])/(?:paper|review|related|concept|keep|graphify|daily|thought|critical|math)[a-z-]*", re.MULTILINE)
+    for source in skill_sources:
+        if source.name not in agents_text:
+            return fail(f"AGENTS.md is missing skill {source.name}")
+        if source.name != "graphify" and forbidden.search((source / "SKILL.md").read_text(encoding="utf-8")):
+            return fail(f"host-specific pattern in {source.name}")
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    for entry in (".omp/config.yml", "*.local.md"):
+        if entry not in gitignore:
+            return fail(f".gitignore is missing {entry}")
+    agent_dir = ROOT / ".omp/agents"
+    for agent in sorted(agent_dir.glob("*.md")):
+        text = agent.read_text(encoding="utf-8")
+        if not re.search(rf"^name:\s*{re.escape(agent.stem)}\s*$", text, re.MULTILINE):
+            return fail(f"agent name does not match {agent.name}")
+        if re.search(r"^\s*(?:model|thinking-level):", text, re.MULTILINE):
+            return fail(f"agent specifies a model or thinking level: {agent.name}")
+    critic = (agent_dir / "idea-critic.md").read_text(encoding="utf-8")
+    if not re.search(r"^structured:\s*true\s*$", critic, re.MULTILINE):
+        return fail("idea-critic must be structured")
+    schema = json.loads((ROOT / "04-Projects/validation/critic-output.schema.json").read_text(encoding="utf-8"))
+    critic_block = re.search(r"(?ms)^    critic:\s*\n(.*?)(?=^    critique_markdown:)", critic)
+    if not critic_block:
+        return fail("idea-critic structured critic schema is missing")
+    block = critic_block.group(1)
+    required_match = re.search(r"(?m)^      required:\s*\[([^\]]*)\]", block)
+    if not required_match or [v.strip().strip("\"'") for v in required_match.group(1).split(",")] != schema["required"]:
+        return fail("idea-critic required fields differ from critic schema")
+    for field, definition in schema["properties"].items():
+        line = re.search(rf"(?m)^        {re.escape(field)}:\s*(.*)$", block)
+        if not line:
+            return fail(f"idea-critic schema is missing {field}")
+        for key in ("enum", "pattern"):
+            if key not in definition:
+                continue
+            if key == "enum":
+                value = re.search(r"enum:\s*\[([^\]]*)\]", line.group(1))
+                actual = [v.strip().strip("\"'") for v in value.group(1).split(",")] if value else None
+            else:
+                value = re.search(r"pattern:\s*['\"]([^'\"]+)['\"]", line.group(1))
+                actual = value.group(1) if value else None
+            if actual != definition[key]:
+                return fail(f"idea-critic {field} {key} differs from critic schema")
+    shared_files = [ROOT / "AGENTS.md"]
+    for name in ("CLAUDE.md", "README.md"):
+        path = ROOT / name
+        if path.exists() or not (ROOT / ".research-harness-manifest.json").is_file():
+            shared_files.append(path)
+    shared_files += [p for p in (ROOT / "docs").glob("*.md") if not p.name.startswith("lab-meeting")]
+    shared_files += list(agent_dir.glob("*.md")) + list((ROOT / ".scripts/bin").glob("*.py"))
+    model_ids = ("claude-" + "fable-5-1", "claude-" + "opus-5-5", "gpt-6-" + "astra")
+    for path in shared_files:
+        if ".example." not in path.name and any(value in path.read_text(encoding="utf-8") for value in model_ids):
+            return fail(f"personal model id in {path.relative_to(ROOT)}")
     def skill_connected(alias: Path, source: Path) -> bool:
         if alias.is_symlink():
             return alias.resolve(strict=False) == source.resolve()
@@ -86,17 +151,21 @@ def main() -> int:
             tracked = json.loads(manifest_path.read_text()).get("files", {}).get(alias.relative_to(ROOT).as_posix(), {})
             return tracked.get("kind") == "copy-tree" and digest_tree(alias) == digest_tree(source) == tracked.get("sha256")
         return False
-    claude_skills = ROOT / ".claude/skills"
-    for source in sorted(path for path in canonical_skills.iterdir() if path.is_dir()):
-        alias = claude_skills / source.name
-        if not skill_connected(alias, source):
-            return fail(f"Claude skill {source.name} must symlink to .agents/skills")
-    for alias in claude_skills.iterdir():
-        if alias.name not in {path.name for path in canonical_skills.iterdir() if path.is_dir()} and alias.name != "math-derivation":
-            return fail(f"unexpected Claude-only skill {alias.name}; keep shared skills in .agents/skills")
-    codex_graphify = ROOT / ".codex/skills/graphify"
-    if not skill_connected(codex_graphify, canonical_skills / "graphify"):
-        return fail(".codex/skills/graphify must symlink to the canonical .agents skill")
+    manifest_path = ROOT / ".research-harness-manifest.json"
+    installed_hosts = set(json.loads(manifest_path.read_text(encoding="utf-8")).get("hosts", [])) if manifest_path.is_file() else {"claude", "codex"}
+    if "claude" in installed_hosts:
+        claude_skills = ROOT / ".claude/skills"
+        for source in sorted(path for path in canonical_skills.iterdir() if path.is_dir()):
+            alias = claude_skills / source.name
+            if not skill_connected(alias, source):
+                return fail(f"Claude skill {source.name} must symlink to .agents/skills")
+        for alias in claude_skills.iterdir():
+            if alias.name not in {path.name for path in canonical_skills.iterdir() if path.is_dir()}:
+                return fail(f"unexpected Claude-only skill {alias.name}; keep shared skills in .agents/skills")
+    if "codex" in installed_hosts:
+        codex_graphify = ROOT / ".codex/skills/graphify"
+        if not skill_connected(codex_graphify, canonical_skills / "graphify"):
+            return fail(".codex/skills/graphify must symlink to the canonical .agents skill")
     daily_skill = (ROOT / ".agents/skills/daily-digest-loop/SKILL.md").read_text(encoding="utf-8")
     for required_text in ("multimodal", "09:00 KST", "채팅으로만", "학회"):
         if required_text not in daily_skill:
@@ -113,6 +182,7 @@ def main() -> int:
         "visualize": "graphify",
         "study-note": "concept-note",
         "concept-note": "concept-note",
+        "derive": "math-derivation",
     }
     for stage in expected:
         result = subprocess.run([sys.executable, str(workflow), stage, "--json"], check=False, capture_output=True, text=True)
@@ -150,6 +220,13 @@ def main() -> int:
                 return fail(f"{page.relative_to(ROOT)} is missing navigation to {target}")
     print("PASS: harness structure and workflow routing verified")
     return 0
+
+
+def main() -> int:
+    try:
+        return verify()
+    except FileNotFoundError as error:
+        return fail(f"missing {error.filename}")
 
 
 if __name__ == "__main__":

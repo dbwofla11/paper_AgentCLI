@@ -2,6 +2,7 @@
 """Build a searchable thought-experiment index from idea notes and run records."""
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import re
@@ -153,4 +154,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    argparse.ArgumentParser(description=__doc__).parse_args()
     main()

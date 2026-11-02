@@ -74,9 +74,10 @@ def skill_rows() -> str:
         rows.append(
             f'<tr><td><a href="{link(source.relative_to(ROOT).as_posix())}">{html.escape(skill.name)}</a></td>'
             f'<td>{"있음" if source.is_file() else "누락"}</td><td>{"연결됨" if claude_ok else "미연결"}</td>'
-            f'<td>{"연결됨" if expected_codex else "미연결"}</td></tr>'
+            f'<td>{"연결됨" if expected_codex else "미연결"}</td>'
+            f'<td>{"직접 탐색" if source.is_file() else "누락"}</td></tr>'
         )
-    return "\n".join(rows) or '<tr><td colspan="4">스킬 없음</td></tr>'
+    return "\n".join(rows) or '<tr><td colspan="5">스킬 없음</td></tr>'
 
 
 def main(run_tests: bool = True) -> None:
@@ -91,6 +92,10 @@ def main(run_tests: bool = True) -> None:
         f'<tr><td>{html.escape(p.stem)}</td><td><a href="{link(p.relative_to(ROOT).as_posix())}">열기</a></td></tr>'
         for p in sorted(PERSONAS.glob("*.md"))
     ) or '<tr><td colspan="2">필수 페르소나 없음</td></tr>'
+    agent_rows = "\n".join(
+        f'<tr><td>{html.escape(p.stem)}</td><td><a href="{link(p.relative_to(ROOT).as_posix())}">열기</a></td></tr>'
+        for p in sorted((ROOT / ".omp/agents").glob("*.md"))
+    ) or '<tr><td colspan="2">omp 에이전트 없음</td></tr>'
     sync_path = ROOT / "graphify-out/sync-state.json"
     sync_state = json.loads(sync_path.read_text(encoding="utf-8")) if sync_path.exists() else {"sources": {}}
     pending = sum(1 for item in sync_state.get("sources", {}).values() if item.get("status") == "pending")
@@ -104,7 +109,8 @@ body{{font:15px system-ui,sans-serif;margin:0;background:#f3f6f2;color:#1c2d24}}
 {guide_html()}
 <section><h2>하네스 구조 검사: <span class="state">{state}</span></h2><p>{html.escape(message)}</p><p>검증 재실행: <code>python3 .scripts/bin/verify_harness.py</code> · 대시보드 갱신: <code>python3 .scripts/bin/harness_dashboard.py</code></p></section>
 <section><h2>현재 라우팅</h2><p>세션 전역의 현재 단계는 따로 저장하지 않습니다. 각 요청이 선언한 단계를 아래 라우터로 연결합니다. 라우터 정본: <a href="{link('.scripts/bin/research_workflow.py')}">research_workflow.py</a> · <a href="{link('docs/Harness-Graph.md')}">Harness-Graph.md</a></p><div class="table-scroll"><table><thead><tr><th>요청 단계</th><th>다음 스킬</th><th>라우팅 이유</th></tr></thead><tbody>{route_rows()}</tbody></table></div></section>
-<section><h2>공통 스킬 정본 및 호스트 연결</h2><p>Codex는 .agents/skills 정본을 직접 탐색합니다. Codex 호환 미러의 미연결은 스킬 사용 불가를 뜻하지 않습니다.</p><div class="table-scroll"><table><thead><tr><th>스킬</th><th>.agents 정본</th><th>Claude 연결</th><th>Codex 호환 미러</th></tr></thead><tbody>{skill_rows()}</tbody></table></div></section>
+<section><h2>공통 스킬 정본 및 호스트 연결</h2><p>Codex와 omp는 .agents/skills 정본을 직접 탐색합니다. Codex 호환 미러의 미연결은 스킬 사용 불가를 뜻하지 않습니다.</p><div class="table-scroll"><table><thead><tr><th>스킬</th><th>.agents 정본</th><th>Claude 연결</th><th>Codex 호환 미러</th><th>omp</th></tr></thead><tbody>{skill_rows()}</tbody></table></div></section>
+<section><h2>omp 에이전트</h2><div class="table-scroll"><table><thead><tr><th>에이전트</th><th>정의</th></tr></thead><tbody>{agent_rows}</tbody></table></div></section>
 <section><h2>페르소나</h2><div class="table-scroll"><table><tbody>{persona_rows}</tbody></table></div></section>
 <section><h2>검증기와 테스트</h2><p>정적 하네스 검사: <b>{state}</b> — {html.escape(message)}</p><p>테스트 실행: <b>{tests}</b></p><details><summary>실행 기록 보기</summary><pre>{html.escape(test_message)}</pre></details><div class="table-scroll"><table><tbody>{validator_rows}</tbody></table></div><p><a href="{link('.scripts/tests/test_harness_tools.py')}">테스트 코드</a></p></section>
 <section><h2>Graphify 동기화</h2><p>{html.escape(sync_summary)}</p><p><code>graphify-out/sync-state.json</code> (로컬 생성 기록) · <a href="{link('.scripts/bin/graphify_sync.py')}">상태 명령</a></p></section>

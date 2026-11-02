@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build source-backed Notion reference pages and presentation diagrams (no network writes)."""
+import argparse
 from pathlib import Path
 import hashlib
 import html
@@ -215,4 +216,5 @@ def main():
 
 
 if __name__=='__main__':
+    argparse.ArgumentParser(description=__doc__).parse_args()
     main()

@@ -12,10 +12,11 @@
 - 대기 상태 점검: `python3 .scripts/bin/graphify_sync.py status`. 상태 원장은 `graphify-out/sync-state.json`이며, 미완료 항목은 같은 Graphify 업데이트를 재실행해 `complete` 처리한다.
 - 연구 단계별 다음 스킬 라우팅: [`bin/research_workflow.py`](bin/research_workflow.py)
 - 구조·라우팅·JSON 스모크 검사: [`bin/verify_harness.py`](bin/verify_harness.py)
-- 첫 사용 환경·스킬·선택 도구 진단: [`bin/onboarding_check.py`](bin/onboarding_check.py) — `--host codex|claude`, 선택적으로 `--with-mcp --with-graphify`; [온보딩 안내](../docs/onboarding.md).
+- 첫 사용 환경·스킬·선택 도구 진단: [`bin/onboarding_check.py`](bin/onboarding_check.py) — `--host codex|claude|omp`, 선택적으로 `--with-mcp --with-graphify`; 새 세션 폴더 준비는 `--create-dirs`. Windows에서는 `py -3`을 사용한다. [온보딩 안내](../docs/onboarding.md).
 - 논문 JSON 데이터 계약: [`docs/paper-record.schema.json`](docs/paper-record.schema.json)
 - 아이디어 분석 JSON 데이터 계약: [`docs/idea-analysis.schema.json`](docs/idea-analysis.schema.json)
 - 논문 탐색 프로토콜: [`docs/search-protocol.md`](docs/search-protocol.md)
+- 리뷰 연결·실행: `bin/onboard_research.py --agent codex|claude|omp`. 개인 런타임·Orca 선택은 `.research-harness-agent.json`에 둔다.
 
 검사는 저장소 루트에서 `python3 .scripts/bin/verify_harness.py`로 실행한다. CLI 회귀 검사는 `python3 -B -m unittest discover -s .scripts/tests -v`로 실행한다. 논문 JSON은 `paper_record.py validate`, 아이디어 JSON은 `idea_analysis.py validate`로 검사한다.
 

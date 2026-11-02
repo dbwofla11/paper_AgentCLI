@@ -111,15 +111,34 @@ class IdeaAnalysisTests(unittest.TestCase):
             idea_analysis.record_critic(self.analysis_path, "method", output)
 
     def test_graphify_sync_state_requires_begin_before_complete(self) -> None:
-        source = "01-Papers/library/2019-khalilsarai-wifi-multiband-phase-retrieval.json"
-        with patch("sys.argv", ["graphify_sync.py", "begin", "--source", source]), contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(0, graphify_sync.main())
-        state = json.loads(graphify_sync.STATE.read_text(encoding="utf-8"))
-        self.assertEqual("pending", state["sources"][source]["status"])
-        with patch("sys.argv", ["graphify_sync.py", "complete", "--source", source]), contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(0, graphify_sync.main())
-        state = json.loads(graphify_sync.STATE.read_text(encoding="utf-8"))
-        self.assertEqual("success", state["sources"][source]["status"])
+        source = "01-Papers/library/example.json"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            record = root / source
+            record.parent.mkdir(parents=True)
+            record.write_text('{"paper_id":"example"}\n', encoding="utf-8")
+            with patch.object(graphify_sync, "ROOT", root):
+                with patch("sys.argv", ["graphify_sync.py", "begin", "--source", source]), contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, graphify_sync.main())
+                state = json.loads(graphify_sync.STATE.read_text(encoding="utf-8"))
+                self.assertEqual("pending", state["sources"][source]["status"])
+                with patch("sys.argv", ["graphify_sync.py", "complete", "--source", source]), contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, graphify_sync.main())
+                state = json.loads(graphify_sync.STATE.read_text(encoding="utf-8"))
+                self.assertEqual("success", state["sources"][source]["status"])
+
+    def test_record_critic_accepts_stdin(self) -> None:
+        idea_analysis.freeze(self.analysis_path)
+        bundle_hash = idea_analysis.load(self.analysis_path)["evidence_bundle"]["sha256"]
+        critic = {
+            "status": "complete", "evidence_bundle_sha256": bundle_hash, "verdict": "conditional",
+            "fatal_flaws": [], "evidence_refs": ["arxiv:1234.5678 §1"],
+            "requests": ["Need more evidence"], "recommendation": "narrow",
+        }
+        with patch("sys.argv", ["idea_analysis.py", "record-critic", str(self.analysis_path), "method", "-"]), \
+                patch("sys.stdin", io.StringIO(json.dumps(critic))), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(0, idea_analysis.main())
+        self.assertEqual(critic, idea_analysis.load(self.analysis_path)["critics"]["method"])
 
 
 if __name__ == "__main__":

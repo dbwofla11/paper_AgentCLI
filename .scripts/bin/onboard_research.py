@@ -17,9 +17,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--agent', choices=('auto', 'codex', 'claude'), default=None)
+    parser.add_argument('--agent', choices=('auto', 'codex', 'claude', 'omp'), default=None)
     parser.add_argument('--check', action='store_true', help='read-only diagnosis; no login, writes, or server')
-    parser.add_argument('--connect-only', action='store_true')
+    parser.add_argument('--connect-only', action='store_true',
+                        help='create directories and local views, then connect without starting the server or browser')
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--port', type=int, default=8765)
     args = parser.parse_args()
@@ -38,7 +39,7 @@ def main() -> int:
         if generator == 'harness_dashboard.py': cli.append('--no-tests')
         subprocess.run(cli, cwd=ROOT, check=True)
     if status.get('installed') and not status['authenticated'] and sys.stdin.isatty():
-        login = [shutil.which(status['agent']), *(['login'] if status['agent'] == 'codex' else ['auth', 'login'])]
+        login = [shutil.which(status['agent']), *(['auth', 'login'] if status['agent'] == 'claude' else ['login'])]
         print('본인 계정으로 로그인하면 연결을 이어갑니다.', flush=True)
         subprocess.run(login, check=False)
     status = research_agent.connect(ROOT, args.agent)

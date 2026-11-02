@@ -22,14 +22,14 @@ python3 .scripts/bin/paper.py refs 1706.03762 --limit 30                  # 이 
 python3 .scripts/bin/paper.py cites 1706.03762 --limit 30                 # 이 논문을 인용한 문헌
 ```
 
-API가 막히거나 결과가 빈약하면 WebSearch → WebFetch로 보완한다. 허용된 도메인은 `.Codex/settings.json` 참고 (arXiv, Semantic Scholar, OpenAlex, OpenReview, ACL Anthology, PMLR, NeurIPS Proceedings, CVF, DBLP).
+API가 막히거나 결과가 빈약하면 웹 검색 후 URL 본문을 읽어 보완한다. 호스트별 도구는 AGENTS.md 어휘표를 따르고, 허용 도메인은 `.scripts/docs/search-protocol.md`를 참고한다.
 
 ## 검색 전략 (요약 — 상세는 `.scripts/docs/search-protocol.md`)
 
 1. **질의를 분해한다.** 사용자의 한 문장을 (a) 방법 용어, (b) 태스크·도메인 용어, (c) 동의어·이전 세대 용어로 나눈다. 분야 용어는 몇 년 단위로 바뀌므로 한 표현만 쓰면 놓친다.
 2. **영어로 검색한다.** 사용자가 한국어로 물어도 질의는 영어로 만든다.
 3. **최소 2개 소스**를 돌린다. arXiv는 최신·프리프린트에 강하고, Semantic Scholar는 인용수·피어리뷰 게재 정보에 강하다. S2가 429(rate limit)면 arXiv/OpenAlex로 수동 전환한다 — `search` 명령엔 자동 폴백이 없다.
-4. **앵커 논문에서 확장한다(스노우볼링).** 좋은 논문 1~3편을 찾으면 `refs`(후방)와 `cites`(전방)로 넓히는 게 키워드 검색보다 효율이 높다 — 용어가 달라졌거나 초록에 핵심어가 없는 논문은 여기서 잡힌다. 관련 연구 맵이 필요하면 `/related-work`로 넘긴다.
+4. **앵커 논문에서 확장한다(스노우볼링).** 좋은 논문 1~3편을 찾으면 `refs`(후방)와 `cites`(전방)로 넓히는 게 키워드 검색보다 효율이 높다 — 용어가 달라졌거나 초록에 핵심어가 없는 논문은 여기서 잡힌다. 관련 연구 맵이 필요하면 `related-work` 스킬로 넘긴다.
 5. **포화하면 멈춘다.** 새 질의·앵커를 돌려도 이미 나온 논문만 반복되면 그 방향은 종료한다.
 6. **한계를 보고한다.** 실제 사용한 질의·소스, 스노우볼링에 쓴 앵커, 검색이 특정 연도·용어에 치우친 지점을 결과와 함께 말한다. 빈약한 결과를 그럴듯하게 포장하지 않는다.
 

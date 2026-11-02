@@ -1,0 +1,22 @@
+# 개인 설정 예시: .omp/config.yml로 복사하여 편집한다. 해당 파일은 gitignore 대상이다.
+# 아래 설정은 모두 예시이며 사용할 항목만 주석을 해제한다.
+# modelRoles:
+#   paper-analysis: "anthropic/claude-fable-5-1:high,anthropic/claude-opus-5-5:high"
+#   paper-critique: "openai-codex/gpt-6-astra:high"
+#   graph-extraction: "anthropic/claude-opus-5-5:medium"
+# task:
+#   agentModelOverrides:
+#     paper-analyst: "@paper-analysis"
+#     paper-verifier: "@paper-critique"
+#     idea-critic: "@paper-critique"
+#     graph-extractor: "@graph-extraction"
+# retry:
+#   rateLimitWalksChain: true
+#   fallbackChains:
+#     anthropic/claude-fable-5-1:
+#       - anthropic/claude-opus-5-5:high
+#     paper-analysis:
+#       - anthropic/claude-opus-5-5:high
+#     paper-critique: []
+# contextFiles:
+#   extra: [AGENTS.local.md]

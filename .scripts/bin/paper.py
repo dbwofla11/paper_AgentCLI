@@ -7,7 +7,7 @@ Semantic Scholar는 무키 호출 시 rate limit(429)이 걸릴 수 있다.
 사용법:
     python scripts/paper.py search "query" [--source arxiv|s2|openalex] [--limit N]
     python scripts/paper.py meta <arxiv_id|doi|s2_id> [--bibtex]
-    python scripts/paper.py pdf  <arxiv_id> [--out papers/<category>]
+    python scripts/paper.py pdf  <arxiv_id> [--out 01-Papers/pdfs/<category>]
     python scripts/paper.py refs  <id> [--limit N]
     python scripts/paper.py cites <id> [--limit N]
 
@@ -367,8 +367,8 @@ def main() -> None:
 
     p = sub.add_parser("pdf", help="arXiv PDF 다운로드")
     p.add_argument("id")
-    p.add_argument("--out", default="papers/other",
-                   help="저장 폴더 (예: papers/wifi-csi; 기본값: papers/other)")
+    p.add_argument("--out", default="01-Papers/pdfs/other",
+                   help="저장 폴더 (예: 01-Papers/pdfs/wifi-csi; 기본값: 01-Papers/pdfs/other)")
 
     for cmd, helptext in (("refs", "이 논문이 인용한 문헌"), ("cites", "이 논문을 인용한 문헌")):
         p = sub.add_parser(cmd, help=helptext)

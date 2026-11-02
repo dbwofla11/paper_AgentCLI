@@ -36,7 +36,33 @@
           "updated_at": { "type": "string", "format": "date-time" },
           "logs": { "type": "array", "items": { "type": "object", "required": ["at", "event", "message"], "properties": { "at": { "type": "string", "format": "date-time" }, "event": { "type": "string" }, "message": { "type": "string" } } } },
           "partial_results": { "type": "array", "items": { "type": "string" } },
-          "dispatches": { "type": "array", "items": { "type": "object", "required": ["run_id", "provider", "agent", "worktree", "started_at", "workers"], "properties": { "run_id": { "type": "string" }, "provider": { "type": "string" }, "agent": { "type": "string" }, "worktree": { "type": "string" }, "started_at": { "type": "string", "format": "date-time" }, "synced_at": { "type": "string", "format": "date-time" }, "workers": { "type": "array", "items": { "type": "object", "required": ["role", "dispatch_id", "orca_task_id"], "properties": { "role": { "enum": ["solution_search", "reference_trace", "counterevidence", "evidence_verifier"] }, "dispatch_id": { "type": "string" }, "orca_task_id": { "type": "string" }, "depends_on": { "type": "array", "items": { "type": "string" } }, "observed_state": { "type": "string" }, "worker_state": { "type": "string" }, "outcome": { "type": ["string", "null"] } } } } } } }
+          "dispatches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["run_id", "provider", "agent", "worktree", "started_at", "workers"],
+              "properties": {
+                "run_id": { "type": "string" },
+                "provider": { "type": "string" },
+                "agent": { "type": "string" },
+                "models": { "type": "object", "properties": { "explorer": { "type": "string" }, "verifier": { "type": "string" } }, "additionalProperties": false },
+                "worktree": { "type": "string" },
+                "started_at": { "type": "string", "format": "date-time" },
+                "synced_at": { "type": "string", "format": "date-time" },
+                "state": { "enum": ["running", "failed", "uncertain"] },
+                "failure": {
+                  "type": "object",
+                  "required": ["role", "message", "response"],
+                  "properties": {
+                    "role": { "enum": ["solution_search", "reference_trace", "counterevidence", "evidence_verifier"] },
+                    "message": { "type": "string" },
+                    "response": {}
+                  }
+                },
+                "workers": { "type": "array", "items": { "type": "object", "required": ["role", "dispatch_id", "orca_task_id"], "properties": { "role": { "enum": ["solution_search", "reference_trace", "counterevidence", "evidence_verifier"] }, "dispatch_id": { "type": "string" }, "orca_task_id": { "type": "string" }, "depends_on": { "type": "array", "items": { "type": "string" } }, "observed_state": { "type": "string" }, "worker_state": { "type": "string" }, "outcome": { "type": ["string", "null"] } } } }
+              }
+            }
+          }
         }
       }
     }

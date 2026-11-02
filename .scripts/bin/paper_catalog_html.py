@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 import subprocess
@@ -256,7 +257,7 @@ async function startReview(p,statusNode,button){
   update("로컬 리뷰 실행기 연결 중…",true);
   try{
     const status=await reviewRequest("/api/status");
-    if(!["codex-cli","claude-cli"].includes(status.runner))throw new Error("리뷰 실행기가 아닌 주소입니다.");
+    if(!["codex-cli","claude-cli","omp-cli"].includes(status.runner))throw new Error("리뷰 실행기가 아닌 주소입니다.");
     if(!status.ready)throw new Error(status.reason||"에이전트 연결이 필요합니다. 온보딩 명령을 실행하세요.");
     const accepted=await reviewRequest("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:p.slug})});
     const job=accepted.job;
@@ -355,6 +356,7 @@ restoreActiveReviews();
 
 
 def main() -> None:
+    argparse.ArgumentParser(description=__doc__).parse_args()
     records = load_records()
     embedded = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
     embedded = embedded.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")

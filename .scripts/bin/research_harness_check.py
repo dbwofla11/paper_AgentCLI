@@ -2,6 +2,7 @@
 """Check installed harness files and skill entry points without writing anything."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -11,6 +12,7 @@ MANIFEST = ROOT / ".research-harness-manifest.json"
 
 
 def main() -> int:
+    argparse.ArgumentParser(description=__doc__).parse_args()
     if not MANIFEST.is_file():
         print("FAIL: installation manifest is missing")
         return 1
@@ -27,6 +29,8 @@ def main() -> int:
         if not (skill / "SKILL.md").is_file():
             failures.append(f"missing {skill.relative_to(ROOT)}/SKILL.md")
     for host in manifest.get("hosts", []):
+        if host == "omp":
+            continue
         host_root = ROOT / f".{host}/skills"
         for skill in skills:
             alias = host_root / skill.name
@@ -43,6 +47,8 @@ def main() -> int:
         if not (ROOT / path).is_file():
             failures.append(f"missing {path}")
     print(f"Skills: {len(skills)} · hosts: {', '.join(manifest.get('hosts', [])) or 'common only'}")
+    agents = ROOT / ".omp/agents"
+    print(f"omp agents: {', '.join(p.stem for p in sorted(agents.glob('*.md'))) if agents.is_dir() else 'not installed'}")
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")

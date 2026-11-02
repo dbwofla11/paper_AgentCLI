@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export the HTML slides to PNG and PDF; optional presentation tooling only."""
+import argparse
 from pathlib import Path
-from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[2]
 VIEWS = ROOT / '100-views/harness-flows'
@@ -9,6 +9,7 @@ ASSETS = VIEWS / 'assets'
 
 
 def main():
+    from playwright.sync_api import sync_playwright
     ASSETS.mkdir(exist_ok=True)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
@@ -24,4 +25,5 @@ def main():
 
 
 if __name__ == '__main__':
+    argparse.ArgumentParser(description=__doc__).parse_args()
     main()

@@ -10,7 +10,7 @@ Graphify는 관계 후보를 탐색하는 지도다. 그래프 경로만으로 �
 ## 자료와 탐색
 
 1. 대상 논문을 JSON paper ID, `01-Papers/index.md`, PDF, 리뷰와 대조한다. JSON이 아직 없으면 확인된 메타데이터만으로 먼저 만든다.
-2. 저장소 그래프가 있으면 `$graphify` 규칙에 따라 `graphify query`, `path`, `explain`으로 논문·주장·방법·데이터 관계 후보를 찾는다. 문서 변경 뒤 갱신할 때는 `graphify_sync.py begin` 후 Graphify 스킬 `.` `--update`를 실행한다. 단순 `graphify update .` CLI는 AST 변경만 반영할 수 있으므로 문서 의미 추출 완료로 취급하지 않는다.
+2. 저장소 그래프가 있으면 `graphify` 스킬 규칙에 따라 `graphify query`, `path`, `explain`으로 논문·주장·방법·데이터 관계 후보를 찾는다. 문서 변경 뒤 갱신할 때는 `graphify_sync.py begin` 후 Graphify 스킬 `.` `--update`를 실행한다. 단순 `graphify update .` CLI는 AST 변경만 반영할 수 있으므로 문서 의미 추출 완료로 취급하지 않는다.
 3. 각 후보의 논문 양쪽에서 PDF 원문과 인용을 확인한다. 필요하면 `.scripts/bin/paper.py refs <id>` 및 `cites <id>` 결과를 교차 확인한다.
 4. 확정 가능한 관계만 JSON `relationships`에 추가한다. 관계 유형은 `supports`, `contradicts`, `extends`, `compares`, `uses`, `cites`, `related_to` 중에서 고르고 `statement`와 출처 위치를 보존한다.
 5. Graphify만 제안했거나 한쪽 원문만 확인한 관계는 JSON에 확정 사실로 저장하지 않는다. 채팅에서는 `INFERRED` 또는 `AMBIGUOUS`로 표시하고 `[추론]` / `[확인 필요]`를 붙인다.

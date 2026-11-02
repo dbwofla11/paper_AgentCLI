@@ -13,6 +13,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import harness_common
+
 ROOT = Path(__file__).resolve().parents[2]
 QUEUE = ROOT / "04-Projects/research-todo/queue.json"
 SCHEMA = ROOT / ".scripts/docs/research-todo.schema.json"
@@ -168,13 +170,26 @@ def render_result(task: dict, data: dict) -> str:
     return "\n".join(lines)
 
 
+class OrcaCommandError(RuntimeError):
+    def __init__(self, message: str, payload: object = None):
+        super().__init__(message)
+        self.payload = payload
+
+
 def orca_json(args: list[str]) -> dict:
-    result = subprocess.run(["orca-ide", *args, "--json"], capture_output=True, text=True, timeout=30, check=False)
+    result = subprocess.run([harness_common.orca_executable(), *args, "--json"], capture_output=True, text=True, timeout=30, check=False)
     if result.returncode:
-        raise RuntimeError(f"Orca command failed ({result.returncode}): {(result.stderr or result.stdout)[-2000:]}")
+        if result.returncode == 1:
+            try:
+                failure = json.loads(result.stdout)
+            except (TypeError, json.JSONDecodeError):
+                pass
+            else:
+                raise OrcaCommandError(f"Orca command failed (1): {json.dumps(failure, ensure_ascii=False)}", failure)
+        raise OrcaCommandError(f"Orca command failed ({result.returncode}): {(result.stderr or result.stdout)[-2000:]}")
     envelope = json.loads(result.stdout)
     if envelope.get("ok") is False:
-        raise RuntimeError(f"Orca rejected request: {envelope.get('error', envelope)}")
+        raise OrcaCommandError(f"Orca rejected request: {envelope.get('error', envelope)}", envelope)
     return envelope.get("result", envelope)
 
 
@@ -213,12 +228,56 @@ def resolve_output(candidate: Path) -> Path:
 def result_file(task: dict) -> Path:
     return resolve_output(ROOT / task["result_path"])
 
+def failure_outcome(payload: object) -> str:
+    """Only an explicit failed outcome rules out an uncertain start."""
+    if isinstance(payload, dict):
+        for key in ("outcome", "status"):
+            if payload.get(key) == "outcome_unknown":
+                return "uncertain"
+        outcomes = [failure_outcome(value) for value in payload.values()]
+        if "uncertain" in outcomes:
+            return "uncertain"
+        if any(payload.get(key) == "failed" for key in ("outcome", "status")) or "failed" in outcomes:
+            return "failed"
+    elif isinstance(payload, list):
+        outcomes = [failure_outcome(value) for value in payload]
+        if "uncertain" in outcomes:
+            return "uncertain"
+        if "failed" in outcomes:
+            return "failed"
+    return ""
+
+
+def start_orca_worker(command: list[str], role: str, dispatch: dict, task: dict, queue: dict, queue_path: Path) -> tuple[str, str]:
+    try:
+        worker = orca_json(command)
+        dispatch_id = nested_id(worker, "dispatchId")
+        task_id = nested_id(worker, "taskId")
+        if not dispatch_id or not task_id:
+            raise OrcaCommandError(f"Orca did not return task and dispatch IDs for {role}", worker)
+        return dispatch_id, task_id
+    except Exception as exc:
+        payload = exc.payload if isinstance(exc, OrcaCommandError) else None
+        state = failure_outcome(payload) or "uncertain"
+        dispatch["state"] = state
+        dispatch["failure"] = {"role": role, "message": str(exc), "response": payload}
+        task["status"] = "failed" if state == "failed" else "needs_input"
+        task["updated_at"] = now()
+        task["logs"].append({
+            "at": now(), "event": "worker-start-error",
+            "message": f"{role}: {state}; inspect Run {dispatch['run_id']} and reconcile recorded workers and residual resources manually. {exc}",
+        })
+        persist_queue(queue_path, queue)
+        raise
+
+
+
 
 def dispatch_orca(task: dict, queue: dict, queue_path: Path) -> None:
     brief = (ROOT / task["idea_path"]).resolve()
     if not brief.is_relative_to(ROOT.resolve()) or not brief.is_file() or sha(brief) != task["brief_sha256"]:
         raise RuntimeError("frozen idea brief is missing or changed; register a new task for the updated brief")
-    if not shutil.which("orca-ide"):
+    if not shutil.which(harness_common.orca_executable()):
         raise RuntimeError("Orca IDE CLI is unavailable; task remains queued")
     status = orca_json(["status"])
     if status.get("runtime", {}).get("state") != "ready":
@@ -229,12 +288,21 @@ def dispatch_orca(task: dict, queue: dict, queue_path: Path) -> None:
         raise RuntimeError("Orca current worktree does not match this repository")
     if task["budget"].get("max_cost_usd", 0) > 0:
         raise RuntimeError("Orca CLI exposes no enforceable per-Run USD ceiling; set max_cost_usd to 0 (uncapped) or use an externally capped account")
+    cfg = harness_common.local_settings(ROOT).get("orca", {})
+    agent = cfg.get("agent", "codex")
+    explorer = harness_common.resolve_model(cfg.get("explorer_model"), ROOT)
+    verifier_model = harness_common.resolve_model(cfg.get("verifier_model"), ROOT)
+    effort = cfg.get("effort") if agent != "omp" else None
+    models = {role: model for role, model in (("explorer", explorer), ("verifier", verifier_model)) if model}
     run = orca_json(["orchestration", "run-create", "--objective", f"Literature investigation {task['task_id']}: {task['question']}"])
     run_id = nested_id(run, "runId") or nested_id(run, "id")
     if not run_id:
         raise RuntimeError("Orca created no identifiable Run")
     dispatches = []
-    task["dispatches"].append({"run_id": run_id, "provider": "orca-ide", "agent": "codex", "worktree": str(ROOT), "started_at": now(), "workers": dispatches})
+    dispatch = {"run_id": run_id, "provider": "orca", "agent": agent, "worktree": str(ROOT), "started_at": now(), "state": "running", "workers": dispatches}
+    if models:
+        dispatch["models"] = models
+    task["dispatches"].append(dispatch)
     task["status"] = "running"
     task["updated_at"] = now()
     task["attempts"] += 1
@@ -242,24 +310,27 @@ def dispatch_orca(task: dict, queue: dict, queue_path: Path) -> None:
     parallel = task["budget"].get("max_parallel", 3)
     explorer_task_ids = []
     for index, role in enumerate(("solution_search", "reference_trace", "counterevidence")):
-        command = ["orchestration", "worker-start", "--run", run_id, "--worktree", "current", "--agent", "codex", "--task-title", role]
+        command = ["orchestration", "worker-start", "--run", run_id, "--worktree", "current", "--agent", agent]
+        if explorer:
+            command += ["--model", explorer]
+            if effort:
+                command += ["--effort", effort]
+        command += ["--task-title", role]
         if index >= parallel:
             command += ["--deps", json.dumps(explorer_task_ids[-parallel:])]
         command += ["--spec", prompt_for(task, role)]
-        worker = orca_json(command)
-        dispatch_id = nested_id(worker, "dispatchId")
-        task_id = nested_id(worker, "taskId")
-        if not dispatch_id or not task_id:
-            raise RuntimeError(f"Orca did not return task and dispatch IDs for {role}; inspect Run {run_id}")
+        dispatch_id, task_id = start_orca_worker(command, role, dispatch, task, queue, queue_path)
         dispatches.append({"role": role, "dispatch_id": dispatch_id, "orca_task_id": task_id})
         explorer_task_ids.append(task_id)
         persist_queue(queue_path, queue)
     deps = json.dumps([item["orca_task_id"] for item in dispatches])
-    verifier = orca_json(["orchestration", "worker-start", "--run", run_id, "--worktree", "current", "--agent", "codex", "--task-title", "evidence_verifier", "--deps", deps, "--spec", prompt_for(task, "evidence_verifier")])
-    verifier_id = nested_id(verifier, "dispatchId")
-    verifier_task = nested_id(verifier, "taskId")
-    if not verifier_id or not verifier_task:
-        raise RuntimeError(f"Orca did not return verifier task and dispatch IDs; inspect Run {run_id}")
+    command = ["orchestration", "worker-start", "--run", run_id, "--worktree", "current", "--agent", agent]
+    if verifier_model:
+        command += ["--model", verifier_model]
+        if effort:
+            command += ["--effort", effort]
+    command += ["--task-title", "evidence_verifier", "--deps", deps, "--spec", prompt_for(task, "evidence_verifier")]
+    verifier_id, verifier_task = start_orca_worker(command, "evidence_verifier", dispatch, task, queue, queue_path)
     dispatches.append({"role": "evidence_verifier", "dispatch_id": verifier_id, "orca_task_id": verifier_task, "depends_on": [item["orca_task_id"] for item in dispatches]})
     persist_queue(queue_path, queue)
 
@@ -268,6 +339,22 @@ def sync_orca(task: dict) -> None:
     if not task.get("dispatches"):
         raise RuntimeError("no Orca dispatch recorded for this task")
     dispatch = task["dispatches"][-1]
+    if dispatch.get("state") in {"failed", "uncertain"}:
+        raise RuntimeError(
+            f"Orca dispatch is {dispatch['state']}; manually reconcile Run {dispatch['run_id']}, "
+            f"recorded workers {json.dumps(dispatch['workers'], ensure_ascii=False)}, "
+            f"and failure resources {json.dumps(dispatch.get('failure'), ensure_ascii=False)}"
+        )
+    roles = [worker.get("role") for worker in dispatch["workers"]]
+    dispatch_ids = [worker.get("dispatch_id") for worker in dispatch["workers"]]
+    task_ids = [worker.get("orca_task_id") for worker in dispatch["workers"]]
+    if (len(roles) != len(ROLES) or set(roles) != set(ROLES)
+            or not all(dispatch_ids) or len(set(dispatch_ids)) != len(ROLES)
+            or not all(task_ids) or len(set(task_ids)) != len(ROLES)):
+        raise RuntimeError(
+            f"Orca dispatch has an incomplete or duplicate role inventory {roles}; "
+            f"manually reconcile Run {dispatch['run_id']} and its residual workers"
+        )
     result = orca_json(["orchestration", "worker-list", "--run", dispatch["run_id"], "--limit", "100"])
     workers = result.get("workers", [])
     by_id = {item.get("dispatchId"): item for item in workers}

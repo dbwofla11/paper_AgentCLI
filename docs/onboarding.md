@@ -4,13 +4,13 @@
 
 ## 1. 무엇을 설치하는가
 
-하네스(harness)는 에이전트가 따라야 할 규칙, 작업별 스킬, 단계 안내, 결과 저장 경로, 검사 도구를 묶은 것이다. 모델 실행은 Codex 또는 Claude Code가 담당한다. **둘 중 하나만 설치해도 시작할 수 있다.** 이 저장소를 clone하면 공통 스킬은 `.agents/skills/`에 들어오므로 처음부터 스킬별 설치를 반복할 필요가 없다.
+하네스(harness)는 에이전트가 따라야 할 규칙, 작업별 스킬, 단계 안내, 결과 저장 경로, 검사 도구를 묶은 것이다. 모델 실행은 Codex, Claude Code 또는 omp가 담당한다. **셋 중 하나만 설치해도 시작할 수 있다.** 이 저장소를 clone하면 공통 스킬은 `.agents/skills/`에 들어온다.
 
 | 구성 | 필요한 시점 | 확인 방법 |
 |---|---|---|
 | Git | 저장소 받기·업데이트 | `git --version` |
 | Python 3.10 이상 | 저장소 CLI·검사 도구 | `python3 --version` |
-| Codex 또는 Claude Code + 사용 가능한 계정 | 에이전트 실행 | `codex --version` 또는 `claude --version` |
+| Codex, Claude Code 또는 omp + 사용 가능한 계정 | 에이전트 실행 | `codex --version`, `claude --version` 또는 `omp --version` |
 | 인터넷 | 로그인·모델 응답·논문 검색/다운로드 | 첫 요청과 검색으로 확인 |
 | uv / uvx | 논문 MCP 서버, Graphify 설치 | `uv --version`, `uvx --version` |
 | Node.js / npx | 선택 기능 llmwiki MCP | `npx --version` |
@@ -54,17 +54,17 @@ cd paper_AgentCLI
 python3 .scripts/bin/onboard_research.py
 ```
 
-설치된 Codex·Claude의 로그인과 비대화형 실행 옵션을 검사하고, 준비된 에이전트를 자동으로 선택한다. 기존 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 명령을 자동으로 시작하고, 로그인 뒤 연결을 이어간다. 연결한 에이전트로 로컬 리뷰 서버를 시작하고 라이브러리를 브라우저에서 연다.
+설치된 Codex·Claude·omp의 준비 상태를 검사하고 자동 선택한다. 순서는 Codex → Claude → omp이며 기존 연결이 있으면 그 선택을 유지한다. CLI 로그인 안내 뒤 로컬 리뷰 서버를 시작하고 라이브러리를 브라우저에서 연다.
 
-연결 파일 `.research-harness-agent.json`에는 에이전트 이름만 저장한다. 본인의 CLI 인증을 그대로 사용하며 계정·토큰·실행 파일 절대 경로를 다른 사용자에게 복사하지 않는다. HTML에 연결한 에이전트와 준비 상태가 표시된다. CLI가 없으면 아래 설치 안내를 따른다. OAuth 로그인에는 본인의 브라우저 인증이 필요하다.
+연결 파일 `.research-harness-agent.json`은 개인 에이전트 선택과 선택적인 Orca 설정을 보관한다. 인증 정보는 보관하지 않는다. `.research-harness-agent.example.json`, `.omp/config.example.yml`, `AGENTS.local.example.md`의 로컬 사본을 만드는 방법은 [AGENTS.md](../AGENTS.md#개인-설정과-로컬-덮어쓰기)를 따른다.
 
 ```bash
-python3 .scripts/bin/onboard_research.py --agent claude  # 직접 선택
+python3 .scripts/bin/onboard_research.py --agent claude  # Codex: --agent codex, omp: --agent omp
 python3 .scripts/bin/onboard_research.py --check         # 읽기 전용 진단
-python3 .scripts/bin/onboard_research.py --connect-only  # 연결 설정만 저장
+python3 .scripts/bin/onboard_research.py --connect-only  # 디렉터리·화면 생성과 연결 설정 후 종료
 ```
 
-Python 3.10+, Poppler의 `pdftotext`가 필요하다. Claude 자동 리뷰는 `--restricted` 지원 버전과 OS 샌드박스를 사용한다. Linux/WSL은 bubblewrap·socat, macOS는 sandbox-exec를 검사한다. 준비되지 않은 환경은 연결 실패 원인을 표시한다. Windows의 Claude 사용자는 WSL에서 이 흐름을 실행한다.
+Python 3.10+, Poppler의 `pdftotext`가 필요하다. Claude 자동 리뷰는 `--restricted` 지원 버전과 OS 샌드박스를 사용한다. Linux/WSL은 bubblewrap·socat, macOS는 sandbox-exec를 검사한다. omp에는 OS 샌드박스 검사가 없으며 임시 작업 복사본을 사용한다. 준비되지 않은 환경은 연결 실패 원인을 표시한다.
 
 구현 근거: [Codex 비대화형 실행](https://learn.chatgpt.com/docs/non-interactive-mode), [Codex 인증](https://learn.chatgpt.com/docs/auth), [Claude CLI·인증 명령](https://code.claude.com/docs/en/cli-reference), [Claude 비대화형 실행](https://code.claude.com/docs/en/headless).
 
@@ -103,6 +103,10 @@ claude
 
 첫 실행의 로그인 안내를 따른다. `CLAUDE.md`가 공통 규칙을 연결하고 `.claude/skills/`가 공통 스킬을 노출한다. [공식 Claude Code quickstart](https://code.claude.com/docs/en/quickstart).
 
+### 경로 C — omp
+
+omp CLI를 설치한 뒤 저장소 루트에서 `omp --version`, `omp login`, `omp models --json`으로 실행·로그인과 사용 가능한 모델을 확인한다. `omp`로 대화형 세션을 시작한다. 모델 역할과 하위 에이전트 선호는 `.omp/config.example.yml`을 복사한 개인 `.omp/config.yml`에서 설정한다.
+
 ## 5. 환경과 하네스 검사
 
 ```bash
@@ -110,7 +114,7 @@ python3 -B .scripts/bin/onboarding_check.py --host codex
 python3 -B .scripts/bin/verify_harness.py
 ```
 
-Claude를 선택했다면 첫 명령의 `--host codex`를 `--host claude`로 바꾼다. 첫 검사는 에이전트 실행 파일, 필수 문서·CLI, 공통 스킬, Claude 진입점, 개인 절대 경로, 선택 도구를 읽기 전용으로 확인한다. `FAIL`은 필수 항목 누락이며 종료 코드가 1이다. `WARN`은 선택 기능 준비가 덜 된 상태다. 비밀값은 출력하지 않는다. 두 번째 검사는 저장소 구조·라우팅·논문 JSON 계약을 검사한다. **검사 통과만으로 로그인·MCP 연결·논문 리뷰 품질이 검증되는 것은 아니다.**
+Claude 또는 omp를 선택했다면 첫 명령을 각각 `--host claude` 또는 `--host omp`로 바꾼다. 새 세션에서 필요한 폴더도 준비하려면 `python3 .scripts/bin/onboarding_check.py --create-dirs`를 사용한다(Windows: `py -3 .scripts/bin/onboarding_check.py --create-dirs`). 첫 검사는 환경과 선택 도구를 확인한다. `FAIL`은 필수 항목 누락, `WARN`은 선택 기능 미준비다. 비밀값은 출력하지 않는다. 두 번째 검사는 저장소 구조·라우팅·논문 JSON 계약을 검사한다. **검사 통과만으로 로그인·MCP 연결·논문 리뷰 품질이 검증되는 것은 아니다.**
 
 `research_harness_check.py`는 다른 저장소에 설치기가 만든 manifest를 검사한다. 이 저장소의 첫 실행 진단에는 위 명령을 사용한다. 여기에서 설치 manifest가 없다는 오류가 나는 것은 설치기를 자기 저장소에 실행하라는 뜻이 아니다.
 
@@ -122,7 +126,7 @@ Claude를 선택했다면 첫 명령의 `--host codex`를 `--host claude`로 바
 codex
 ```
 
-Claude라면 `claude`를 실행한다. Codex는 신뢰한 프로젝트의 `.codex/config.toml`을 읽으므로 첫 실행 시 프로젝트 내용과 설정을 확인하고 신뢰 여부를 선택한다. 기존 공통 규칙이 있으므로 `/init`으로 새 규칙을 만들 필요는 없다. [공식 설정 안내](https://learn.chatgpt.com/docs/config-file/config-basic).
+Claude라면 `claude`, omp라면 `omp`를 실행한다. Codex는 신뢰한 프로젝트의 `.codex/config.toml`을 읽으므로 첫 실행 시 프로젝트 내용과 설정을 확인하고 신뢰 여부를 선택한다. 기존 공통 규칙이 있으므로 `/init`으로 새 규칙을 만들 필요는 없다. [공식 설정 안내](https://learn.chatgpt.com/docs/config-file/config-basic).
 
 **첫 채팅 — 파일 쓰기 없이 지침 확인:**
 
@@ -160,13 +164,13 @@ arXiv 1706.03762를 paper-search로 수집해서 Keep과 논문 JSON에 등록�
 리뷰 뒤 review-index와 Graphify 동기화 상태를 확인해줘.
 ```
 
-Codex에서는 `$paper-search`, `$paper-review`로 명시할 수도 있고, Claude에서는 `/paper-search`, `/paper-review`를 사용할 수 있다. 자연어 요청도 가능하다. 이 표기는 에이전트 입력란에서 사용하며 셸 명령이 아니다.
+Codex에서는 `$paper-search`, Claude에서는 `/paper-search`, omp에서는 `/skill:paper-search`로 명시할 수 있다. 자연어 요청도 가능하다. 이 표기는 에이전트 입력란에서 사용하며 셸 명령이 아니다.
 
 원문을 구간별로 읽는지, 수치마다 위치를 붙이는지, 결과가 `01-Papers/pdfs/{category}/`, `reviews/{category}/`, `library/{slug}.json`, `keep.md`, `index.md`에 연결되는지 확인한다. 실행 환경에 PDF 페이지 읽기 도구가 없다면 그 문제부터 해결하고, 읽지 않은 논문을 완료 처리하지 않는다. 공부노트 승격은 사용자가 이해를 확인하고 명시적으로 요청한 뒤 진행한다.
 
 ## 7. MCP와 Graphify 확장
 
-MCP(Model Context Protocol)는 검색·원문 조회 같은 외부 도구 연결이다. Claude 설정은 `.mcp.json`, Codex 설정은 `.codex/config.toml`에 있다. **한쪽만 고쳐서는 다른 에이전트 설정이 바뀌지 않는다.**
+MCP(Model Context Protocol)는 검색·원문 조회 같은 외부 도구 연결이다. Claude 설정은 `.mcp.json`, Codex 설정은 `.codex/config.toml`에 있다. omp는 두 프로젝트 설정을 가져온다. 한쪽 설정을 고쳐도 다른 설정 파일이 바뀌지는 않는다.
 
 uv 설치 후 새 터미널에서 확인한다. [uv 공식 설치 안내](https://docs.astral.sh/uv/getting-started/installation/).
 

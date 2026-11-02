@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Serve local paper catalog and queue one-paper review jobs to a fixed Codex adapter."""
+"""Serve the local paper catalog and queue one-paper reviews to a selected CLI."""
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import http.server
 import json
@@ -95,38 +96,120 @@ def allowed_output(name: str, record_path: Path, review_path: Path) -> bool:
     return name in {record_name, review_name, "01-Papers/index.md", "100-views/paper-library.html"} or name.startswith("graphify-out/") or name.startswith("00-Inbox/concept-candidates/")
 
 
+STAGING_IGNORES = (".git", "__pycache__", "*.pyc", "pdfs", ".mcp.json",
+                   ".env", ".env.*", ".claude", ".codex", ".secrets",
+                   "credentials.json", "node_modules", ".cache",
+                   ".research-harness-agent.json", ".research-harness-agent.tmp")
+
+
+def staging_inventory(root: Path) -> set[Path]:
+    """List safe files, including graph artifacts and permitted local settings."""
+    def allowed(relative: Path) -> bool:
+        return all(not any(fnmatch.fnmatchcase(part, pattern) for pattern in STAGING_IGNORES)
+                   for part in relative.parts)
+
+    paths: set[Path] = set()
+    def collect_tree(start: Path) -> None:
+        if start.is_symlink():
+            paths.add(start.relative_to(root))
+            return
+        for directory, dirs, files in os.walk(start):
+            base = Path(directory)
+            dirs[:] = [name for name in dirs if allowed((base / name).relative_to(root))]
+            paths.update((base / name).relative_to(root) for name in files)
+            paths.update((base / name).relative_to(root) for name in dirs if (base / name).is_symlink())
+
+    error_message = "Git 제외 규칙을 확인하지 못해 리뷰 작업공간을 만들지 않았습니다"
+    resolved_root = root.resolve()
+    has_git_marker = any(os.path.lexists(directory / ".git")
+                         for directory in (resolved_root, *resolved_root.parents))
+    git_env = os.environ.copy()
+    git_env["LC_ALL"] = "C"
+    for name in ("LANGUAGE", "GIT_DIR", "GIT_WORK_TREE"):
+        git_env.pop(name, None)
+    try:
+        context = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, check=False, env=git_env,
+        )
+    except OSError as exc:
+        if has_git_marker:
+            raise RuntimeError(error_message) from exc
+        in_worktree = False
+    else:
+        if context.returncode == 0 and context.stdout.strip() == b"true":
+            in_worktree = True
+        elif context.returncode != 0 and not has_git_marker:
+            in_worktree = False
+        else:
+            raise RuntimeError(error_message + " (지원하지 않거나 확인할 수 없는 Git 경로입니다)")
+
+    if in_worktree:
+        try:
+            listing = subprocess.run(
+                ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                capture_output=True, check=False, env=git_env,
+            )
+        except OSError as exc:
+            raise RuntimeError(error_message) from exc
+        if listing.returncode != 0:
+            raise RuntimeError(error_message)
+        paths.update(Path(os.fsdecode(name)) for name in listing.stdout.split(b"\0") if name)
+        paths.add(Path(".omp/config.yml"))
+        for directory in (root, root / "04-Projects/thought-experiment-runs"):
+            if directory.is_dir():
+                paths.update(path.relative_to(root) for path in directory.glob("*.local.md"))
+        collect_tree(root / "graphify-out")
+    else:
+        collect_tree(root)
+
+    safe = set()
+    for relative in paths:
+        if relative.is_absolute() or ".." in relative.parts or not allowed(relative):
+            continue
+        path = root / relative
+        if not os.path.lexists(path):
+            continue
+        if path.is_symlink() and os.path.isabs(os.readlink(path)):
+            continue
+        try:
+            path.resolve(strict=False).relative_to(resolved_root)
+        except (ValueError, OSError, RuntimeError):
+            continue
+        safe.add(relative)
+    return safe
+
+
 def snapshot(root: Path) -> dict[str, str]:
     result = {}
-    for path in root.rglob("*"):
-        if not path.is_file() or ".git" in path.parts or "__pycache__" in path.parts:
-            continue
-        relative = path.relative_to(root).as_posix()
-        if relative.startswith("01-Papers/pdfs/"):
-            continue
+    for relative in staging_inventory(root):
+        path = root / relative
         if path.is_symlink():
-            result[relative] = "symlink:" + os.readlink(path)
-        else:
-            result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            result[relative.as_posix()] = "symlink:" + os.readlink(path)
+        elif path.is_file():
+            result[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     return result
 
 
 def clone_review_workspace(destination: Path, pdf_path: Path) -> None:
-    ignored = shutil.ignore_patterns(".git", "__pycache__", "*.pyc", "pdfs", ".mcp.json", ".env", ".env.*", ".claude", ".codex", ".secrets", "credentials.json")
-    shutil.copytree(ROOT, destination, ignore=ignored, symlinks=True, dirs_exist_ok=True)
-    for link in list(destination.rglob("*")):
-        if link.is_symlink():
-            try:
-                link.resolve(strict=False).relative_to(destination.resolve())
-            except ValueError:
-                link.unlink()
+    for relative in staging_inventory(ROOT):
+        source = ROOT / relative
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_symlink():
+            target.symlink_to(os.readlink(source))
+        elif source.is_file():
+            shutil.copy2(source, target)
     relative = pdf_path.relative_to(ROOT)
     target = destination / relative
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(pdf_path, target)
 
 
-def review_command(stage: Path, last_message: Path, prompt: str) -> list[str]:
-    return research_agent.command("codex", stage, last_message, prompt)
+def review_command(stage: Path, last_message: Path, prompt: str, selected: str = "codex", *,
+                   timeout_seconds: int | None = None, root: Path | None = None) -> list[str]:
+    return research_agent.command(selected, stage, last_message, prompt,
+                                  timeout_seconds=timeout_seconds, root=root)
 
 
 def runtime_status(requested: str | None = None) -> dict:
@@ -201,22 +284,21 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             live_before = snapshot(ROOT)
             clone_review_workspace(stage, pdf_path)
             before = snapshot(stage)
-            reader_instruction = ("Use the bounded pdftotext fallback because the headless Codex worker has no Read pages tool; "
-                                  if agent["agent"] == "codex" else
-                                  "Use the Read tool with explicit PDF page ranges; stop if actual pages cannot be read; ")
             prompt = (
                 f"Use the installed paper-review skill to review exactly the paper with slug {slug}. "
                 f"Read AGENTS.md, its SKILL.md and review template. The repository PDF is {record.get('source', {}).get('pdf_path')}. "
-                + reader_instruction +
-                "read actual numbered PDF pages in chunks of at most 10. Do not use only the abstract. "
+                "Read actual numbered PDF pages using pdftotext or a host page-bounded PDF tool, "
+                "in ranges of at most 10 pages; record the pages actually read in the review. "
+                "Stop if actual pages cannot be read or extracted text is empty. Do not use only the abstract. "
                 "Follow 3 passes, cite all factual claims and numbers, update only this paper's Markdown review, "
                 "its JSON record, 01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
                 "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review."
             )
             last_message = Path(tmp) / "last-message.md"
             result = subprocess.run(
-                research_agent.command(agent["agent"], stage, last_message, prompt),
-                cwd=stage, capture_output=True, text=True, timeout=timeout, check=False,
+                review_command(stage, last_message, prompt, agent["agent"], timeout_seconds=timeout),
+                cwd=stage, capture_output=True, text=True,
+                timeout=timeout + 60 if agent["agent"] == "omp" else timeout, check=False,
             )
             after = snapshot(stage)
             changed = {name for name in before.keys() | after.keys() if before.get(name) != after.get(name)}
@@ -305,7 +387,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
         elif route == "/api/status":
             status = runtime_status()
-            self.send_json(200, {"ok": True, "workspace_id": hashlib.sha256(str(ROOT.resolve()).encode()).hexdigest()[:16], **status, "runner": f"{status.get('agent')}-cli", "pdf_reader": "pdftotext", "max_parallel": MAX_JOBS, "queue": load_queue()})
+            self.send_json(200, {"ok": True, "workspace_id": hashlib.sha256(str(ROOT.resolve()).encode()).hexdigest()[:16], **status, "runner": research_agent.RUNNERS.get(status.get("agent")), "pdf_reader": "pdftotext", "max_parallel": MAX_JOBS, "queue": load_queue()})
         elif self.path.startswith("/api/reviews/"):
             slug = self.path.rsplit("/", 1)[-1]
             data = load_queue()

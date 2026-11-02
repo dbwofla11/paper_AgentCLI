@@ -19,6 +19,7 @@ WORKFLOW = {
     "concept": {"next": "thought-experiment-critique", "reason": "공부·문헌 결과를 반증 가능한 가설로 점검한다."},
     "study-note": {"next": "concept-note", "reason": "사용자가 요청한 개념 공부노트를 생성·수정한다."},
     "concept-note": {"next": "concept-note", "reason": "사용자가 요청한 개념 공부노트를 생성·수정한다."},
+    "derive": {"next": "math-derivation", "reason": "수식의 가정과 생략된 유도 단계를 확인한다."},
     "idea": {"next": "critical-validation", "reason": "아이디어의 방법·재현성·새로움을 독립 심사한다."},
     "experiment": {"next": "thought-experiment-runner", "reason": "승인된 가설을 작은 manifest 기반 실행으로 전환한다."},
     "draft": {"next": "paper-draft-logic-review", "reason": "논문 초안의 주장·근거·한계 연결을 검토한다."},

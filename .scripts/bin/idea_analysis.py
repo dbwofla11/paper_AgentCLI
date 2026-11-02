@@ -10,18 +10,14 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+from harness_common import sha256_file, write_json_atomic
 
 ROOT = Path(__file__).resolve().parents[2]
 ROLES = ("method", "repro", "novelty")
 SCHEMA = ROOT / ".scripts/docs/idea-analysis.schema.json"
 
 
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+sha256 = sha256_file
 
 
 def empty_critic(bundle_hash: str | None = None) -> dict[str, Any]:
@@ -33,7 +29,7 @@ def empty_critic(bundle_hash: str | None = None) -> dict[str, Any]:
 
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(path, payload)
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -270,12 +266,14 @@ def validate(path: Path) -> list[str]:
     return errors
 
 
-def record_critic(analysis_path: Path, role: str, output_path: Path) -> None:
+def record_critic(analysis_path: Path, role: str, output_path: Path | None) -> None:
     data = load(analysis_path)
     initial_errors = validate(analysis_path)
     if initial_errors:
         raise ValueError("cannot accept a critic result against an invalid/stale analysis:\n- " + "\n- ".join(initial_errors))
-    output = load(output_path)
+    output = load(output_path) if output_path is not None else json.load(sys.stdin)
+    if not isinstance(output, dict):
+        raise ValueError("critic output must be a JSON object")
     expected_fields = {"status", "evidence_bundle_sha256", "verdict", "fatal_flaws", "evidence_refs", "requests", "recommendation"}
     if set(output) != expected_fields or output.get("status") != "complete":
         raise ValueError("critic output must match critic-output.schema.json and be complete")
@@ -349,7 +347,7 @@ def main() -> int:
             freeze(path)
             return 0
         if args.command == "record-critic":
-            record_critic(path, args.role, resolve_repo_path(args.critic_output_json))
+            record_critic(path, args.role, None if args.critic_output_json == "-" else resolve_repo_path(args.critic_output_json))
             print(f"Recorded {args.role} critic result")
             return 0
         errors = validate(path)

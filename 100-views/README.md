@@ -10,7 +10,7 @@
 
 ## 열기
 
-검색·필터·리뷰 보기는 HTML 파일을 직접 열어 사용할 수 있다. 새 리뷰 실행은 저장소 루트에서 `python3 .scripts/bin/onboard_research.py` 후 `http://127.0.0.1:8765/`로 접속한다. 실행기가 꺼져 있으면 페이지에 연결 안내가 표시된다.
+검색·필터·리뷰 보기는 HTML 파일을 직접 열어 사용할 수 있다. 새 리뷰 실행은 저장소 루트에서 `python3 .scripts/bin/onboard_research.py` 후 `http://127.0.0.1:8765/`로 접속한다. `--agent codex`, `--agent claude`, `--agent omp`로 실행할 호스트를 선택할 수 있다. 개인 연결 설정은 `.research-harness-agent.json`에 둔다. 실행기가 꺼져 있으면 페이지에 연결 안내가 표시된다.
 
 ## 갱신
 

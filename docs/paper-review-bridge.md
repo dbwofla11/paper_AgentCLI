@@ -18,4 +18,6 @@ python3 .scripts/bin/paper_review_bridge.py serve
 
 리뷰 에이전트는 저장소의 임시 작업 복사본에서 실행된다. 선택한 PDF만 복사하고 나머지 원문 PDF는 제외한다. `.mcp.json`, `.env*`, `.claude/`, `.codex/`, `.secrets/`, `credentials.json`도 복사하지 않으며, 복사본 밖을 가리키는 심볼릭 링크는 제거한다. 작업 전후 파일 상태를 비교하며 리뷰 Markdown, 선택 논문 JSON, 논문 인덱스, 카탈로그, Graphify 출력, 개념 후보 초안만 게시 후보로 받는다. JSON 스키마·5축 필드·실제 읽은 범위를 확인하고, Graphify 동기화 실패는 리뷰를 유지한 채 pending으로 남긴다. 실행 중 원본 파일이 바뀌었으면 해당 출력 게시를 거부한다. 실패 상태와 오류 요약은 `04-Projects/review-queue/queue.json`에 남긴다.
 
+리뷰 에이전트는 `wiki-index.md`와 `wiki-log.md`를 수정할 수 없다(바뀌면 허용 범위 밖 변경으로 실패 처리한다). 게시가 끝나면 브리지가 실제 저장소에서 `python3 .scripts/bin/wiki.py index`와 `wiki.py log --op ingest --title "<논문 제목>" --path <리뷰> --path <JSON>`을 실행하고, 두 파일을 변경 목록에 포함한다. 이 단계가 실패해도 게시한 리뷰는 유지되며 작업 메시지에 실패 내용과 재실행 방법을 남긴다.
+
 브리지는 `127.0.0.1`에만 바인딩하고 브라우저 요청의 `Origin`·`Host`를 같은 로컬 출처로 제한한다. 임의 shell 명령이나 파일 경로를 요청으로 받지 않는다. 이 실행기는 리뷰가 필요한 논문 한 편에 대한 전용 어댑터이며, 사고실험 문헌 조사 실행은 별도 Orca TODO 어댑터를 사용한다.

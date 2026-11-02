@@ -206,6 +206,91 @@ class ViewTests(unittest.TestCase):
         self.assertFalse(review_bridge.allowed_output("paper-library.html", record, review))
         self.assertFalse(review_bridge.allowed_output("100-views/harness-dashboard.html", record, review))
 
+    def test_review_worker_refreshes_live_wiki_and_rejects_staged_wiki_edits(self):
+        for forbidden in (None, "wiki-index.md", "wiki-log.md", "wiki-failure"):
+            with self.subTest(forbidden=forbidden), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory).resolve()
+                subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
+                record_name = "01-Papers/library/example.json"
+                review_name = "01-Papers/reviews/other/example.md"
+                pdf_name = "01-Papers/pdfs/other/example.pdf"
+                record = {"slug": "example", "paper_id": "paper-1", "title": "Example paper",
+                          "source": {"pdf_path": pdf_name, "review_path": review_name}}
+                for name, content in ((record_name, json.dumps(record)), (pdf_name, "fixture PDF"),
+                                      ("01-Papers/index.md", "# Papers\n"),
+                                      ("wiki-index.md", "live old index\n"),
+                                      ("wiki-log.md", "# 작업 기록\n\nprior entry\n")):
+                    path = root / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(content, encoding="utf-8")
+                script = root / ".scripts/bin/wiki.py"
+                script.parent.mkdir(parents=True)
+                shutil.copy2(ROOT / ".scripts/bin/wiki.py", script)
+                shutil.copy2(ROOT / ".scripts/bin/harness_common.py", script.parent / "harness_common.py")
+                queue = {"jobs": [{"job_id": "job-1", "agent": "codex"}]}
+                real_run = subprocess.run
+
+                def run(command, **kwargs):
+                    if command[0] == "fixture-review-agent":
+                        stage = Path(kwargs["cwd"])
+                        updated = {**record, "structured_review_status": "complete",
+                                   "review": {f"axis-{i}": {"summary": "summary", "claims": ["claim"]}
+                                              for i in range(5)}}
+                        (stage / record_name).write_text(json.dumps(updated), encoding="utf-8")
+                        review = stage / review_name
+                        review.parent.mkdir(parents=True, exist_ok=True)
+                        review.write_text("# Published review\n읽은 범위: 1\n", encoding="utf-8")
+                        (stage / "01-Papers/index.md").write_text("# Papers\nexample\n", encoding="utf-8")
+                        state = stage / "graphify-out/sync-state.json"
+                        state.parent.mkdir(parents=True, exist_ok=True)
+                        state.write_text(json.dumps({"sources": {record_name: {"status": "success"}}}), encoding="utf-8")
+                        if forbidden and forbidden != "wiki-failure":
+                            (stage / forbidden).write_text("agent injected content\n", encoding="utf-8")
+                        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+                    if len(command) > 1 and command[1].endswith("paper_record.py"):
+                        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+                    if len(command) > 1 and command[1].endswith("paper_catalog_html.py"):
+                        catalog = Path(kwargs["cwd"]) / "100-views/paper-library.html"
+                        catalog.parent.mkdir(parents=True, exist_ok=True)
+                        catalog.write_text("catalog", encoding="utf-8")
+                        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+                    if forbidden == "wiki-failure" and len(command) > 2 and command[1].endswith("wiki.py") and command[2] == "index":
+                        return subprocess.CompletedProcess(command, 1, stdout="", stderr="fixture wiki failure")
+                    return real_run(command, **kwargs)
+
+                with patch.object(review_bridge, "ROOT", root), \
+                     patch.object(review_bridge, "load_queue", return_value=queue), \
+                     patch.object(review_bridge, "save_queue"), \
+                     patch.object(review_bridge, "read_record", return_value=(root / record_name, record)), \
+                     patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "codex"}), \
+                     patch.object(review_bridge, "review_command", return_value=["fixture-review-agent"]), \
+                     patch.object(review_bridge.subprocess, "run", side_effect=run):
+                    self.assertFalse(review_bridge.allowed_output("wiki-index.md", root / record_name, root / review_name))
+                    self.assertFalse(review_bridge.allowed_output("wiki-log.md", root / record_name, root / review_name))
+                    review_bridge.review_worker("job-1", "example", 30)
+                job = queue["jobs"][0]
+                if forbidden and forbidden != "wiki-failure":
+                    self.assertEqual(job["status"], "failed", job.get("message"))
+                    self.assertIn("outside allowed outputs", job["message"])
+                    self.assertIn(forbidden, job["message"])
+                    self.assertEqual((root / "wiki-index.md").read_text(encoding="utf-8"), "live old index\n")
+                    self.assertEqual((root / "wiki-log.md").read_text(encoding="utf-8"), "# 작업 기록\n\nprior entry\n")
+                    self.assertFalse((root / review_name).exists())
+                elif forbidden == "wiki-failure":
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertTrue((root / review_name).is_file())
+                    self.assertIn("fixture wiki failure", job["message"])
+                else:
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertIn(review_name, (root / "wiki-index.md").read_text(encoding="utf-8"))
+                    log = (root / "wiki-log.md").read_text(encoding="utf-8")
+                    self.assertTrue(log.startswith("# 작업 기록\n\nprior entry\n"))
+                    self.assertEqual(log.count(" ingest | Example paper"), 1)
+                    self.assertIn("- " + review_name + "\n", log)
+                    self.assertIn("- " + record_name + "\n", log)
+                    self.assertIn("wiki-index.md", job["changed_files"])
+                    self.assertIn("wiki-log.md", job["changed_files"])
+
 
 class CatalogTests(unittest.TestCase):
     def test_local_pdf_precedes_url_and_rejects_outside_paths(self):
@@ -232,7 +317,7 @@ class CatalogTests(unittest.TestCase):
 
 class ResearchPromptTests(unittest.TestCase):
     def test_verifier_reads_roles_and_uses_canonical_json(self):
-        task = {"task_id": "1"*16, "idea_id": "idea", "idea_path": "05-ideas/idea.md", "brief_sha256": "a"*64,
+        task = {"task_id": "1"*16, "idea_id": "idea", "idea_path": "05-Ideas/idea.md", "brief_sha256": "a"*64,
                 "question": "q", "conditions": [], "constraints": [], "counterfactuals": [], "existing_paper_ids": [],
                 "search_scope": ["OpenAlex"], "budget": {}, "result_path": "04-Projects/research-todo/results/idea.md"}
         prompt = research.prompt_for(task, "evidence_verifier")
@@ -459,13 +544,13 @@ class ResearchPromptTests(unittest.TestCase):
     def test_idea_catalog_preserves_registry_conflicts(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            notes = root / "05-ideas/thought-experiments"
+            notes = root / "05-Ideas/thought-experiments"
             notes.mkdir(parents=True)
             note = notes / "test-conflict.md"
             note.write_text("# Test idea\n- 상태: 실행 완료\n- 사용자 결정: 중단\n", encoding="utf-8")
             registry = root / "registry.md"
             registry.write_text(
-                "| test-conflict | Test | 05-ideas/thought-experiments/test-conflict.md | complete | clear | clear | clear | 실험 가능 | 승인 | 없음 | 2026-10-06 |\n",
+                "| test-conflict | Test | 05-Ideas/thought-experiments/test-conflict.md | complete | clear | clear | clear | 실험 가능 | 승인 | 없음 | 2026-10-06 |\n",
                 encoding="utf-8",
             )
             with patch.multiple(ideas, ROOT=root, IDEAS=notes, RUNS=root / "runs", REGISTRY=registry, TODO_QUEUE=root / "queue.json"):
@@ -493,6 +578,62 @@ class InstallerTests(unittest.TestCase):
             installer.remove(target)
             self.assertEqual((target / "AGENTS.md").read_text(encoding="utf-8"), "user instructions\n")
             self.assertFalse((target / installer.MANIFEST).exists())
+
+    def test_papers_unmanaged_wiki_index_is_preserved_and_never_claimed(self):
+        header = "자동 생성 파일. 직접 수정하지 말고 python3 .scripts/bin/wiki.py index로 갱신한다."
+        for contents in ("# My index\nUser content.\n", f"# My index\n{header}\nUser content.\n"):
+            with self.subTest(contents=contents), tempfile.TemporaryDirectory() as temporary:
+                target = Path(temporary).resolve()
+                index = target / "wiki-index.md"
+                original = contents.encode("utf-8")
+                index.write_bytes(original)
+                command = [sys.executable, str(ROOT / ".scripts/bin/install_research_harness.py"),
+                           str(target), "--profile", "papers", "--host", "claude", "--link-mode", "copy"]
+                result = subprocess.run(command, capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertRegex(result.stdout, r"(?m)^CONFLICT\s+wiki-index\.md\b")
+                operations, conflicts = installer.plan(target, ["claude"], "copy", "preserve", "papers")
+                self.assertIn("wiki-index.md", conflicts)
+                installer.apply(target, operations, ["claude"])
+                self.assertEqual(index.read_bytes(), original)
+                manifest = json.loads((target / installer.MANIFEST).read_text(encoding="utf-8"))
+                self.assertNotIn("wiki-index.md", manifest["files"])
+                result = subprocess.run(command + ["--remove"], capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(index.read_bytes(), original)
+
+    def test_papers_wiki_index_removal_respects_user_edits(self):
+        for edited in (False, True):
+            with self.subTest(edited=edited), tempfile.TemporaryDirectory() as temporary:
+                target = Path(temporary).resolve()
+                operations, conflicts = installer.plan(target, ["claude"], "copy", "preserve", "papers")
+                self.assertNotIn("wiki-index.md", conflicts)
+                installer.apply(target, operations, ["claude"])
+                index = target / "wiki-index.md"
+                self.assertTrue(index.is_file())
+                manifest = json.loads((target / installer.MANIFEST).read_text(encoding="utf-8"))
+                self.assertIn("wiki-index.md", manifest["files"])
+                if edited:
+                    changed = index.read_bytes() + b"\nUser edit.\n"
+                    index.write_bytes(changed)
+                    preview = subprocess.run(
+                        [sys.executable, str(ROOT / ".scripts/bin/install_research_harness.py"),
+                         str(target), "--profile", "papers", "--host", "claude", "--link-mode", "copy"],
+                        capture_output=True, text=True, check=False)
+                    self.assertEqual(preview.returncode, 0, preview.stdout + preview.stderr)
+                    self.assertRegex(preview.stdout, r"(?m)^CONFLICT\s+wiki-index\.md\b")
+                    operations, conflicts = installer.plan(target, ["claude"], "copy", "preserve", "papers")
+                    self.assertIn("wiki-index.md", conflicts)
+                    installer.apply(target, operations, ["claude"])
+                    self.assertEqual(index.read_bytes(), changed)
+                result = subprocess.run(
+                    [sys.executable, str(ROOT / ".scripts/bin/install_research_harness.py"),
+                     str(target), "--remove"], capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                if edited:
+                    self.assertEqual(index.read_bytes(), changed)
+                else:
+                    self.assertFalse(index.exists())
 
     def legacy_guidance_fixture(self, target):
         legacy_guidance = (
@@ -623,6 +764,14 @@ class InstallerTests(unittest.TestCase):
                 result = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],
                                         cwd=target, env=env, capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                index = target / "wiki-index.md"
+                index.write_text(index.read_text(encoding="utf-8") + "\nstale fixture\n", encoding="utf-8")
+                stale = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],
+                                       cwd=target, env=env, capture_output=True, text=True, timeout=30)
+                self.assertEqual(stale.returncode, 1, stale.stdout + stale.stderr)
+                self.assertIn("FAIL", stale.stdout)
+                self.assertIn("wiki", stale.stdout.lower())
+                self.assertIn("stale fixture", index.read_text(encoding="utf-8"))
 
     def test_existing_host_skill_is_preserved_and_copy_mode_diagnoses(self):
         with tempfile.TemporaryDirectory() as temporary:

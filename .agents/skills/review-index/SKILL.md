@@ -41,3 +41,4 @@ description: 01-Papers/index.md를 갱신하고 정본 PDF·리뷰·논문 JSON 
 - 메타데이터를 기억으로 채우지 않는다. 리뷰 파일의 프론트매터 또는 `paper.py meta`에서 가져온다.
 - 인덱스에 요약을 쓰지 않는다. 요약이 필요하면 리뷰 파일로 링크한다.
 - 리뷰를 완료한 논문은 `.scripts/docs/paper-record.schema.json`에 맞춰 JSON의 다섯 분석 축과 근거 위치를 보강하고, 모두 채운 뒤 `structured_review_status: complete`로 표시한다. `.scripts/bin/paper_record.py validate`로 확인한다.
+- `01-Papers/index.md`를 고친 뒤 위키 페이지가 추가·변경되었으면 `python3 .scripts/bin/wiki.py index`로 루트 `wiki-index.md`도 다시 만든다. `wiki-index.md`는 손으로 고치지 않는다.

@@ -16,7 +16,7 @@
 
 ## 사고실험 저장
 
-- 가설·반증 조건: 05-ideas/thought-experiments/
+- 가설·반증 조건: 05-Ideas/thought-experiments/
 - 기획·심사·실행 증거: 04-Projects/thought-experiment-runs/{slug}/
 - 문헌 조사 작업: 04-Projects/research-todo/queue.json
 - 자동 리뷰 작업: 04-Projects/review-queue/queue.json

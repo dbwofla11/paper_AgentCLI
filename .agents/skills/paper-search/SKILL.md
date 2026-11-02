@@ -49,6 +49,7 @@ PDF 첫 페이지에서 제목·저자·연도·venue를 확인하고, 가능하
 2. PDF를 `01-Papers/pdfs/{category}/{연도}-{제1저자성}-{짧은슬러그}.pdf`에 보관한다. 기존 원본은 임의로 삭제하지 않는다.
 3. `01-Papers/keep.md`에 `상태: 킵`, `01-Papers/index.md`에 `읽을 예정`으로 등록한다.
 4. `01-Papers/library/{slug}.json`을 만든다. 기본 레코드는 `.scripts/bin/paper_record.py init`으로 생성하고 확인된 메타데이터·초록·태그·출처·PDF 경로를 채운다. 새 파일은 `python3 .scripts/bin/paper_record.py validate <path>`로 검증한다. 기존 JSON은 덮어쓰지 않는다.
+5. PDF·Keep·인덱스·JSON 저장이 끝나면 `python3 .scripts/bin/wiki.py index`로 위키 인덱스를 갱신하고 `python3 .scripts/bin/wiki.py log --op ingest --title "<논문 제목>" --path <JSON 경로>`로 기록한다.
 
 검색 결과를 채팅으로만 제시해 달라는 경우에는 PDF 다운로드, Keep 등록, JSON 생성을 하지 않는다. 사용자가 검색 후보를 채택하면:
 
@@ -57,3 +58,4 @@ PDF 첫 페이지에서 제목·저자·연도·venue를 확인하고, 가능하
 3. arXiv 버전이 있고 최종 게재본이 따로 있으면 둘 다 기록하고 어느 쪽을 읽는지 명시한다 (버전 간 내용이 다를 수 있다).
 4. PDF가 페이월이면 다운로드를 시도하지 말고 사용자에게 알린다. 우회하지 않는다.
 5. Keep 목록, 인덱스, 논문 JSON을 `읽을 예정` 상태로 등록한다. JSON 구조는 [.scripts/docs/paper-record.schema.json](../../../.scripts/docs/paper-record.schema.json)을 따른다.
+6. 저장을 마치면 위 5번과 같이 `wiki.py index`와 `wiki.py log --op ingest`를 실행한다.

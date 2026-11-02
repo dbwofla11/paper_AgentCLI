@@ -45,6 +45,8 @@ REQUIRED = [
     ROOT / ".omp/config.example.yml",
     ROOT / ".research-harness-agent.example.json",
     ROOT / "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.example.md",
+    ROOT / ".scripts/bin/wiki.py",
+    ROOT / "wiki-index.md",
 ]
 CORE_SKILLS = (
     "paper-search", "paper-review", "review-index", "related-work",
@@ -209,6 +211,11 @@ def verify() -> int:
         )
         if validation.returncode != 0:
             return fail(f"paper JSON validation failed: {validation.stdout}{validation.stderr}")
+    wiki = subprocess.run([sys.executable, str(ROOT / ".scripts/bin/wiki.py"), "index", "--check"],
+                          cwd=ROOT, check=False, capture_output=True, text=True)
+    if wiki.returncode != 0:
+        return fail("wiki-index.md is stale or missing; run python3 .scripts/bin/wiki.py index "
+                     f"({(wiki.stdout + wiki.stderr).strip()[-500:]})")
     for page, linked in (
         (ROOT / "100-views/paper-library.html", ("harness-dashboard.html", "thought-experiments.html")),
         (ROOT / "100-views/harness-dashboard.html", ("paper-library.html", "thought-experiments.html")),

@@ -14,9 +14,12 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 | `01-Papers/favorites.md` | 선호 논문 기록 |
 | `02-Concepts/` | 사용자가 공부해 이해한 내용을 쌓는 공부노트 |
 | `03-Trends/daily/` | 날짜별 다이제스트 |
-| `05-ideas/thought-experiments/` | 연구 아이디어·사고실험 |
+| `05-Ideas/thought-experiments/` | 연구 아이디어·사고실험 |
+| `wiki-index.md` | 위키 페이지 전체 목록 (자동 생성, 직접 수정 금지) |
+| `wiki-log.md` | 위키 작업 기록 (추가만 함) |
 | `90-Templates/paper/` | 리뷰·트리아지 템플릿 |
 | `.scripts/bin/paper.py` | arXiv / Semantic Scholar / OpenAlex 조회 CLI (stdlib만 사용) |
+| `.scripts/bin/wiki.py` | 위키 인덱스 생성·작업 기록·구조 점검 CLI (stdlib만 사용) |
 | `.mcp.json` | 연결된 MCP 서버 — `exa`(의미 검색, API 키 필요), `arxiv-mcp`, `paper-search-mcp` |
 
 ## 새 세션 시작 (필수)
@@ -38,16 +41,33 @@ Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사�
 
 ## 학습·연구 하네스
 
-`docs/Home.md`는 전체 MOC다. `00-Inbox/`, `01-Papers/`, `02-Concepts/`, `03-Trends/`, `04-Projects/`, `05-ideas/`, `90-Templates/`, `99-Attachments/`, `.scripts/`는 탐색과 운영을 위한 레이어다.
+`docs/Home.md`는 전체 MOC다. `00-Inbox/`, `01-Papers/`, `02-Concepts/`, `03-Trends/`, `04-Projects/`, `05-Ideas/`, `90-Templates/`, `99-Attachments/`, `.scripts/`는 탐색과 운영을 위한 레이어다.
 
 - `02-Concepts/`는 논문 한 편의 요약이 아니라 사용자가 공부해 이해한 내용을 축적하는 공부노트다.
-- `04-Projects/`는 실행할 실험·구현·스터디를, `05-ideas/`는 검증 전 가설과 반증 조건을 다룬다.
-- 원문 PDF·심층 리뷰·일일 트렌드·사고실험·자동화의 정본은 각각 `01-Papers/pdfs/`, `01-Papers/reviews/`, `03-Trends/daily/`, `05-ideas/thought-experiments/`, `.scripts/bin/`이다.
+- `04-Projects/`는 실행할 실험·구현·스터디를, `05-Ideas/`는 검증 전 가설과 반증 조건을 다룬다.
+- 원문 PDF·심층 리뷰·일일 트렌드·사고실험·자동화의 정본은 각각 `01-Papers/pdfs/`, `01-Papers/reviews/`, `03-Trends/daily/`, `05-Ideas/thought-experiments/`, `.scripts/bin/`이다.
 - 논문별 기계 판독 레코드는 `01-Papers/library/{slug}.json`에 둔다. 수집 때 메타데이터를 기록하고 심층 리뷰 뒤 5축 분석과 원문 근거를 보강한다. 모든 축 검증 뒤 `structured_review_status: complete`로 표시한다. 형식은 `.scripts/docs/paper-record.schema.json`을 따른다.
 - `01-Papers/keep.md`(읽기/조사 대기열)와 `01-Papers/favorites.md`(선호 논문)는 독립 목록으로 유지한다. `01-Papers/library/`에는 논문 JSON만 둔다.
 - 루트의 기존 `papers/`, `reviews/`, `library/`, `notes/`, `templates/`, `scripts/`는 과거 링크와 자동화를 위한 호환 링크다. 새 파일은 여기에 쓰지 않는다. 사람용 안내 문서는 `docs/`에 둔다.
 
 - 직접 만든 HTML 화면은 `100-views/`, 공통 화면 자산은 `100-views/assets/`에서 관리한다. 생성기는 `.scripts/bin/`에 유지한다.
+
+## LLM-Wiki 운영
+
+이 저장소는 에이전트가 유지하는 위키로 운영한다. 세 층을 구분한다.
+
+- **원본**: `01-Papers/pdfs/`의 PDF와 `99-Attachments/`의 첨부. 읽기만 하고 수정하지 않는다.
+- **위키 페이지**: `01-Papers/reviews/{category}/`, `01-Papers/triage/`, `02-Concepts/`, `03-Trends/daily/`, `05-Ideas/thought-experiments/`, `04-Projects/thought-experiment-runs/{slug}/`의 `results.md`·`critique.md`·`manifest.md`. 범위의 정본은 `.scripts/bin/wiki.py`의 `PAGE_SCOPE`이고 Git이 보는 파일만 포함한다(`README.md`, 템플릿 제외).
+- **규칙**: 이 `AGENTS.md`, `.agents/skills/`, `90-Templates/`.
+
+작업 규칙:
+
+- **수집(ingest)·갱신** — 위키 페이지를 만들거나 고친 뒤 `python3 .scripts/bin/wiki.py index`로 `wiki-index.md`를 다시 만들고, `python3 .scripts/bin/wiki.py log --op ingest --title "<제목>" --path <파일>`(새 페이지) 또는 `--op update`(기존 페이지 수정)로 기록한다. `wiki-index.md`는 손으로 고치지 않는다.
+- **질의(query)** — 먼저 `wiki-index.md`를 읽는다. `graphify-out/graph.json`이 있으면 graphify CLI(`graphify query "<질문>"`, `graphify path "A" "B"`, `graphify explain "X"`, `graphify affected "X"`)로 범위를 좁힌 뒤 해당 페이지를 읽는다. 그래프는 커밋하지 않으므로 새 clone에는 없다. 없으면 `wiki-index.md`와 페이지만으로 답하고 그래프를 쓰지 않았다고 밝힌다. 답을 남길 가치가 있으면 범위 안의 새 페이지로 저장하고 `index`를 다시 실행한 뒤 `log --op query`로 기록한다.
+- **점검(lint)** — `python3 .scripts/bin/wiki.py lint`로 깨진 링크·오래된 인덱스·고립 페이지·제목 누락을 확인한다(보고 전용, 과거 페이지에는 깨진 링크가 남아 있을 수 있다). `03-Trends/daily/`는 `wiki-index.md`로 접근하는 날짜순 기록이라 고립 페이지 검사에서 제외한다(`ORPHAN_EXEMPT`). 이어서 에이전트가 페이지 사이의 모순·낡은 주장을 직접 검토하고, 결과를 `log --op lint`로 기록한다.
+- `wiki-log.md`는 추가만 한다. 기존 항목을 고치거나 지우지 않는다. 로컬 리뷰 브리지가 리뷰를 게시하면 브리지가 직접 `index`와 `log --op ingest`를 실행하므로, 브리지 작업 중인 에이전트는 두 파일을 수정하지 않는다.
+- `verify_harness.py`는 `wiki.py index --check`로 인덱스가 최신인지만 검사한다. `lint`는 검증 단계에 포함하지 않는다.
+- 위키와 지식 그래프는 MCP 서버로 접근하지 않는다. 로컬 리뷰 브리지의 작업 복사본에는 프로젝트 MCP 설정이 없다. 위키·그래프 기능이 더 필요하면 MCP 서버를 추가하지 말고 저장소 CLI `.scripts/bin/wiki.py`를 확장한다.
 
 ## 프로젝트 스킬
 
@@ -168,13 +188,15 @@ omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 �
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+지식 그래프 질의 도구는 graphify CLI이며 `graphify-out/graph.json`을 읽는다. `graphify-out/`은 Git에 커밋하지 않으므로 새 clone에는 그래프가 없다. 먼저 graphify 스킬로 그래프를 구축한다(문서 의미 추출에 모델 호출 비용이 든다). 이후 정본 변경은 `.scripts/bin/graphify_sync.py`로 동기화를 추적한다.
 
-When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+When the user invokes the graphify skill (`/graphify` in Claude Code, `$graphify` in Codex, `/skill:graphify` in omp), use the installed graphify skill or instructions before doing anything else.
 
 Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If `graphify-out/graph.json` exists, first run `graphify query "<question>"`. Use `graphify path "<A>" "<B>"` for relationships, `graphify explain "<concept>"` for focused concepts, and `graphify affected "<node>"` for what depends on a node. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If `graphify-out/graph.json` does not exist, do not claim graph results: fall back to `wiki-index.md` and the pages, say that no graph was used, and offer to build it with the graphify skill.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost). It does not replace semantic extraction for papers, concepts, or ideas.
+- Graph access goes through the graphify CLI, not an MCP server. Extend `.scripts/bin/wiki.py` rather than adding a wiki/graph MCP server.

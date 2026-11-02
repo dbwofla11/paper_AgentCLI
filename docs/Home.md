@@ -16,5 +16,6 @@
 - [하네스 대시보드](../100-views/harness-dashboard.html)
 - [논문 라이브러리](../100-views/paper-library.html)
 - [사고실험](../100-views/thought-experiments.html)
+- [위키 인덱스](../wiki-index.md): 위키 페이지 전체 목록 (`wiki.py index`로 자동 생성)
 
 화면은 정본 자료를 탐색한다. 논문·연구 자료는 저장소의 각 영역에서 관리한다.

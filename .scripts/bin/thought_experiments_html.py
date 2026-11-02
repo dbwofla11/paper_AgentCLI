@@ -12,7 +12,7 @@ from pathlib import Path
 from research_ui import STYLESHEET, page_header
 
 ROOT = Path(__file__).resolve().parents[2]
-IDEAS = ROOT / "05-ideas/thought-experiments"
+IDEAS = ROOT / "05-Ideas/thought-experiments"
 RUNS = ROOT / "04-Projects/thought-experiment-runs"
 OUTPUT = ROOT / "100-views" / "thought-experiments.html"
 REGISTRY = RUNS / "CRITICAL_VALIDATION_REGISTRY.md"

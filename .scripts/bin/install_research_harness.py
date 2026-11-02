@@ -237,6 +237,11 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile:
                 add_file(relative, source.read_bytes())
         for name in ("index", "keep", "favorites"):
             add_file(f"01-Papers/{name}.md", f"# {name}\n\n".encode())
+        # wiki.py ships with this profile; render the index for the target so
+        # verify_harness passes. Same ownership/conflict policy as other files.
+        import wiki
+        add_file(wiki.INDEX_NAME,
+                 wiki.render_index(target, list_files=tuple(name for _, name in wiki.PAPER_LISTS)).encode("utf-8"))
         add_file("docs/research-harness/profile.json", b'{"profile":"papers"}\n')
     for skill_dir in skill_dirs:
         for source in sorted(p for p in skill_dir.rglob("*") if p.is_file()):

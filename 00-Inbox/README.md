@@ -14,5 +14,5 @@
 - 특정 논문을 읽을지 판단: `01-Papers/keep.md` 또는 `01-Papers/triage/`의 메모
 - 내가 이해한 내용을 설명: `02-Concepts/`
 - 리뷰에서 나온 개념 후보 검토: `concept-candidates/`
-- 검증할 연구 가설: `05-ideas/`
+- 검증할 연구 가설: `05-Ideas/`
 - 실제로 실행할 실험/구현: `04-Projects/`

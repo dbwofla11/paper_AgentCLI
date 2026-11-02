@@ -22,7 +22,7 @@ FILES = ("AGENTS.md", "docs/Home.md", "README.md", "docs/onboarding.md", ".scrip
 DIRECTORIES = ("00-Inbox", *(f"01-Papers/{kind}/{category}" for kind in ("pdfs", "reviews")
                for category in ("wifi-csi", "game-ai", "agent-ai", "computer-vision", "other")),
                "01-Papers/triage", "01-Papers/library", "02-Concepts", "03-Trends/daily",
-               "04-Projects", "05-ideas/thought-experiments", "99-Attachments")
+               "04-Projects", "05-Ideas/thought-experiments", "99-Attachments")
 
 
 def check(root: Path, host: str | None, with_mcp: bool = False,
@@ -84,8 +84,6 @@ def check(root: Path, host: str | None, with_mcp: bool = False,
         if host == "codex":
             for server in ("arxiv-mcp", "exa", "paper-search-mcp"):
                 report(bool(re.search(r'^\s*\[mcp_servers\.' + re.escape(server) + r'\]\s*$', content, re.MULTILINE)), f"Codex MCP 설정: {server}")
-            if 'command = "npx"' in content:
-                report(shutil.which("npx") is not None, "llmwiki 실행용 npx", optional=not with_mcp)
     mcp = root / ".mcp.json"
     if mcp.is_file():
         try:

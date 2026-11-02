@@ -69,6 +69,8 @@ python3 .scripts/bin/idea_analysis.py record-critic <analysis.json> <role> <file
 
 어느 경우에도 상태 전환은 사용자가 승인한다. Paper2Agent 준비성은 이 심사에서 미해결 치명적 결함이 있으면 `준비됨`으로 기록하지 않는다.
 
+최종 `critique.md`(또는 run 폴더의 `manifest.md`·`results.md`)를 쓰거나 고친 뒤 `python3 .scripts/bin/wiki.py index`를 실행하고 `python3 .scripts/bin/wiki.py log --op ingest --title "<slug> 비판 검증" --path 04-Projects/thought-experiment-runs/{slug}/critique.md`(기존 파일 수정이면 `--op update`)로 기록한다.
+
 ## 보고
 
 사용자에게는 brief에서 확정된 가설, 심사별 핵심 반론, 반드시 답해야 할 grill 질문, 권고 상태 하나를 짧게 보여준다. 비판의 원문과 증거는 실행 폴더에 남기고, Notion이 정본이면 해당 페이지에도 상태와 링크를 기록할 후보로만 제시한다. 단, `PROGRESS_BACKEND.local.md`에 `notion: disabled`가 있으면 Notion 기록을 실행하거나 제안하지 않고 저장소에만 기록한다.

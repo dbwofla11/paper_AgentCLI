@@ -9,20 +9,22 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
 
 ## 진척 관리 온보딩
 
-정본은 [`04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md`](../../../04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md)의 `backend` 값으로 정한다. 비판 검증 기본 정책은 [`CRITICAL_VALIDATION_SETTINGS.md`](../../../04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md)의 `mode` 값으로 정한다.
+`04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.md`가 있으면 먼저 읽고 없으면 공유 [`PROGRESS_BACKEND.md`](../../../04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md)를 읽어 `backend`를 정한다. 비판 검증 정책도 `CRITICAL_VALIDATION_SETTINGS.local.md`가 있으면 먼저 읽고 없으면 공유 [`CRITICAL_VALIDATION_SETTINGS.md`](../../../04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md)를 읽어 `mode`를 정한다. 온보딩과 이후 개인 선택은 각각의 `.local.md`에 기록하고 공유 파일은 팀 기본값으로 둔다.
 
-**처음 실행하거나 `backend` 값이 `unset`이면, 다른 작업을 시작하기 전에 반드시 아래 질문을 하고 답을 기다린다.**
+로컬 진척 설정에 `notion: disabled`가 있으면 아래 Notion 분기를 실행하거나 제안하지 않는다. 사용자가 Notion 기록을 요청해도 로컬에서 꺼져 있음을 알리고 저장소 정본에만 기록한다.
+
+**처음 실행하거나 `backend` 값이 `unset`이면, 다른 작업을 시작하기 전에 반드시 아래 질문을 하고 답을 기다린다.** 단, `notion: disabled`이면 Notion 선택지는 보여주거나 제안하지 않고 저장소 기록만 안내한다.
 
 > 사고실험 진척을 어디에서 관리할까요?
 >
 > 1. `repository` — 이 저장소의 `04-Projects/thought-experiment-runs/{slug}/progress.md`에서 관리합니다.
 > 2. `notion` — Notion MCP에 연결된 페이지 또는 데이터베이스에서 관리합니다.
 
-- `repository` 선택: `PROGRESS_BACKEND.md`를 `backend: repository`로 갱신한다. 각 실험 폴더의 `progress.md`가 상태·acceptance criteria·blocker·결정의 정본이다.
+- `repository` 선택: `PROGRESS_BACKEND.local.md`를 `backend: repository`로 갱신한다. 각 실험 폴더의 `progress.md`가 상태·acceptance criteria·blocker·결정의 정본이다.
 - `notion` 선택: Notion MCP 연결 여부와 대상 페이지 또는 데이터베이스를 확인한 뒤 `backend: notion`과 링크·식별자를 기록한다. Notion이 정본이고 로컬은 실행 증거만 보관한다. MCP가 없거나 인증이 끝나지 않으면 연결 방법을 안내하고 진척 판정은 하지 않는다.
 - 설정이 이미 있으면 질문을 반복하지 않는다. 사용자가 변경을 요청할 때만 backend를 바꾼다.
 
-**`mode`가 `unset`이면 저장 backend와 별개로, 사고실험의 구체화·문헌 탐색·실행 전에 `CRITICAL_VALIDATION_SETTINGS.md`의 질문을 하고 답을 기다린다.** 선택한 `required` / `on-request` / `off`를 파일에 기록하고 사용자가 변경을 요청할 때만 바꾼다.
+**`mode`가 `unset`이면 저장 backend와 별개로, 사고실험의 구체화·문헌 탐색·실행 전에 `CRITICAL_VALIDATION_SETTINGS.md`의 질문을 하고 답을 기다린다.** 선택한 `required` / `on-request` / `off`를 `CRITICAL_VALIDATION_SETTINGS.local.md`에 기록하고 사용자가 변경을 요청할 때만 바꾼다.
 
 - `required`: 모든 새 사고실험 기획에 `critical-validation`을 먼저 적용한다. 심사를 통과했다는 표기는 사용자가 최종 결정을 기록한 경우에만 한다.
 - `on-request`: 사용자가 비판 검증을 요청한 경우에만 `critical-validation`을 적용한다.

@@ -1,6 +1,6 @@
 # 논문 탐색 프로토콜 (Paper Search Protocol)
 
-`/paper-search`가 따르는 상세 절차. paper-search 스킬은 이 문서를 요약한 실행 가이드고, 여기가 근거·판정 기준의 원본이다.
+`paper-search` 스킬이 따르는 상세 절차. paper-search 스킬은 이 문서를 요약한 실행 가이드고, 여기가 근거·판정 기준의 원본이다.
 
 ## 0. 목적
 
@@ -27,7 +27,14 @@
 | Semantic Scholar (S2) | 인용수, 폭넓은 커버리지(학술지·컨퍼런스 포함), refs/cites 그래프 | 무키 호출 시 rate limit(429) 잦음 | `paper.py search --source s2` |
 | arXiv | 최신 프리프린트, 안정적, PDF 자동 다운로드 지원 | arXiv에 올라온 것만 (저널 전용·구간행사 논문 누락) | `paper.py search --source arxiv` |
 | OpenAlex | 가장 넓은 커버리지(저널·구권 포함), rate limit 거의 없음 | 초록 미제공(API 자체가 inverted index로 줌), 관련도 랭킹이 S2보다 약함 | `paper.py search --source openalex` |
-| WebSearch + WebFetch | 위 API가 다 놓친 것 보완, venue 전용 페이지 확인 | 구조화 안 됨, 수동 판단 필요 | 허용 도메인은 `.claude/settings.json` |
+| 웹 검색과 URL 본문 읽기 | 위 API가 다 놓친 것 보완, venue 전용 페이지 확인 | 구조화 안 됨, 수동 판단 필요 | 호스트별 도구는 AGENTS.md 어휘표, 도메인은 아래 목록 |
+
+웹 검색 결과의 논문·공식 출처를 읽을 때 허용된 도메인:
+
+- `arxiv.org`, `export.arxiv.org`, `api.semanticscholar.org`, `www.semanticscholar.org`
+- `api.openalex.org`, `api.crossref.org`, `doi.org`, `openreview.net`, `api2.openreview.net`
+- `aclanthology.org`, `proceedings.mlr.press`, `proceedings.neurips.cc`, `openaccess.thecvf.com`
+- `dblp.org`, `paperswithcode.com`, `huggingface.co`, `github.com`, `raw.githubusercontent.com`
 
 **우선순위**: 인용망 확장이 필요하면 S2, 최신 프리프린트 위주면 arXiv, 커버리지를 최대로 넓히려면 OpenAlex. 하나만 돌리고 끝내지 않는다 — **최소 2개 소스**를 항상 돌린다.
 
@@ -62,7 +69,7 @@
 
 ## 6. 알려진 한계 (2026-08-13 기준)
 
-- `scripts/paper.py search`는 소스 전환을 사용자/에이전트가 수동으로 해야 한다. `meta`/`refs`/`cites`처럼 자동 폴백을 넣는 개선이 남아 있다.
+- `.scripts/bin/paper.py search`는 소스 전환을 사용자/에이전트가 수동으로 해야 한다. `meta`/`refs`/`cites`처럼 자동 폴백을 넣는 개선이 남아 있다.
 - OpenAlex 검색 결과는 초록이 비어 있다 (inverted index 복원 미구현).
 - 키워드/API 검색이라 의미 기반(semantic) 검색이 아니다 — 질의 분해(§1)로 보완한다. 의미 검색이 필요하면 §7의 MCP 옵션을 검토한다.
 
@@ -76,6 +83,6 @@ Codex는 `.codex/config.toml`의 MCP 설정을 사용한다. `.mcp.json`은 다�
 | **arxiv-mcp** ([blazickjp/arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server), PyPI) | 연결됨, 동작 확인 | 논문 전문을 섹션 단위로 가져오거나 연구 알림 유지 | `uvx`로 실행, 다운로드 캐시는 `.codex/mcp-cache/arxiv/`에 격리(우리 `01-Papers/pdfs/` 명명 규칙과 안 섞이게). 실제로 채택할 PDF는 여전히 `paper.py pdf`로 `01-Papers/pdfs/`에 정식 저장한다. |
 | **paper-search-mcp** ([openags/paper-search-mcp](https://github.com/openags/paper-search-mcp), PyPI) | 연결됨, 동작 확인 | arXiv 외 PubMed·bioRxiv·Google Scholar·CORE·DOAJ·IEEE·ACM까지 한 번에 — AI/ML을 넘어서는 인접 분야 검색 시 유용 | `uvx`로 실행. CORE/DOAJ/Unpaywall 키는 선택 사항(없으면 경고만 뜨고 낮은 레이트리밋으로 동작) — 필요하면 `.mcp.json`의 `env`에 `PAPER_SEARCH_MCP_*` 변수 추가. |
 
-**Semantic Scholar MCP는 연결하지 않았다.** PyPI의 `semantic-scholar-mcp` 패키지를 실행 검증했더니 `ModuleNotFoundError: mcp.server.fastmcp`로 즉시 죽는다 — 패키지 자체가 깨져 있음. 대안 구현(`JackKuo666/semanticscholar-MCP-Server`)은 git clone + Windows 절대경로 수동 설정이 필요해 번거롭고, `scripts/paper.py`가 이미 S2의 검색/메타데이터/인용망을 다 커버하므로 이득이 적다. 나중에 고쳐지면 재검토.
+**Semantic Scholar MCP는 연결하지 않았다.** PyPI의 `semantic-scholar-mcp` 패키지를 실행 검증했더니 `ModuleNotFoundError: mcp.server.fastmcp`로 즉시 죽는다 — 패키지 자체가 깨져 있음. 대안 구현(`JackKuo666/semanticscholar-MCP-Server`)은 git clone + Windows 절대경로 수동 설정이 필요해 번거롭고, `.scripts/bin/paper.py`가 이미 S2의 검색/메타데이터/인용망을 다 커버하므로 이득이 적다. 나중에 고쳐지면 재검토.
 
 **uv/uvx는 이 세팅 과정에서 `pip install uv`로 로컬에 설치했다.** Node.js는 설치하지 않았다 — Exa를 npm 패키지(`npx exa-mcp-server`) 대신 공식 원격 HTTP 엔드포인트로 붙여서 필요 없게 만들었다.

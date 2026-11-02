@@ -21,7 +21,7 @@ description: Manage an explicit list of favorite papers in this paper-review rep
 - 연도·venue: {확인된 값}
 - 식별자: arXiv/DOI 또는 `[확인 필요]`
 - PDF: [pdfs/category/file.pdf](pdfs/category/file.pdf)
-- 리뷰: [reviews/file.md](reviews/file.md) 또는 `없음`
+- 리뷰: [reviews/category/file.md](reviews/category/file.md) 또는 `없음`
 - 이유: {사용자가 말한 이유 또는 간단한 기록}
 ```
 

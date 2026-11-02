@@ -5,3 +5,5 @@
 04-Projects/thought-experiment-runs/**/critique-novelty.md
 04-Projects/thought-experiment-runs/**/analysis.json
 04-Projects/thought-experiment-runs/**/evidence-bundle-v*.json
+*.local.md
+.omp/

@@ -29,7 +29,10 @@
       "Edit(02-Concepts/*)",
       "Edit(03-Trends/daily/*)",
       "Edit(04-Projects/*)",
-      "Edit(05-ideas/*)"
+      "Edit(05-ideas/*)",
+      "Bash(pdftotext *)",
+      "Bash(pdfinfo *)",
+      "Bash(pdftoppm *)"
     ],
     "deny": [
       "Edit(01-Papers/pdfs/*)"

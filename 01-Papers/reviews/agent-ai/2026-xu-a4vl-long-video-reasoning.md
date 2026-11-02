@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2603.14052"
 doi: "공식 CVF 페이지에 DOI 미기재"
 code: "https://github.com/git-disl/A4VL"
-pdf: "papers/agent-ai/2026-xu-a4vl-long-video-reasoning.pdf"
+pdf: "01-Papers/pdfs/agent-ai/2026-xu-a4vl-long-video-reasoning.pdf"
 read_date: 2026-09-07
 rating: 4
 tags: [agent AI, video reasoning, VideoQA, multi-agent, frame selection, VLM]

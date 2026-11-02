@@ -10,7 +10,7 @@ flowchart LR
     intake --> keep["01-Papers/keep.md<br>읽기 대기열"]
     daily["매일 09:00 KST<br>CV 1 + 멀티모달 1 + 관심 분야 1"] --> candidates["후보 3편을 채팅으로 제시"]
     candidates -->|사용자 채택| intake
-    intake --> record["library/{slug}.json<br>수집 시 생성"]
+    intake --> record["01-Papers/library/{slug}.json<br>수집 시 생성"]
     record --> review["paper-review<br>3패스 정독 + 5축 분석"]
     review -->|근거·분석 보강| record
     record --> graph["Graphify<br>논문·개념·주장 관계"]

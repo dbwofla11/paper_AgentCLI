@@ -126,7 +126,7 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile:
     guidance = GUIDANCE.replace(END_MARKER, skill_table + END_MARKER)
     if profile == "papers":
         guidance = guidance.replace(END_MARKER, """- Read `docs/Harness-Graph.md` and route each paper request through the installed skills.
-- Store PDFs/reviews/JSON in `01-Papers/pdfs/`, `reviews/`, and `library/`; JSON follows `.scripts/docs/paper-record.schema.json`.
+- Store PDFs/reviews/JSON in `01-Papers/pdfs/`, `01-Papers/reviews/`, and `01-Papers/library/`; JSON follows `.scripts/docs/paper-record.schema.json`.
 - Read actual PDF pages and cite source locations; do not complete a review from an abstract alone.
 - Study notes need explicit user promotion. Failed Graphify sync remains retryable pending.
 - Manage generated HTML in `100-views/`. Run `.scripts/bin/onboard_research.py` to connect this user's CLI.

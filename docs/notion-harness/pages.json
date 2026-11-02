@@ -163,7 +163,7 @@
     "key": "skill-paper-summary",
     "parent": "skills",
     "title": "논문 3편 요약 · paper-summary",
-    "content": "## 역할\n\n초록·전체 주장·방법·한계를 채팅으로 요약\n\n## 입력\n\n정확히 세 논문과 실제 확인한 원문\n\n## 작동 조건·결과\n\n심층 리뷰와 별도 작업이다. PDF를 못 읽었으면 확인 범위를 명시한다. 기존 papers/ 표기는 호환 경로이며 새 저장은 canonical 경로를 따른다.\n\n## 관리\n\n실행 지침의 정본은 아래 SKILL.md다. 호스트 연결과 순서 안내는 상위 스킬 목록·운영 문서에서 확인한다.\n\n## 근거 문서\n\n- `.agents/skills/paper-summary/SKILL.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "content": "## 역할\n\n초록·전체 주장·방법·한계를 채팅으로 요약\n\n## 입력\n\n정확히 세 논문과 실제 확인한 원문\n\n## 작동 조건·결과\n\n심층 리뷰와 별도 작업이다. PDF를 못 읽었으면 확인 범위를 명시한다. 저장소 PDF는 01-Papers/pdfs/에서 읽는다.\n\n## 관리\n\n실행 지침의 정본은 아래 SKILL.md다. 호스트 연결과 순서 안내는 상위 스킬 목록·운영 문서에서 확인한다.\n\n## 근거 문서\n\n- `.agents/skills/paper-summary/SKILL.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       ".agents/skills/paper-summary/SKILL.md"
     ],

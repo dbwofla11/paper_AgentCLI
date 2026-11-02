@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2510.04542"
 doi: ""
 code: "논문 내 코드 저장소 링크 미기재"
-pdf: "papers/game-ai/lehrach-code-world-models-general-game-playing.pdf"
+pdf: "01-Papers/pdfs/game-ai/lehrach-code-world-models-general-game-playing.pdf"
 read_date: 2026-09-04
 rating: 4
 tags: ["general game playing", "code world model", "LLM", "MCTS", "ISMCTS", "imperfect information"]

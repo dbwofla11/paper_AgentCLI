@@ -1,6 +1,6 @@
 # 논문 리뷰·공부 작업 공간
 
-AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 Codex / Claude Code 작업 공간.
+AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 omp / Codex / Claude Code 작업 공간.
 
 처음에는 [Home.md](docs/Home.md)에서 시작한다. 원문·리뷰 관리는 `01-Papers/`, **내가 공부해서 이해한 내용**은 `02-Concepts/`, 실제 실험·구현은 `04-Projects/`, 검증 전 가설은 `05-ideas/`에 둔다. 인덱스·Keep·즐겨찾기는 `01-Papers/` 바로 아래에, 논문 JSON은 `01-Papers/library/`에 둔다. [논문 JSON 시각화](100-views/paper-library.html)에서 레코드를 탐색할 수 있다.
 
@@ -16,7 +16,7 @@ HTML 화면과 공통 디자인 자산은 [100-views/](100-views/README.md)에�
 
 - **논문 읽기:** 검색·수집 → 트리아지 → 3패스 심층 리뷰 → 인덱스·관련 연구 정리
 - **사고실험·실험 설계:** Grill-me로 기획 구체화 → 방법·재현성·새로움 독립 심사 → 사용자 결정 → 작은 실험
-- **스킬·운영:** 프로젝트 스킬 15개, 하네스 문서·템플릿·페르소나, 일일 후보 루프와 본인 에이전트 연결
+- **스킬·운영:** 프로젝트 스킬 16개, 하네스 문서·템플릿·페르소나, 일일 후보 루프와 본인 에이전트 연결
 - **데이터 관리:** PDF·리뷰·논문 JSON·가설·실행 증거의 저장 위치와 연결 흐름
 - **HTML 화면·발표 자료:** 하네스·논문·사고실험 화면의 역할, 발표용 HTML 흐름도와 PNG·PDF 다운로드
 
@@ -30,21 +30,22 @@ Notion은 기능을 설명하는 안내 공간이다. 실제 작업은 이 저�
 python3 .scripts/bin/onboard_research.py
 ```
 
-**에이전트 감지 → 로그인 확인 → 연결 설정 저장 → HTML 실행** 순서로 진행한다. 설치된 Codex·Claude 중 준비된 에이전트를 자동으로 선택하며, 이전에 연결한 에이전트가 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다. 본인이 인증을 마치면 연결을 이어간다.
+**에이전트 감지 → 로그인 확인 → 연결 설정 저장 → HTML 실행** 순서로 진행한다. 자동 선택 순서는 Codex → Claude → omp이며, 이전 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다.
 
-Python 3.10 이상, Codex 또는 Claude CLI, PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. Linux/WSL은 bubblewrap·socat, macOS는 sandbox-exec를 검사한다. 설치 방법과 환경별 조건은 [온보딩 안내](docs/onboarding.md)를 따른다.
+Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. omp에는 별도의 OS 샌드박스 검사가 없다. 설치 방법은 [온보딩 안내](docs/onboarding.md)를 따른다.
 
 | 명령 | 용도 |
 |---|---|
 | `python3 .scripts/bin/onboard_research.py --agent codex` | Codex를 선택해 연결·실행 |
 | `python3 .scripts/bin/onboard_research.py --agent claude` | Claude를 선택해 연결·실행 |
+| `python3 .scripts/bin/onboard_research.py --agent omp` | omp를 선택해 연결·실행 |
 | `python3 .scripts/bin/onboard_research.py --check` | 파일 수정 없이 CLI·로그인·실행 옵션·PDF 도구 준비 상태 확인 |
 | `python3 .scripts/bin/onboard_research.py --connect-only` | 화면을 생성하고 연결 설정을 저장한 뒤 종료 |
 | `python3 .scripts/bin/onboard_research.py --no-browser` | 브라우저 자동 열기 없이 실행 |
 
 기본 화면 주소는 `http://127.0.0.1:8765/100-views/paper-library.html`이다. HTML에서 연결된 에이전트와 준비 상태를 확인하고 **리뷰 시작**을 누르면 본인 계정의 에이전트가 해당 논문을 분석한다. 같은 저장소의 실행기가 이미 켜져 있으면 그 실행기에 연결한다. 다른 포트를 사용하려면 `--port 8766`처럼 지정한다.
 
-연결 파일 `.research-harness-agent.json`에는 에이전트 이름만 저장한다. 인증은 본인의 CLI가 관리하며 계정·토큰·API 키를 저장소에 복사하지 않는다. HTML 파일을 직접 열면 검색·필터·리뷰 보기를 사용할 수 있고, 새 리뷰 실행은 위 명령으로 연 로컬 화면에서 진행한다.
+연결 파일 `.research-harness-agent.json`은 개인 파일이며 에이전트 이름과 선택적인 Orca 설정을 저장한다. 인증은 본인의 CLI가 관리하며 계정·토큰·API 키를 저장소에 복사하지 않는다. 개인 설정 예시와 복사 방법은 [AGENTS.md](AGENTS.md#개인-설정과-로컬-덮어쓰기)를 본다. HTML 파일을 직접 열면 검색·필터·리뷰 보기를 사용할 수 있고, 새 리뷰 실행은 위 명령으로 연 로컬 화면에서 진행한다.
 
 ### 다른 저장소에 설치
 
@@ -73,7 +74,7 @@ python3 -B .scripts/bin/verify_harness.py
 codex
 ```
 
-Claude를 사용하면 `--host claude`와 `claude`로 바꾼다. 다음 요청은 **에이전트 채팅 입력란**에 넣는다. Codex는 `$paper-search`처럼 스킬을 지정하거나 자연어로 요청한다. 아래 `/스킬` 예시는 Claude Code 기준이다.
+Claude를 사용하면 `--host claude`와 `claude`, omp를 사용하면 `--host omp`와 `omp`로 바꾼다. 다음 요청은 **에이전트 채팅 입력란**에 넣는다. Codex는 `$paper-search`, omp는 `/skill:paper-search`, Claude Code는 `/paper-search`로 스킬을 지정하거나 자연어로 요청한다. 아래 예시는 Claude Code 기준이다.
 
 ```
 /paper-search      transformer 효율화 관련 최근 논문 찾아줘
@@ -98,12 +99,12 @@ docs/Harness-Graph.md  연구 하네스 실행 순서
 docs/Skill-Catalog.md  스킬 보기 전용 목록
 .claude/settings.json  논문 사이트 WebFetch·스크립트 실행 허용목록
 .agents/skills/        모든 공통 스킬의 유일한 정본
-.claude/skills/        공통 스킬 링크 + Claude 전용 math-derivation
+.claude/skills/        math-derivation을 포함한 공통 스킬 링크
 .codex/skills/graphify Graphify 정본을 가리키는 호환 링크
 90-Templates/paper/    review-template.md (심층) · triage-template.md (1차 판정)
 .scripts/bin/paper.py  arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
 .scripts/bin/onboard_research.py  사용자 에이전트 자동 연결·HTML 실행
-.scripts/bin/research_agent.py    Codex·Claude 감지·인증 확인·실행 어댑터
+.scripts/bin/research_agent.py    Codex·Claude·omp 감지·인증 확인·실행 어댑터
 .scripts/docs/search-protocol.md  논문 탐색 프로토콜
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 01-Papers/pdfs/        원문 PDF
@@ -179,13 +180,13 @@ setx EXA_API_KEY "your_api_key"
 
 ## 자동화 루틴
 
-Orca Automation에서 `$daily-digest-loop`를 예약해 CV·멀티모달·관심 분야 후보를 채팅으로 제시할 수 있다. 후보는 채택되기 전까지 저장하지 않는다. 뉴스·자동 commit/push는 이 흐름에 포함하지 않는다.
+Orca Automation에서 `daily-digest-loop`를 예약해 CV·멀티모달·관심 분야 후보를 채팅으로 제시할 수 있다. 후보는 채택되기 전까지 저장하지 않는다. 뉴스·자동 commit/push는 포함하지 않는다. 실행 파일 선택과 일반 예약 예시는 [Orca 자동화 안내](docs/daily-orca-automation.md)를 본다.
 
 날짜별 논문 주제 계획은 `$paper-scheduler`로 예약하고 `03-Trends/daily/{YYYY-MM-DD}-plan.md`에 저장한다. 과거 다이제스트 파일은 기록으로 보존한다.
 
 ## 설계 원칙
 
 - **원문 근거 없는 서술 금지.** 모든 수치에 `(§4.2, Table 3)` 형태의 위치를 붙이고, 추론은 `[추론]`/`[내 의견]`/`[확인 필요]`로 표시한다.
-- **PDF를 실제로 읽는다.** 초록만 보고 방법 섹션을 쓰지 않는다. Read 도구의 `pages` 인자로 구간을 나눠 읽는다.
+- **PDF를 실제로 읽는다.** 초록만 보고 방법을 쓰지 않는다. 한 번에 최대 10쪽씩 읽고 실제 읽은 페이지 범위를 기록한다.
 - **리뷰의 값어치는 3패스에 있다.** 요약이 아니라 주장–증거 대응, 빠진 베이스라인, 혼동 요인, 일반화 조건을 판정하는 부분.
 - **BibTeX와 메타데이터는 지어내지 않는다.** 서버에서 받아오거나 비워 둔다.

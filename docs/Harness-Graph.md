@@ -2,6 +2,8 @@
 
 논문을 모으는 두 입력 경로를 하나의 검증 가능한 연구 지식 흐름으로 연결한다. 연구 노트와 PDF의 폴더 구조는 유지한다.
 
+공유 스킬은 Codex, Claude Code, omp에서 사용한다. 호출 표기는 각각 `$paper-review`, `/paper-review`, `/skill:paper-review`이며 호스트별 도구와 개인 설정은 [AGENTS.md](../AGENTS.md)를 따른다.
+
 ```mermaid
 flowchart LR
     upload["사용자 PDF·논문 링크"] --> intake["paper-search<br>메타데이터·중복 확인"]
@@ -63,6 +65,6 @@ python3 .scripts/bin/research_workflow.py idea
 - `100-views/paper-library.html`은 `01-Papers/library/*.json`에서 다시 생성한다. 로컬 PDF를 우선 연결하고, 유효한 HTTP(S) 원문만 대체 링크로 사용한다.
 - `100-views/thought-experiments.html`은 아이디어 노트, 비판 검증 레지스트리, 실험 폴더, TODO JSON을 결합한다. 상태 충돌은 표시하고 자동 조정하지 않는다.
 - 이 저장소의 첫 실행은 [노트북 온보딩 안내](onboarding.md)와 `onboarding_check.py`로 준비한다. 다른 저장소로 스킬을 옮길 때는 `install_research_harness.py`를 dry-run 기본으로 사용한다. 대상 저장소 적용·갱신·제거는 manifest와 충돌 보존 정책을 따른다.
-- 연구 TODO의 구조화 원장은 `04-Projects/research-todo/queue.json`이다. `research_todo.py dispatch --execute`는 준비된 `orca-ide` 런타임과 현재 저장소 worktree를 확인한 뒤 세 탐색 worker 및 의존성으로 묶인 근거 확인 worker를 시작한다. `sync`는 정확한 Run만 조회하며, 결과 검증·보고서 publish가 끝나기 전에는 조사 완료로 표시하지 않는다. Orca가 없거나 준비되지 않으면 dispatch하지 않는다.
+- 연구 TODO의 구조화 원장은 `04-Projects/research-todo/queue.json`이다. `research_todo.py dispatch --execute`는 준비된 Orca 런타임과 현재 저장소 worktree를 확인한 뒤 세 탐색 worker 및 의존성으로 묶인 근거 확인 worker를 시작한다. 실행 파일은 `ORCA_CLI_COMMAND` 우선, Linux에서 사용 가능한 `orca-ide`, 그 외 `orca` 순서로 선택한다. 개인 Orca 설정이 없으면 기존 Codex 기본값을 사용한다. `sync`는 정확한 Run만 조회하며, 결과 검증·보고서 publish가 끝나기 전에는 조사 완료로 표시하지 않는다.
 
 운영 화면 갱신 명령은 대시보드 하단과 각 HTML에 기록한다. 화면 간 이동은 하네스 대시보드, 논문 라이브러리, 사고실험 목록을 연결한다.

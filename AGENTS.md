@@ -21,11 +21,15 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 
 ## 새 세션 시작 (필수)
 
-이 저장소를 새로 복제했거나 새 Codex 세션에서 첫 사용자 요청을 받으면, 요청을 처리하기 전에 저장소 루트에서 다음 점검을 실행한다.
+이 저장소를 새로 복제했거나 새 에이전트 세션에서 첫 사용자 요청을 받으면, 요청을 처리하기 전에 저장소 루트에서 다음 점검을 실행한다.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
+```bash
+python3 .scripts/bin/onboarding_check.py --create-dirs
 ```
+
+Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사용한다.
+
+`--host`를 생략하면 개인 연결 설정의 에이전트를 우선하고, 설정이 없으면 설치된 `codex` → `claude` → `omp` 순서에서 처음 발견된 호스트를 선택한다. 특정 호스트를 검사하려면 `--host omp`, `--host claude` 또는 `--host codex`를 명시한다.
 
 - 성공하면 사용자 요청을 계속 처리한다. 사용자에게 README를 읽거나 수동 점검을 실행하라고 요구하지 않는다.
 - 실패하면 출력의 `FAIL` 항목과 필요한 설치 명령만 간단히 보고한다. 해당 도구가 필수인 작업은 보류하되, 가능한 범위의 작업은 계속한다.
@@ -45,6 +49,51 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
 
 - 직접 만든 HTML 화면은 `100-views/`, 공통 화면 자산은 `100-views/assets/`에서 관리한다. 생성기는 `.scripts/bin/`에 유지한다.
 
+## 프로젝트 스킬
+
+아래 16개는 이 저장소 범위의 스킬이다. omp, Claude Code, Codex는 저장소에서 실행할 때 이 프로젝트의 스킬을 발견한다. 다른 저장소에 전역 설치되는 것은 아니다.
+
+| 이름 | 목적 | 정본 경로 |
+|---|---|---|
+| `paper-search` | 논문 검색·수집과 등록 | `.agents/skills/paper-search/` |
+| `daily-digest-loop` | 일일 논문 후보를 채팅으로 제시 | `.agents/skills/daily-digest-loop/` |
+| `paper-scheduler` | 날짜별 논문 선정 계획 관리 | `.agents/skills/paper-scheduler/` |
+| `paper-summary` | 논문 세 편 요약 | `.agents/skills/paper-summary/` |
+| `paper-review` | 원문 3패스 심층 리뷰 | `.agents/skills/paper-review/` |
+| `review-index` | 리뷰 인덱스 갱신 | `.agents/skills/review-index/` |
+| `keep-list` | 읽기 대기열 관리 | `.agents/skills/keep-list/` |
+| `paper-favorites` | 선호 논문 관리 | `.agents/skills/paper-favorites/` |
+| `concept-note` | 사용자 확인 개념을 공부노트로 정리 | `.agents/skills/concept-note/` |
+| `related-work` | 선행·후속 문헌 추적 | `.agents/skills/related-work/` |
+| `paper-relations` | 논문 간 관계를 원문으로 검증 | `.agents/skills/paper-relations/` |
+| `graphify` | 지식 그래프 구축·질의·갱신 | `.agents/skills/graphify/` |
+| `thought-experiment-critique` | 아이디어의 전제와 반증 조건 점검 | `.agents/skills/thought-experiment-critique/` |
+| `critical-validation` | 근거 동결과 독립 3심사 | `.agents/skills/critical-validation/` |
+| `thought-experiment-runner` | 승인된 가설의 작은 실험 실행 | `.agents/skills/thought-experiment-runner/` |
+| `math-derivation` | 수식의 가정과 유도 단계 설명 | `.agents/skills/math-derivation/` |
+
+## 호스트별 도구 어휘
+
+| 능력 | omp | Claude Code | Codex |
+|---|---|---|---|
+| 파일 읽기 | `read` | Read | 셸 읽기 |
+| PDF 쪽수 | `bash`: `pdfinfo` | Bash: `pdfinfo` | 셸: `pdfinfo` |
+| PDF 범위 읽기 (최대 10쪽) | `bash`: `pdftotext -f a -l b -layout <pdf> -` | Read `pages` 또는 Bash `pdftotext` | 셸: `pdftotext` |
+| 그림·표 확인 | `pdftoppm -f p -l p -png -r 150 <pdf> /tmp/<slug>-p<p>` 후 `read` | 같은 명령 후 Read | 같은 명령 후 이미지 보기 |
+| 웹 검색 / URL | `web_search` / `read <url>` | WebSearch / WebFetch | 웹 검색 도구 |
+| 하위 에이전트 | `task`와 `agent:` | Agent | `spawn_agent` / `wait_agent` / `close_agent` |
+| 스킬 호출 | `/skill:<name>` 또는 자연어 + `skill://<name>` | `/<name>` | `$<name>` |
+
+omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 검증), `idea-critic`(아이디어 심사), `graph-extractor`(그래프 청크)다. 공유 정의는 모델을 지정하지 않으며 개인 설정이나 부모 세션에서 모델을 정한다. 리뷰 독립 검증은 요청 시 수행한다.
+
+기본 관문인 `critical-validation`은 동일한 근거 묶음 경로·SHA-256·brief를 격리된 방법·재현성·새로움 심사자 셋에게 동시에 전달한다. omp에서는 `task` 한 번에 `agent: idea-critic` 항목 셋을 사용하고 각 항목에 해당 역할과 페르소나만 전달한다. 도구 부재, 깊이 제한, 해시 불일치 또는 심사 실패 시 `심사 대기`로 남기며 순차 역할극으로 대체하지 않는다. graphify 청크는 omp에서 청크당 `agent: graph-extractor` 항목 하나를 사용한다.
+
+## 개인 설정과 로컬 덮어쓰기
+
+개인 설정이 필요하면 `.omp/config.example.yml`을 `.omp/config.yml`로, `.research-harness-agent.example.json`을 `.research-harness-agent.json`으로, `AGENTS.local.example.md`를 `AGENTS.local.md`로 복사해 수정한다. 이 개인 파일은 Git에 커밋하지 않는다. omp에서 `AGENTS.local.md`를 자동으로 읽으려면 개인 설정의 `contextFiles.extra`에 추가한다.
+
+`PROGRESS_BACKEND`와 `CRITICAL_VALIDATION_SETTINGS`는 같은 폴더에 `<이름>.local.md`가 있으면 공유 `<이름>.md` 대신 먼저 읽고, 없으면 공유 설정을 사용한다. 개인 온보딩 선택은 공유 파일이 아닌 로컬 파일에 쓴다. Notion 연동은 유지한다. 개인 `PROGRESS_BACKEND.local.md`에 `notion: disabled`가 있으면 Notion 분기를 실행하거나 제안하지 않으며, 사용자가 Notion 기록을 요청하면 로컬 비활성 상태를 알리고 저장소 정본에 기록한다.
+
 ## 파일 명명 규칙
 
 `{연도}-{제1저자성}-{짧은슬러그}` (소문자, 하이픈). PDF는 논문의 주 카테고리 폴더인 `wifi-csi`, `game-ai`, `agent-ai`, `computer-vision`, `other` 중 하나에 저장한다.
@@ -57,11 +106,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
 
 ## 표준 워크플로
 
-1. **수집** — `/paper-search`. 메타데이터 확정 후 `01-Papers/pdfs/{category}/`에 저장.
+1. **수집** — `paper-search`. 메타데이터 확정 후 `01-Papers/pdfs/{category}/`에 저장.
 2. **트리아지** — `90-Templates/paper/triage-template.md`로 1패스. 메모는 `01-Papers/triage/`, 상태는 `01-Papers/index.md`에 남긴다.
-3. **심층 리뷰** — `/paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다.
-4. **위치 파악** — 필요 시 `/related-work`로 선행/후속 연구 맵핑.
-5. **인덱스 갱신** — `/review-index`로 `01-Papers/index.md` 한 줄 추가.
+3. **심층 리뷰** — `paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다.
+4. **위치 파악** — 필요 시 `related-work`로 선행/후속 연구 맵핑.
+5. **인덱스 갱신** — `review-index`로 `01-Papers/index.md` 한 줄 추가.
 
 ## 연구 하네스 라우팅
 
@@ -77,7 +126,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\.scripts\setup.ps1
 
 ## 원문 읽기
 
-- PDF는 Read 도구의 `pages` 인자로 직접 읽는다 (`pages: "1-10"`, 요청당 최대 20쪽). 외부 변환 도구 불필요.
+- PDF는 호스트별 도구 어휘에 따라 한 번에 최대 10쪽씩 읽고, 리뷰에 실제로 읽은 페이지의 `읽은 범위`를 남긴다. 근거 위치에도 실제 읽은 페이지 번호를 적는다. 추출된 텍스트가 비어 있는 스캔 PDF 등은 `needs_input`으로 남기고 완료 처리하지 않는다.
 - **긴 논문은 통째로 읽지 말고 구간을 나눠 읽는다.** 본문 → 실험 → 부록 순으로 필요한 만큼만.
 - 초록·서론만 읽고 방법 섹션을 추측해 쓰지 않는다. 방법·실험 서술은 반드시 해당 페이지를 실제로 읽은 뒤 쓴다.
 

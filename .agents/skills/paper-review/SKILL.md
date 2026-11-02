@@ -53,6 +53,7 @@ description: 논문 1편을 3패스로 정독하고 다섯 분석 축을 리뷰�
 4. `review-index` 스킬로 `01-Papers/index.md`에 한 줄 추가한다.
 5. 다섯 JSON 축을 보강하고 `python3 .scripts/bin/paper_record.py validate 01-Papers/library/{slug}.json`으로 검증한다. 수집 메타데이터·기존 출처를 보존하고 원문에서 확인한 분석과 근거만 추가한다.
 6. 최종 논문 JSON을 검증한 뒤 `python3 .scripts/bin/graphify_sync.py begin --source 01-Papers/library/{slug}.json`을 실행하고 Graphify 스킬을 `.` 대상으로 `--update`로 수행해 문서 의미 추출까지 완료한다. 성공 뒤 `graphify_sync.py complete`로 기록한다. 실패하면 `graphify_sync.py fail --message "..."`을 남기고 리뷰는 완료 처리하되 동기화 pending을 보고한다.
+   - 위키 갱신: `python3 .scripts/bin/wiki.py index` 후 `python3 .scripts/bin/wiki.py log --op update --title "<논문 제목>" --path <리뷰 경로> --path <JSON 경로>`. 작업 지시가 `wiki-index.md`·`wiki-log.md` 수정을 금지하면(로컬 리뷰 브리지) 건너뛴다. 브리지가 게시 뒤 직접 갱신한다.
 7. 리뷰에서 재사용 가능한 개념 후보를 추출해 `00-Inbox/concept-candidates/YYYY-MM-DD-{concept-slug}.md`에 후보 초안을 만든다. [`00-Inbox/concept-candidate-template.md`](../../../00-Inbox/concept-candidate-template.md)를 사용하고 리뷰·JSON의 근거를 연결한다. 후보가 없으면 억지로 만들지 말고 사용자에게 없다고 알린다.
 8. 후보 초안은 사용자의 이해나 승인으로 간주하지 않는다. `02-Concepts/`에는 자동 복사하지 않는다. 사용자가 후보를 검토하고 자신의 설명·수정을 확인한 뒤, 명시적으로 승격을 요청할 때 `concept-note`로 정본을 작성한다.
 9. 사용자에게 보고할 때: 리뷰 파일 경로, TL;DR, 가장 중요한 비판 2~3개, Graphify 상태, 개념 후보 경로(또는 없음)를 짚는다.

@@ -22,6 +22,7 @@ description: "사용자가 개념 공부노트를 명시적으로 생성·수정
 4. 템플릿의 정의·필요성·직관·예시/수식·혼동점·연결 자료·확인할 것을 채운다. 논문 사실에는 논문 리뷰/PDF의 위치를 링크하고, 분석자 설명은 사실과 구분한다.
 5. 노트를 `02-Concepts/{concept-slug}.md`에 작성하거나 기존 노트를 갱신한다. 상태는 `초안`으로 시작한다. 사용자가 후보에 이해 확인/수정 내용을 남겼으면 그 내용만 반영한다. `내 설명`을 에이전트가 대신 만들지 않는다.
 6. 정본 변경 뒤 `python3 .scripts/bin/graphify_sync.py begin --source 02-Concepts/{concept-slug}.md`를 실행하고 Graphify 스킬을 `.` 대상으로 `--update`로 수행한다. 성공 뒤 `graphify_sync.py complete`로 기록한다. 실패하면 `graphify_sync.py fail --message "..."`을 남기고 정본은 유지하며 동기화 pending과 재시도 방법을 알린다.
+   - 위키 갱신: `python3 .scripts/bin/wiki.py index` 후 `python3 .scripts/bin/wiki.py log --op ingest --title "<개념 이름>" --path 02-Concepts/{concept-slug}.md`(기존 노트 수정이면 `--op update`).
 7. 완료 후 파일 경로, 사용한 근거, 확인이 필요한 부분을 채팅으로 알린다. 사용자가 검토·수정한 사실만 상태를 `공부 중` 또는 `정리 완료`로 바꾼다.
 
 ## 경계

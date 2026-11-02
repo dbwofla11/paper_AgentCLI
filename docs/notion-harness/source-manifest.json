@@ -1,15 +1,15 @@
 [
   {
     "path": ".agents/skills/concept-note/SKILL.md",
-    "sha256": "3342d703f2fd2e2b2d549f64c7c0bde3ca9bc8de19f2e01e894728cf63017ab1"
+    "sha256": "6d8758ed4f72dbf113305f8e1a66ba643a57d521a17050fb15230609716bc60d"
   },
   {
     "path": ".agents/skills/critical-validation/SKILL.md",
-    "sha256": "8a3fadd8079adf8ecd2464a13589af6c42336d768e5c29c2bf9f5bfcca8064c7"
+    "sha256": "8718c117cf8a73d7e661e54ec99181844234bf4714629c635e0b029b8e61d122"
   },
   {
     "path": ".agents/skills/daily-digest-loop/SKILL.md",
-    "sha256": "0121ae10d05ca9f5d0c6118683dd8ca36559ba1b24c12485d0d20be8e68d5447"
+    "sha256": "823272b50ff7b3616380921e7ddab01888c3710606be0afb3621c87c26249212"
   },
   {
     "path": ".agents/skills/graphify/SKILL.md",
@@ -21,15 +21,15 @@
   },
   {
     "path": ".agents/skills/paper-favorites/SKILL.md",
-    "sha256": "b8035a73e66152d1ccdc9755f13febb1c9bf1c661275642e8c68d032e3e6c364"
+    "sha256": "cd306afa964b47a0084151012e72c7d56b897be1e3e0c080ffe007d0dab890b8"
   },
   {
     "path": ".agents/skills/paper-relations/SKILL.md",
-    "sha256": "0612c4ba06bda495f185d22aaf632a765e112096ea973e30d1dc03a2dc613a31"
+    "sha256": "02b3587d6c842b6d46e3b3de0634238d7e7392b8c379233855ec9937028364e5"
   },
   {
     "path": ".agents/skills/paper-review/SKILL.md",
-    "sha256": "a9bceb234b3b675c4a45e80f98ba79a0f98a738418785f907c268ebb0b314b09"
+    "sha256": "81edc1f2a0a82be128b6640f8110a9270f088c3891f3fd9ff96651a87290816e"
   },
   {
     "path": ".agents/skills/paper-scheduler/SKILL.md",
@@ -37,27 +37,27 @@
   },
   {
     "path": ".agents/skills/paper-search/SKILL.md",
-    "sha256": "e66cb54c9192d684c1ed4f5a351a18abc99844bdb7bc8aa7e96708b34c1bdb8f"
+    "sha256": "fa291f9d95da146320fbc0f96f57306399f064f1c4212b7260a55183db316d41"
   },
   {
     "path": ".agents/skills/paper-summary/SKILL.md",
-    "sha256": "1131d303a5c01803d5246a3d8ecd671b2e948ac86cafafa72c0e5cf2303e00cd"
+    "sha256": "0f8c377c472ee3528582ed990e658759cd25555d9542fc4e46ce48ae36660346"
   },
   {
     "path": ".agents/skills/related-work/SKILL.md",
-    "sha256": "a1dd1494bbc43e7f4cf48ad5f0e0b78ccb45f93ff98c8e5fc783cbb1ab47cbaa"
+    "sha256": "ca0ca696a7e15fe7d5c580f287d7fb83d53a48302ab230d2c0515d545a105b55"
   },
   {
     "path": ".agents/skills/review-index/SKILL.md",
-    "sha256": "e22d1c09341f48bdc3608222ce79b22acccdcbd457c8a0e1eca0bf0c04506c89"
+    "sha256": "12774898516f0f0288d1dbb08e9a0aa02144013eb0e0deeb2fc1953af7f9d08f"
   },
   {
     "path": ".agents/skills/thought-experiment-critique/SKILL.md",
-    "sha256": "e507415734db711bc31a810e06282100784b0ca23c60c6502be3ee2c8d052e2d"
+    "sha256": "d8ed98aa1133c9a93a73c365c22dd7b23f632e021de0aa248ef538378306ad0d"
   },
   {
     "path": ".agents/skills/thought-experiment-runner/SKILL.md",
-    "sha256": "0d279c40559577e065559cc0415c3bd36d812a9b98a76e9d35944c7313e761b6"
+    "sha256": "7c737331741c34237cdcf829fb1e0634247ade60dd7c9c1608b40485b6c21d40"
   },
   {
     "path": ".scripts/docs/idea-analysis.schema.json",
@@ -73,15 +73,15 @@
   },
   {
     "path": ".scripts/docs/research-todo.schema.json",
-    "sha256": "45f33280b29bdfc3ff18abc5db1ce26c0e7d19a96cb1e695af0c6347d26155d0"
+    "sha256": "67d8fd6c2bef0046d9ba9adfab407132616171365e5224efd78b3e181d7e7a43"
   },
   {
     "path": ".scripts/docs/research-workflow-map.json",
-    "sha256": "3707b4364337b25cb2e0997d0821cb8aaa18008a4540e1e86092190d4af9f9b2"
+    "sha256": "b2b19314e30305c362164f8ea45e93da6e8a1bd8b889b2b117fec682309e8f19"
   },
   {
     "path": ".scripts/docs/search-protocol.md",
-    "sha256": "a0e3cf4e6ec1ea102cb65c54b1ea94bb16f07f9ff4404645aff89707eef5322f"
+    "sha256": "92f21f8974cecf77c0e39067eabc21ec1fe92169f0d2bcefa906245bfb592a85"
   },
   {
     "path": "04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md",
@@ -125,7 +125,7 @@
   },
   {
     "path": "100-views/README.md",
-    "sha256": "058c61ee2f1cf76cf081ae645436127f390fa8dda6040a713609d3e1f8acebba"
+    "sha256": "fa073a5a3cfde88002f9213c736c35576bec836c0285403c68f7cddd413bf52e"
   },
   {
     "path": "90-Templates/paper/review-template.md",
@@ -141,19 +141,19 @@
   },
   {
     "path": "AGENTS.md",
-    "sha256": "5c0ed22a10454f96dfc610f5dd101ca1836c39ffece33fb6eae784b7f8d983cc"
+    "sha256": "eb918ab2d2959d7c63725e9df5a061265e6003a1e98593fe70954c040b7157ad"
   },
   {
     "path": "docs/Harness-Graph.md",
-    "sha256": "3050453e5ae0d83394673d6562795cc872afd9840e18939740b2ea64ef00933f"
+    "sha256": "bb5d6704818a6ade6326568a483450197f17060139fb47f6c92fba90102e365e"
   },
   {
     "path": "docs/Home.md",
-    "sha256": "07e3943d8e947b8712c3ce9850b6794938ea17fcee555b2a722e6e3d67388a3b"
+    "sha256": "b394bee8e7fab5982bbacf9e12c846d49bfc2b7dec2d1f51a0c53f4a10d19fe0"
   },
   {
     "path": "docs/Skill-Catalog.md",
-    "sha256": "6331171cc4e2f384e56de4a784c9a156ab7c71ecde19c4b8276efe9b3914e72b"
+    "sha256": "87a603ae0e0b0daa02f283a5f3b306668386f6caf5b88473312faa8dadcff3eb"
   },
   {
     "path": "docs/agent-research-todo.md",
@@ -161,7 +161,7 @@
   },
   {
     "path": "docs/daily-orca-automation.md",
-    "sha256": "074aff7ec2bbdbbc08c4dabff2fbf652c60ee4e843fc319e130cd9e39fcfe0de"
+    "sha256": "955ea754dd5816c3ccc74fba1f2a33c8cce42b932d7382a34209a83026a27889"
   },
   {
     "path": "docs/design/DESIGN-discord.md",
@@ -177,7 +177,7 @@
   },
   {
     "path": "docs/handoff-paper-harness.md",
-    "sha256": "115997ebd86ccb3741c117640649222ecc4b5213adc4b51db753344e28066819"
+    "sha256": "1978eec0c0b1eb47a71121b92df7123e7304cc216a1450c4a6caca7529f6b5c8"
   },
   {
     "path": "docs/lab-meeting-presentation-plan.md",
@@ -189,14 +189,14 @@
   },
   {
     "path": "docs/onboarding.md",
-    "sha256": "4295dfd809089d3b43b03ff4029cef5eaaefccb98e9e743dcd17849b1badda9e"
+    "sha256": "d9673e328da4bf9c22b38784394516e500ce6bc679389ff99434636679396e9b"
   },
   {
     "path": "docs/paper-review-bridge.md",
-    "sha256": "115997ebd86ccb3741c117640649222ecc4b5213adc4b51db753344e28066819"
+    "sha256": "d776e3e98c51ccefc3fa333a56dba28e317c055488c85e3521e1e5be1c9a5b09"
   },
   {
     "path": "docs/research-harness-installer.md",
-    "sha256": "916d0de3480fea09f6b2a14378e80f3cdbeaecef76705bdc23b1ddf9462b1f63"
+    "sha256": "66838588a7799c80d15b68ff8a1945e7cd1193d7cf81f9dc30c063b4f27af223"
   }
 ]

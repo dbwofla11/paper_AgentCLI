@@ -2,7 +2,7 @@
 
 AI/ML/CS 논문을 찾고, 정독하고, 한국어 심층 리뷰로 남기기 위한 omp / Codex / Claude Code 작업 공간.
 
-처음에는 [Home.md](docs/Home.md)에서 시작한다. 원문·리뷰 관리는 `01-Papers/`, **내가 공부해서 이해한 내용**은 `02-Concepts/`, 실제 실험·구현은 `04-Projects/`, 검증 전 가설은 `05-ideas/`에 둔다. 인덱스·Keep·즐겨찾기는 `01-Papers/` 바로 아래에, 논문 JSON은 `01-Papers/library/`에 둔다. [논문 JSON 시각화](100-views/paper-library.html)에서 레코드를 탐색할 수 있다.
+처음에는 [Home.md](docs/Home.md)에서 시작한다. 원문·리뷰 관리는 `01-Papers/`, **내가 공부해서 이해한 내용**은 `02-Concepts/`, 실제 실험·구현은 `04-Projects/`, 검증 전 가설은 `05-Ideas/`에 둔다. 인덱스·Keep·즐겨찾기는 `01-Papers/` 바로 아래에, 논문 JSON은 `01-Papers/library/`에 둔다. [논문 JSON 시각화](100-views/paper-library.html)에서 레코드를 탐색할 수 있다.
 
 연구 단계별 다음 실행 스킬은 [Harness-Graph.md](docs/Harness-Graph.md)에서 확인한다. [Skill-Catalog.md](docs/Skill-Catalog.md)는 보기 전용이다.
 
@@ -93,6 +93,8 @@ Claude를 사용하면 `--host claude`와 `claude`, omp를 사용하면 `--host 
 
 ```
 AGENTS.md              공통 에이전트 작업 규칙의 정본
+wiki-index.md          위키 페이지 전체 목록 (자동 생성, 직접 수정 금지)
+wiki-log.md            위키 작업 기록 (추가만 함)
 CLAUDE.md              AGENTS.md를 포함하는 Claude Code 진입점 + Claude 전용 설정 안내
 docs/Home.md           사람이 보는 시작 페이지 / MOC
 docs/Harness-Graph.md  연구 하네스 실행 순서
@@ -105,6 +107,7 @@ docs/Skill-Catalog.md  스킬 보기 전용 목록
 .scripts/bin/paper.py  arXiv / Semantic Scholar / OpenAlex CLI (stdlib만, 설치 불필요)
 .scripts/bin/onboard_research.py  사용자 에이전트 자동 연결·HTML 실행
 .scripts/bin/research_agent.py    Codex·Claude·omp 감지·인증 확인·실행 어댑터
+.scripts/bin/wiki.py   위키 인덱스(wiki-index.md) 생성·작업 기록(wiki-log.md)·구조 점검(lint)
 .scripts/docs/search-protocol.md  논문 탐색 프로토콜
 .mcp.json               연결된 MCP 서버: exa, arxiv-mcp, paper-search-mcp
 01-Papers/pdfs/        원문 PDF
@@ -113,7 +116,7 @@ docs/Skill-Catalog.md  스킬 보기 전용 목록
 01-Papers/             전체 인덱스 · Keep · 즐겨찾기
 01-Papers/library/     논문별 JSON 레코드
 03-Trends/daily/       일일 트렌드 다이제스트·예약 계획
-05-ideas/thought-experiments/  연구 아이디어 메모
+05-Ideas/thought-experiments/  연구 아이디어 메모
 100-views/             하네스·논문·사고실험 HTML과 공통 디자인 자산
 ```
 
@@ -126,7 +129,7 @@ docs/                  사람용 시작 페이지·하네스 그래프·스킬 �
 02-Concepts/           내 공부노트 (논문 간 개념 종합)
 03-Trends/             날짜별 트렌드와 daily/ 다이제스트
 04-Projects/           실험·구현·스터디 실행 단위
-05-ideas/              thought-experiments/를 포함한 연구 아이디어
+05-Ideas/              thought-experiments/를 포함한 연구 아이디어
 90-Templates/          공부노트 등 추가 양식
 99-Attachments/        그림·실험 산출물 등 비원문 첨부
 .scripts/              자동화 실행 코드와 탐색 프로토콜
@@ -146,6 +149,8 @@ graphify install --project --platform agents
 ```
 
 Graphify 스킬의 정본은 `.agents/skills/graphify/`다. `.claude/skills/graphify/`와 `.codex/skills/graphify/`는 같은 정본을 가리키는 호환 링크이며, 복사본을 두지 않는다. Graphify 규칙은 `AGENTS.md`에 둔다. 논문 관계는 원문에서 확인되지 않으면 `[확인 필요]`로 표시한다.
+
+지식 그래프 질의는 graphify CLI(`graphify query "<질문>"`, `graphify path "A" "B"`, `graphify explain "X"`, `graphify affected "X"`)가 `graphify-out/graph.json`을 읽어 수행한다. `graphify-out/`은 커밋하지 않으므로 새 clone에는 그래프가 없다. 먼저 Graphify 스킬로 구축하고(의미 추출에 모델 호출 비용이 든다), 이후 `.scripts/bin/graphify_sync.py`로 동기화를 추적한다. 그래프가 없으면 `wiki-index.md`와 페이지를 읽는다. 위키·그래프는 MCP 서버로 접근하지 않으며, 기능이 더 필요하면 `.scripts/bin/wiki.py`를 확장한다.
 
 ## .scripts/bin/paper.py
 

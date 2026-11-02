@@ -13,7 +13,6 @@
 | Codex, Claude Code 또는 omp + 사용 가능한 계정 | 에이전트 실행 | `codex --version`, `claude --version` 또는 `omp --version` |
 | 인터넷 | 로그인·모델 응답·논문 검색/다운로드 | 첫 요청과 검색으로 확인 |
 | uv / uvx | 논문 MCP 서버, Graphify 설치 | `uv --version`, `uvx --version` |
-| Node.js / npx | 선택 기능 llmwiki MCP | `npx --version` |
 | Graphify | 논문 관계 질의·정본 갱신 | `graphify --help` |
 | EXA_API_KEY | 선택 기능 Exa 의미 검색 | 환경 진단의 설정 여부 표시 |
 | Orca | 예약 실행·Orca worker 기능 | 해당 기능을 사용할 때 별도 구성 |
@@ -189,7 +188,6 @@ Claude는 `claude mcp list`로 설정을 확인한다. 이후 에이전트 안�
 | arxiv-mcp | uvx; 설정의 Python 3.11·서버 버전 사용 | 로그와 패키지 다운로드를 확인; `paper.py` 대체 경로 |
 | paper-search-mcp | uvx; `mcp<2` 제약 사용 | 버전 제약·연결 확인; 다른 검색 소스 사용 |
 | exa | 본인 EXA_API_KEY | 키 없이 시작 가능; 사용할 때만 키 설정 |
-| llmwiki (Codex 설정) | Node.js/npx, `.wiki` 저장 경로 | 사용하지 않으면 해당 서버 표에 `enabled = false` 추가 |
 
 Exa를 사용할 때는 터미널에서 비밀값을 화면에 표시하지 않고 입력한 뒤 같은 터미널에서 에이전트를 다시 시작한다:
 
@@ -208,7 +206,9 @@ uv tool install 'graphifyy[pdf]'
 python3 -B .scripts/bin/onboarding_check.py --host codex --with-mcp --with-graphify
 ```
 
-스킬은 이미 저장소에 있다. 새 clone에는 무시된 `graphify-out/` 캐시가 없을 수 있으므로 에이전트에 “Graphify 스킬을 읽고 이 저장소의 그래프를 구축해줘”라고 요청한다. 초기 추출과 의미 분석은 별도 작업이다. 코드 변경의 `graphify update .`는 AST 갱신이며 논문 의미 추출 완료를 대신하지 않는다. 의미 동기화 실패는 재시도 가능한 pending으로 남긴다.
+스킬은 이미 저장소에 있다. 지식 그래프 `graphify-out/graph.json`은 커밋하지 않으므로 새 clone에는 없다. 에이전트에 “Graphify 스킬을 읽고 이 저장소의 그래프를 구축해줘”라고 요청해 먼저 만든다. 이 구축은 의미 추출을 위해 모델 호출 비용이 든다. 그래프가 생기면 `graphify query "<질문>"`, `graphify path "A" "B"`, `graphify explain "X"`, `graphify affected "X"`로 질의하고, 정본이 바뀌면 `.scripts/bin/graphify_sync.py`로 동기화를 추적한다. 코드 변경의 `graphify update .`는 AST 갱신이며 논문 의미 추출 완료를 대신하지 않는다. 의미 동기화 실패는 재시도 가능한 pending으로 남긴다. 그래프가 없으면 `wiki-index.md`와 해당 페이지를 읽는다.
+
+위키와 지식 그래프는 MCP 서버로 접근하지 않는다. 로컬 리뷰 브리지의 작업 복사본에는 프로젝트 MCP 설정(`.mcp.json`, `.codex/`, `.claude/`)이 복사되지 않는다. 위키·그래프 기능이 더 필요하면 MCP 서버를 추가하지 말고 저장소 CLI `.scripts/bin/wiki.py`를 확장한다.
 
 HTML 화면은 `100-views/harness-dashboard.html`, `paper-library.html`, `thought-experiments.html`을 브라우저에서 열면 된다. 화면과 실제 에이전트 실행의 차이는 [로컬 리뷰 실행기](paper-review-bridge.md)를 본다. 일일 자동 검색은 별도 Orca Automation이 필요하며, `$paper-scheduler`는 날짜별 주제 계획만 기록한다.
 
@@ -222,7 +222,6 @@ HTML 화면은 `100-views/harness-dashboard.html`, `paper-library.html`, `though
 | Claude 링크가 일반 텍스트 파일임 | 심볼릭 링크가 보존되는 WSL 파일 시스템에 새 clone; 개인 수정은 먼저 보관 |
 | Codex 프로젝트 MCP가 안 보임 | 프로젝트 신뢰·시작 디렉터리·사용자 설정 확인 |
 | MCP 시작 실패 | uvx/Python/네트워크/서버 로그 확인; 사용하지 않는 서버는 비활성화 |
-| llmwiki가 다른 폴더를 읽음 | 저장소 루트에서 시작; GUI 런타임의 작업 디렉터리도 확인 |
 | 401 또는 로그인 실패 | 선택한 에이전트 로그인 상태와 계정 접근 권한 확인 |
 | 논문 API 429 | 재시도·대체 소스 사용; 결과를 지어내지 않기 |
 | manifest 누락 | 이 저장소는 onboarding_check.py; 외부 설치 대상은 research_harness_check.py |

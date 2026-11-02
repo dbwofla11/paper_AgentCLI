@@ -18,13 +18,14 @@ import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 import research_agent
+from harness_common import git_visible_files
 
 ROOT = Path(__file__).resolve().parents[2]
 LIBRARY = ROOT / "01-Papers/library"
 QUEUE = ROOT / "04-Projects/review-queue/queue.json"
 LOCK = threading.RLock()
 MAX_JOBS = 1
-ALLOWED_ROOTS = ("01-Papers/", "02-Concepts/", "03-Trends/", "04-Projects/", "05-ideas/", "00-Inbox/", "docs/", "100-views/", "graphify-out/", ".scripts/", ".agents/")
+ALLOWED_ROOTS = ("01-Papers/", "02-Concepts/", "03-Trends/", "04-Projects/", "05-Ideas/", "00-Inbox/", "docs/", "100-views/", "graphify-out/", ".scripts/", ".agents/")
 ALLOWED_ROOT_FILES = {"AGENTS.md", "CLAUDE.md", "README.md"}
 
 
@@ -119,42 +120,10 @@ def staging_inventory(root: Path) -> set[Path]:
             paths.update((base / name).relative_to(root) for name in files)
             paths.update((base / name).relative_to(root) for name in dirs if (base / name).is_symlink())
 
-    error_message = "Git 제외 규칙을 확인하지 못해 리뷰 작업공간을 만들지 않았습니다"
     resolved_root = root.resolve()
-    has_git_marker = any(os.path.lexists(directory / ".git")
-                         for directory in (resolved_root, *resolved_root.parents))
-    git_env = os.environ.copy()
-    git_env["LC_ALL"] = "C"
-    for name in ("LANGUAGE", "GIT_DIR", "GIT_WORK_TREE"):
-        git_env.pop(name, None)
-    try:
-        context = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, check=False, env=git_env,
-        )
-    except OSError as exc:
-        if has_git_marker:
-            raise RuntimeError(error_message) from exc
-        in_worktree = False
-    else:
-        if context.returncode == 0 and context.stdout.strip() == b"true":
-            in_worktree = True
-        elif context.returncode != 0 and not has_git_marker:
-            in_worktree = False
-        else:
-            raise RuntimeError(error_message + " (지원하지 않거나 확인할 수 없는 Git 경로입니다)")
-
-    if in_worktree:
-        try:
-            listing = subprocess.run(
-                ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
-                capture_output=True, check=False, env=git_env,
-            )
-        except OSError as exc:
-            raise RuntimeError(error_message) from exc
-        if listing.returncode != 0:
-            raise RuntimeError(error_message)
-        paths.update(Path(os.fsdecode(name)) for name in listing.stdout.split(b"\0") if name)
+    listing = git_visible_files(root, "Git 제외 규칙을 확인하지 못해 리뷰 작업공간을 만들지 않았습니다")
+    if listing is not None:
+        paths.update(listing)
         paths.add(Path(".omp/config.yml"))
         for directory in (root, root / "04-Projects/thought-experiment-runs"):
             if directory.is_dir():
@@ -263,6 +232,34 @@ def publish_review_outputs(stage: Path, changed: set[str], live_before: dict,
     return publish, "success" if synced else "pending"
 
 
+def refresh_wiki(title: str, record_path: Path, review_path: Path) -> tuple[list[str], str | None]:
+    """Refresh the live wiki index and append one ingest log entry after a publish.
+
+    The review agent never edits these files; failures are reported, not raised,
+    so a published review is never rolled back by bookkeeping.
+    """
+    script = str(ROOT / ".scripts/bin/wiki.py")
+    steps = (
+        ("wiki-index.md", [sys.executable, script, "index"]),
+        ("wiki-log.md", [sys.executable, script, "log", "--op", "ingest", "--title", title,
+                         "--path", review_path.relative_to(ROOT).as_posix(),
+                         "--path", record_path.relative_to(ROOT).as_posix()]),
+    )
+    updated: list[str] = []
+    errors: list[str] = []
+    for name, command in steps:
+        try:
+            result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+        except OSError as exc:
+            errors.append(f"{name}: {exc}")
+            continue
+        if result.returncode:
+            errors.append(f"{name}: {(result.stderr or result.stdout).strip()[-1000:]}")
+        else:
+            updated.append(name)
+    return updated, ("; ".join(errors) or None)
+
+
 def review_worker(job_id: str, slug: str, timeout: int) -> None:
     with LOCK:
         data = load_queue()
@@ -292,6 +289,7 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
                 "Stop if actual pages cannot be read or extracted text is empty. Do not use only the abstract. "
                 "Follow 3 passes, cite all factual claims and numbers, update only this paper's Markdown review, "
                 "its JSON record, 01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
+                "Do not edit wiki-index.md or wiki-log.md; the bridge updates them after publishing. "
                 "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review."
             )
             last_message = Path(tmp) / "last-message.md"
@@ -342,6 +340,9 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             if "01-Papers/index.md" not in changed or "100-views/paper-library.html" not in changed:
                 raise RuntimeError("index or paper catalog was not regenerated")
             publish, sync_status = publish_review_outputs(stage, changed, live_before, record_path, target)
+            title = updated.get("title") if isinstance(updated.get("title"), str) and updated["title"].strip() else slug
+            wiki_files, wiki_error = refresh_wiki(" ".join(title.split()), record_path, target)
+            publish += wiki_files
         with LOCK:
             data = load_queue()
             job = next(item for item in data["jobs"] if item["job_id"] == job_id)
@@ -351,6 +352,9 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             job["graphify_sync"] = sync_status
             job["message"] = ("리뷰 검증과 저장을 완료했습니다. 그래프 동기화도 완료했습니다." if sync_status == "success"
                               else "리뷰 검증과 저장을 완료했습니다. 그래프 동기화는 재시도 대기 중입니다.")
+            if wiki_error:
+                job["message"] += (" 위키 인덱스·작업 기록 갱신은 실패했습니다"
+                                   "(python3 .scripts/bin/wiki.py index로 다시 갱신하세요): " + wiki_error)
             save_queue(data)
     except Exception as exc:  # preserve a retryable failure record for the UI
         with LOCK:

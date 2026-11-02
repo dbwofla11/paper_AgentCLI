@@ -18,4 +18,4 @@
 - `distributed-rf-geometry.md` — Tx/Rx 개수·간격·배치와 관측 가능성
 - `inverse-reconstruction.md` — CSI forward model과 inverse problem
 
-위 파일들은 아직 만들지 않았다. 첫 공부 때 필요한 것부터 만든다. 관련 사고실험은 [05-ideas](../05-ideas/README.md)에서 관리한다.
+위 파일들은 아직 만들지 않았다. 첫 공부 때 필요한 것부터 만든다. 관련 사고실험은 [05-Ideas](../05-Ideas/README.md)에서 관리한다.

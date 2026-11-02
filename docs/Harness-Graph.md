@@ -18,7 +18,7 @@ flowchart LR
     candidate -->|사용자 이해 확인 + 승격 요청| concept_skill["concept-note"]
     concept_skill --> concepts["02-Concepts<br>학습 정본"]
     concepts --> graph["Graphify 갱신<br>pending / success"]
-    review --> idea["05-ideas<br>가설·반증 조건"]
+    review --> idea["05-Ideas<br>가설·반증 조건"]
     idea --> grill["grill-me<br>기획 고정"]
     grill --> packet["동일한 읽기 전용 근거 묶음"]
     record --> packet
@@ -55,7 +55,7 @@ python3 .scripts/bin/research_workflow.py daily
 python3 .scripts/bin/research_workflow.py idea
 ```
 
-`Skill-Catalog.md`는 조회용이고 실행 순서는 `.scripts/bin/research_workflow.py`가 담당한다. Graphify 질문은 기존 그래프를 우선 조회한다. 코드 변경은 AST CLI 갱신, 논문·개념 문서 변경은 Graphify 스킬의 `--update` 의미 추출을 수행한다.
+`Skill-Catalog.md`는 조회용이고 실행 순서는 `.scripts/bin/research_workflow.py`가 담당한다. 지식 그래프 질문은 `graphify-out/graph.json`이 있으면 graphify CLI(`query`·`path`·`explain`·`affected`)로 기존 그래프를 우선 조회한다. 그래프는 커밋하지 않으므로 새 clone에서는 Graphify 스킬로 먼저 구축하고, 없으면 `wiki-index.md`와 페이지를 읽는다. 위키·그래프 접근에 MCP 서버를 쓰지 않는다. 코드 변경은 AST CLI 갱신, 논문·개념 문서 변경은 Graphify 스킬의 `--update` 의미 추출을 수행한다.
 
 대시보드의 작업 흐름 안내는 `.scripts/docs/research-workflow-map.json`을 읽는다. 이 파일은 기본 순서와 선택 단계·확인 조건·병렬 역할을 명시하며 `research_workflow.py --json`에도 포함된다. 새 흐름을 추가하거나 순서를 바꾸면 관련 스킬 지침과 함께 갱신하고 `verify_harness.py`로 참조 경로를 검사한다. 모든 스킬을 한 번에 순차 실행하는 명령은 아니다.
 

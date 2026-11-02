@@ -28,7 +28,7 @@ def main() -> int:
     if args.check:
         print(json.dumps({**status, 'pdf_reader_ready': bool(shutil.which('pdftotext'))}, ensure_ascii=False, indent=2))
         return 0 if status['ready'] and shutil.which('pdftotext') else 1
-    for relative in ('01-Papers/library', '01-Papers/pdfs', '01-Papers/reviews', '05-ideas/thought-experiments'):
+    for relative in ('01-Papers/library', '01-Papers/pdfs', '01-Papers/reviews', '05-Ideas/thought-experiments'):
         (ROOT / relative).mkdir(parents=True, exist_ok=True)
     state_path = ROOT / 'graphify-out/sync-state.json'
     if not state_path.exists():

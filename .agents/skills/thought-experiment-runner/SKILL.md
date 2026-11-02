@@ -5,7 +5,7 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
 
 # Thought Experiment Runner
 
-사고실험을 가설 노트에만 남기지 않고, 작은 반증 가능 실험과 재현 가능한 실행 기록으로 연결한다. 가설·반증 조건은 `05-ideas/thought-experiments/`에 유지하고, 실행 입력·manifest·결과는 `04-Projects/thought-experiment-runs/{slug}/`에 분리한다.
+사고실험을 가설 노트에만 남기지 않고, 작은 반증 가능 실험과 재현 가능한 실행 기록으로 연결한다. 가설·반증 조건은 `05-Ideas/thought-experiments/`에 유지하고, 실행 입력·manifest·결과는 `04-Projects/thought-experiment-runs/{slug}/`에 분리한다.
 
 ## 진척 관리 온보딩
 
@@ -44,6 +44,7 @@ description: "사고실험·연구 가설을 작은 재현 실험과 문헌 방�
    - `results.md` — criterion별 증거, 실행 여부, condition별 결과, 실패·누락, artifact 경로, 해석과 원자료의 구분
    - `progress.md` — backend가 `repository`일 때만 작성. 상태, acceptance criteria, blocker, 결정, 다음 행동을 기록
    - 실행 코드가 이미 있을 때만 그 코드를 호출한다. 원본 논문 PDF·기존 simulator·원본 manifest는 수정하지 않는다.
+   - `manifest.md`·`results.md`·`critique.md`를 쓰거나 고친 뒤 `python3 .scripts/bin/wiki.py index`를 실행하고 `python3 .scripts/bin/wiki.py log --op ingest --title "<slug> 실행" --path <파일>`(기존 파일 수정이면 `--op update`)로 기록한다.
 5. 결과는 가설을 승인하지 않는다. 관측값, 결측, 재현 여부만 보고하고, 가설의 채택·변경은 사람이 승인한다.
 
 ## Paper2Agent 연동

@@ -8,7 +8,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `01_Nair_Karim_LLM_Guided_RL_Adaptive_NPCs.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/01_Nair_Karim_LLM_Guided_RL_Adaptive_NPCs.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/01_Nair_Karim_LLM_Guided_RL_Adaptive_NPCs.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -17,7 +17,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `02_Qi_et_al_MASMP_RTS_Games.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/02_Qi_et_al_MASMP_RTS_Games.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/02_Qi_et_al_MASMP_RTS_Games.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -26,7 +26,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `03_Hong_PCSP_Infinite_NPCs.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/03_Hong_PCSP_Infinite_NPCs.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/03_Hong_PCSP_Infinite_NPCs.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -35,7 +35,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `04_Tseng_et_al_QuIP_Sharp.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/04_Tseng_et_al_QuIP_Sharp.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/04_Tseng_et_al_QuIP_Sharp.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -44,7 +44,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `05_Tseng_et_al_QTIP.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/05_Tseng_et_al_QTIP.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/05_Tseng_et_al_QTIP.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -53,7 +53,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `06_Dettmers_et_al_QLoRA.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/06_Dettmers_et_al_QLoRA.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/06_Dettmers_et_al_QLoRA.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -62,7 +62,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `07_Shao_et_al_DeepSeekMath.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/07_Shao_et_al_DeepSeekMath.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/07_Shao_et_al_DeepSeekMath.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -71,7 +71,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `08_Dadgarnia_et_al_GSQ.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/08_Dadgarnia_et_al_GSQ.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/08_Dadgarnia_et_al_GSQ.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -80,7 +80,7 @@
 
 - 추가일: 2026-09-17
 - 출처: 로컬 제공 PDF `09_Gallotta_et_al_LLMs_and_Games_Survey.pdf` · 서지정보 [확인 필요]
-- PDF: [바탕화면 원본](../../../LLM_GameAI_Papers/09_Gallotta_et_al_LLMs_and_Games_Survey.pdf)
+- PDF: [바탕화면 원본](../../LLM_GameAI_Papers/09_Gallotta_et_al_LLMs_and_Games_Survey.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 사용자 지정. LLM/Game AI 읽기 대기열.
@@ -89,7 +89,7 @@
 
 - 추가일: 2026-09-17
 - 출처: CVPR 2026 · [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Zhang_IPR-1_Interactive_Physical_Reasoner_CVPR_2026_paper.html) · [공식 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Zhang_IPR-1_Interactive_Physical_Reasoner_CVPR_2026_paper.pdf)
-- PDF: [저장소 PDF](../pdfs/game-ai/2026-zhang-ipr-interactive-physical-reasoner.pdf)
+- PDF: [저장소 PDF](pdfs/game-ai/2026-zhang-ipr-interactive-physical-reasoner.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 2026-09-16 다이제스트 2번. 사용자 지정.
@@ -98,7 +98,7 @@
 
 - 추가일: 2026-09-17
 - 출처: CVPR 2026 · [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Xia_SAGE_Scalable_Agentic_3D_Scene_Generation_for_Embodied_AI_CVPR_2026_paper.html) · [공식 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Xia_SAGE_Scalable_Agentic_3D_Scene_Generation_for_Embodied_AI_CVPR_2026_paper.pdf)
-- PDF: [저장소 PDF](../pdfs/computer-vision/2026-xia-sage-agentic-3d-scene-generation.pdf)
+- PDF: [저장소 PDF](pdfs/computer-vision/2026-xia-sage-agentic-3d-scene-generation.pdf)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 2026-09-16 다이제스트 3번. 사용자 지정.
@@ -107,8 +107,8 @@
 
 - 추가일: 2026-09-02
 - 출처: EMNLP 2026 Findings · [arXiv:2609.01567](https://arxiv.org/abs/2609.01567)
-- PDF: [저장소 PDF](../pdfs/agent-ai/merler-selective-agent-guidance-entropy-learning-autonomous-policies.pdf)
-- 메모: [분석 메모](../triage/2026-merler-selective-agent-guidance-entropy.notes.md)
+- PDF: [저장소 PDF](pdfs/agent-ai/merler-selective-agent-guidance-entropy-learning-autonomous-policies.pdf)
+- 메모: [분석 메모](triage/2026-merler-selective-agent-guidance-entropy.notes.md)
 - 리뷰: 없음
 - 상태: 킵
 - 이유: 기존 즐겨찾기에서 이관. “오늘 다이제스트 1번 논문이 괜찮아서.”
@@ -119,6 +119,6 @@
 
 - 추가일: 2026-09-17
 - 유형: 제품·연구 도구 조사
-- 자료: [Agents API 조사·검증 메모](../../02-Concepts/openai-agents-api.md) · [RF simulation 실행 루프 심층 분석](../../05-ideas/thought-experiments/2026-09-15-agents-api-rf-simulation-loop.md)
+- 자료: [Agents API 조사·검증 메모](../02-Concepts/openai-agents-api.md) · [RF simulation 실행 루프 심층 분석](../05-Ideas/thought-experiments/2026-09-15-agents-api-rf-simulation-loop.md)
 - 상태: 킵
 - 이유: 2026-09-14 조사. WaveVerse/ESP32 실험에서 제한된 experiment controller로 쓸 수 있는지 추후 검증.

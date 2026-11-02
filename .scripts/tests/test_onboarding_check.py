@@ -94,7 +94,7 @@ class OnboardingChecks(unittest.TestCase):
             expected = ["00-Inbox", *(f"01-Papers/{kind}/{category}" for kind in ("pdfs", "reviews")
                         for category in ("wifi-csi", "game-ai", "agent-ai", "computer-vision", "other")),
                         "01-Papers/triage", "01-Papers/library", "02-Concepts", "03-Trends/daily",
-                        "04-Projects", "05-ideas/thought-experiments", "99-Attachments"]
+                        "04-Projects", "05-Ideas/thought-experiments", "99-Attachments"]
             for relative in expected:
                 self.assertTrue((root / relative).is_dir(), relative)
 

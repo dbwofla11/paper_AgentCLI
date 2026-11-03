@@ -268,6 +268,115 @@ class WikiTests(unittest.TestCase):
         self.assertRegex(output, r"(?m)^ERROR stale-index ")
         self.assertRegex(output, r"(?m)^WARNING (orphan-page|missing-title) ")
 
+    def test_lint_skips_single_and_multiline_html_comments(self):
+        self.put("02-Concepts/target.md", "# Target\n")
+        self.put("02-Concepts/source.md",
+                 "# Source\n"
+                 "<!-- [single](single-missing.md) -->\n"
+                 "<!-- opening\n[multiline](multi-missing.md)\n"
+                 "[hidden inbound](target.md) --> [visible](visible-missing.md)\n")
+        self.put("01-Papers/index.md", "[Source](../02-Concepts/source.md)\n")
+        self.assertEqual(self.run_wiki("index")[0], 0)
+        code, output, err = self.run_wiki("lint", "--json")
+        self.assertEqual(code, 1, output + err)
+        findings = json.loads(output)
+        broken = [f for f in findings if f["code"] == "broken-link"]
+        self.assertEqual(len(broken), 1, findings)
+        self.assertIn("visible-missing.md", broken[0]["detail"])
+        self.assertTrue(any(f["code"] == "orphan-page" and f["path"] == "02-Concepts/target.md"
+                            for f in findings), findings)
+
+    def test_lint_classifies_missing_and_outside_targets(self):
+        cases = (
+            ("[pdf](../01-Papers/pdfs/other/missing.pdf#page=2)\n",
+             "missing-source", "INFO", 0),
+            ("[outside](../../missing-outside.pdf)\n",
+             "outside-repo", "WARNING", 0),
+            ("[existing outside](../../)\n",
+             "outside-repo", "WARNING", 0),
+            ("[missing](missing.md)\n",
+             "broken-link", "ERROR", 1),
+            ("[near pdf directory](../01-Papers/pdfs-other/missing.pdf)\n",
+             "broken-link", "ERROR", 1),
+        )
+        for link, expected_code, level, exit_code in cases:
+            with self.subTest(link=link):
+                self.put("02-Concepts/source.md", "# Source\n" + link)
+                self.put("01-Papers/index.md", "[Source](../02-Concepts/source.md)\n")
+                self.assertEqual(self.run_wiki("index")[0], 0)
+                code, output, err = self.run_wiki("lint", "--json")
+                self.assertEqual(code, exit_code, output + err)
+                findings = json.loads(output)
+                classified = [f for f in findings if f["code"] in
+                              {"missing-source", "outside-repo", "broken-link"}]
+                self.assertEqual(len(classified), 1, findings)
+                self.assertEqual((classified[0]["code"], classified[0]["level"]),
+                                 (expected_code, level))
+                self.assertEqual(classified[0]["path"], "02-Concepts/source.md")
+                if expected_code == "missing-source":
+                    self.assertIn("원문 PDF는 저장소에 포함되지 않음", classified[0]["detail"])
+                code, output, err = self.run_wiki("lint")
+                self.assertEqual(code, exit_code, output + err)
+                self.assertRegex(output, rf"(?m)^{level} {expected_code} ")
+
+    def test_lint_html_comments_and_code_delimiter_precedence(self):
+        cases = (
+            "<!--\n`-->`\n[visible](missing.md)\n",
+            "<!--\n```\n-->\n[visible](missing.md)\n",
+            "`<!--`\n[visible](missing.md)\n",
+            "```html\n<!--\n```\n[visible](missing.md)\n",
+        )
+        for body in cases:
+            with self.subTest(body=body):
+                self.put("02-Concepts/source.md", "# Source\n" + body)
+                self.put("01-Papers/index.md", "[Source](../02-Concepts/source.md)\n")
+                self.assertEqual(self.run_wiki("index")[0], 0)
+                code, output, err = self.run_wiki("lint", "--json")
+                self.assertEqual(code, 1, output + err)
+                broken = [f for f in json.loads(output) if f["code"] == "broken-link"]
+                self.assertEqual(len(broken), 1, output)
+                self.assertEqual(broken[0]["level"], "ERROR")
+                self.assertIn("missing.md", broken[0]["detail"])
+
+    def test_lint_classifies_resolved_symlink_targets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            outside = Path(directory).resolve()
+            (outside / "existing.md").write_text("# External\n", encoding="utf-8")
+            self.put("02-Concepts/source.md", "# Source\n")
+            (self.root / "02-Concepts/external").symlink_to(outside, target_is_directory=True)
+            pdfs = self.root / "01-Papers/pdfs"
+            pdfs.mkdir(parents=True)
+            (self.root / "02-Concepts/pdf-link").symlink_to(pdfs, target_is_directory=True)
+            self.put("01-Papers/index.md", "[Source](../02-Concepts/source.md)\n")
+            cases = (
+                ("external/existing.md", "outside-repo", "WARNING"),
+                ("external/missing.md", "outside-repo", "WARNING"),
+                ("pdf-link/missing.pdf", "missing-source", "INFO"),
+            )
+            for target, expected_code, level in cases:
+                with self.subTest(target=target):
+                    self.put("02-Concepts/source.md", f"# Source\n[link]({target})\n")
+                    self.assertEqual(self.run_wiki("index")[0], 0)
+                    code, output, err = self.run_wiki("lint", "--json")
+                    self.assertEqual(code, 0, output + err)
+                    classified = [f for f in json.loads(output) if f["code"] in
+                                  {"missing-source", "outside-repo", "broken-link"}]
+                    self.assertEqual(len(classified), 1, output)
+                    self.assertEqual((classified[0]["code"], classified[0]["level"]),
+                                     (expected_code, level))
+
+    def test_lint_text_summary_counts_all_levels(self):
+        self.put("02-Concepts/source.md",
+                 "# Source\n"
+                 "[broken](missing.md)\n"
+                 "[outside](../../missing-outside.md)\n"
+                 "[pdf](../01-Papers/pdfs/other/missing.pdf)\n")
+        self.put("01-Papers/index.md", "[Source](../02-Concepts/source.md)\n")
+        self.assertEqual(self.run_wiki("index")[0], 0)
+        code, output, err = self.run_wiki("lint")
+        self.assertEqual(code, 1, output + err)
+        self.assertIn("wiki lint: 1 error(s), 1 warning(s), 1 info\n", output)
+
     def test_help_has_no_filesystem_side_effects(self):
         before = {p.relative_to(self.root) for p in self.root.rglob("*")}
         for args in (("--help",), ("index", "--help"), ("log", "--help"), ("lint", "--help")):

@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2608.27763"
 doi: "10.48550/arXiv.2608.27763"
 code: "https://github.com/yifanzhang-pro/fast-weight-attention"
-pdf: "papers/other/zhang-fast-weight-attention-continual-learning.pdf"
+pdf: "01-Papers/pdfs/other/zhang-fast-weight-attention-continual-learning.pdf"
 read_date: 2026-09-04
 rating: 4
 tags: [continual learning, fast weights, linear attention, DeltaNet, state space models]

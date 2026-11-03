@@ -5,11 +5,11 @@
 Semantic Scholar는 무키 호출 시 rate limit(429)이 걸릴 수 있다.
 
 사용법:
-    python scripts/paper.py search "query" [--source arxiv|s2|openalex] [--limit N]
-    python scripts/paper.py meta <arxiv_id|doi|s2_id> [--bibtex]
-    python scripts/paper.py pdf  <arxiv_id> [--out 01-Papers/pdfs/<category>]
-    python scripts/paper.py refs  <id> [--limit N]
-    python scripts/paper.py cites <id> [--limit N]
+    python .scripts/bin/paper.py search "query" [--source arxiv|s2|openalex] [--limit N]
+    python .scripts/bin/paper.py meta <arxiv_id|doi|s2_id> [--bibtex]
+    python .scripts/bin/paper.py pdf  <arxiv_id> [--out 01-Papers/pdfs/<category>]
+    python .scripts/bin/paper.py refs  <id> [--limit N]
+    python .scripts/bin/paper.py cites <id> [--limit N]
 
 모든 명령에 --json 을 붙이면 원시 JSON을 출력한다.
 """
@@ -326,7 +326,7 @@ def download_pdf(paper_id: str, outdir: str) -> str:
     bare = arxiv_bare_id(paper_id)
     if not bare:
         die("PDF 다운로드는 arXiv ID만 지원한다 (예: 1706.03762). "
-            "그 외 논문은 출판사 페이지에서 직접 받아 해당 papers/<category>/ 에 두세요.")
+            "그 외 논문은 출판사 페이지에서 직접 받아 해당 01-Papers/pdfs/<category>/ 에 두세요.")
     meta = get_meta(bare)
     year = meta.get("year") or "0000"
     first = (meta.get("authors") or ["unknown"])[0]

@@ -141,11 +141,11 @@
   },
   {
     "path": "AGENTS.md",
-    "sha256": "eb918ab2d2959d7c63725e9df5a061265e6003a1e98593fe70954c040b7157ad"
+    "sha256": "31183725b8a9cb80ab2fe2d6b960f3a20ef2b7f6af488bb6b2249ea2686d3dc6"
   },
   {
     "path": "docs/Harness-Graph.md",
-    "sha256": "bb5d6704818a6ade6326568a483450197f17060139fb47f6c92fba90102e365e"
+    "sha256": "74103474a531d7a1d8f2dc4cf1d27f1cca79a72eda6dbb8cd8bddec17b8dde62"
   },
   {
     "path": "docs/Home.md",
@@ -189,7 +189,7 @@
   },
   {
     "path": "docs/onboarding.md",
-    "sha256": "d9673e328da4bf9c22b38784394516e500ce6bc679389ff99434636679396e9b"
+    "sha256": "c1b6cca75dfec184bcaa6da61ba46bf5cfe971d5a0ea2cc2162f92ba592e391a"
   },
   {
     "path": "docs/paper-review-bridge.md",

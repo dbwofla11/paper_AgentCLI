@@ -119,6 +119,6 @@
 
 - 추가일: 2026-09-17
 - 유형: 제품·연구 도구 조사
-- 자료: [Agents API 조사·검증 메모](../02-Concepts/openai-agents-api.md) · [RF simulation 실행 루프 심층 분석](../05-Ideas/thought-experiments/2026-09-15-agents-api-rf-simulation-loop.md)
+- 자료: [Agents API 조사·검증 메모](../02-Concepts/openai-agents-api.md) · RF simulation 실행 루프 심층 분석 `05-Ideas/thought-experiments/2026-09-15-agents-api-rf-simulation-loop.md` (저장소에 없음)
 - 상태: 킵
 - 이유: 2026-09-14 조사. WaveVerse/ESP32 실험에서 제한된 experiment controller로 쓸 수 있는지 추후 검증.

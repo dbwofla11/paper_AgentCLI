@@ -66,8 +66,8 @@ def verify() -> int:
         if not path.is_file():
             return fail(f"missing {path.relative_to(ROOT)}")
     daily = (ROOT / "03-Trends/daily/README.md").read_text(encoding="utf-8")
-    if "03-Trends/daily/" not in daily or "notes/trends/" not in daily:
-        return fail("daily contract lacks canonical and legacy-path rules")
+    if "03-Trends/daily/" not in daily:
+        return fail("daily contract lacks the canonical path rule")
     catalog = (ROOT / "docs/Skill-Catalog.md").read_text(encoding="utf-8")
     if "보기 전용" not in catalog:
         return fail("catalog is not explicitly read-only")

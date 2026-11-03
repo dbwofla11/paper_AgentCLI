@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2607.08741"
 doi: "10.1145/3811284"
 code: "https://github.com/nv-tlabs/ardy"
-pdf: "papers/computer-vision/zhao-ardy-autoregressive-diffusion-hybrid-representation-interactive-human-motion-generation.pdf"
+pdf: "01-Papers/pdfs/computer-vision/zhao-ardy-autoregressive-diffusion-hybrid-representation-interactive-human-motion-generation.pdf"
 read_date: 2026-08-13
 rating: 4
 tags: [human motion generation, autoregressive diffusion, real-time animation, SMPL, interactive control, NVIDIA]
@@ -184,4 +184,4 @@ status: 완료
 ```
 
 ---
-*리뷰 작성: 2026-08-13 · 읽은 범위: pp.1-14 전체(본문 §1-7, 참고문헌 포함). GitHub(`nv-tlabs/ardy`) README도 WebFetch로 보조 확인(라이선스·체크포인트 학습 데이터 확인 목적). (2026-08-13 수정: 다운로드 스크립트가 만든 잘못된 중첩 디렉터리 구조를 `papers/`에서 정리함.)*
+*리뷰 작성: 2026-08-13 · 읽은 범위: pp.1-14 전체(본문 §1-7, 참고문헌 포함). GitHub(`nv-tlabs/ardy`) README도 WebFetch로 보조 확인(라이선스·체크포인트 학습 데이터 확인 목적). (2026-08-13 수정: 다운로드 스크립트가 만든 잘못된 중첩 디렉터리 구조를 `01-Papers/pdfs/`에서 정리함.)*

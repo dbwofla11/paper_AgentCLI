@@ -1,1 +1,0 @@
-../01-Papers/triage/2026-huang-can-llms-discover-scientific-laws.notes.md

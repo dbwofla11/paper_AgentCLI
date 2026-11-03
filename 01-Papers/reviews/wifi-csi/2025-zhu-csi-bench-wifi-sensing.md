@@ -6,7 +6,7 @@ year: 2025
 arxiv: "2505.21866"
 doi: "10.52202/085713-5648"
 code: "https://github.com/guozhen-jenn-zhu/CSI-Bench-Real-WiFi-Sensing-Benchmark"
-pdf: "papers/wifi-csi/2025-zhu-csi-bench-wifi-sensing.pdf"
+pdf: "01-Papers/pdfs/wifi-csi/2025-zhu-csi-bench-wifi-sensing.pdf"
 read_date: 2026-09-07
 rating: 4
 tags: [WiFi CSI, dataset, multi-task learning, domain generalization, wireless sensing]

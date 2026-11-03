@@ -6,7 +6,7 @@ year: 2025
 arxiv: "2506.10605"
 doi: "10.1145/3680207.3765601"
 code: "없음 — 논문에 공개 코드 링크 미기재"
-pdf: "papers/wifi-csi/ramesh-latentcsi-wifi-csi-latent-diffusion.pdf"
+pdf: "01-Papers/pdfs/wifi-csi/ramesh-latentcsi-wifi-csi-latent-diffusion.pdf"
 read_date: 2026-09-04
 rating: 4
 tags: [WiFi CSI, latent diffusion, image generation, wireless sensing, privacy]

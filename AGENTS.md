@@ -48,7 +48,7 @@ Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사�
 - 원문 PDF·심층 리뷰·일일 트렌드·사고실험·자동화의 정본은 각각 `01-Papers/pdfs/`, `01-Papers/reviews/`, `03-Trends/daily/`, `05-Ideas/thought-experiments/`, `.scripts/bin/`이다.
 - 논문별 기계 판독 레코드는 `01-Papers/library/{slug}.json`에 둔다. 수집 때 메타데이터를 기록하고 심층 리뷰 뒤 5축 분석과 원문 근거를 보강한다. 모든 축 검증 뒤 `structured_review_status: complete`로 표시한다. 형식은 `.scripts/docs/paper-record.schema.json`을 따른다.
 - `01-Papers/keep.md`(읽기/조사 대기열)와 `01-Papers/favorites.md`(선호 논문)는 독립 목록으로 유지한다. `01-Papers/library/`에는 논문 JSON만 둔다.
-- 루트의 기존 `papers/`, `reviews/`, `library/`, `notes/`, `templates/`, `scripts/`는 과거 링크와 자동화를 위한 호환 링크다. 새 파일은 여기에 쓰지 않는다. 사람용 안내 문서는 `docs/`에 둔다.
+- 사람용 안내 문서는 `docs/`에 둔다.
 
 - 직접 만든 HTML 화면은 `100-views/`, 공통 화면 자산은 `100-views/assets/`에서 관리한다. 생성기는 `.scripts/bin/`에 유지한다.
 
@@ -64,7 +64,7 @@ Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사�
 
 - **수집(ingest)·갱신** — 위키 페이지를 만들거나 고친 뒤 `python3 .scripts/bin/wiki.py index`로 `wiki-index.md`를 다시 만들고, `python3 .scripts/bin/wiki.py log --op ingest --title "<제목>" --path <파일>`(새 페이지) 또는 `--op update`(기존 페이지 수정)로 기록한다. `wiki-index.md`는 손으로 고치지 않는다.
 - **질의(query)** — 먼저 `wiki-index.md`를 읽는다. `graphify-out/graph.json`이 있으면 graphify CLI(`graphify query "<질문>"`, `graphify path "A" "B"`, `graphify explain "X"`, `graphify affected "X"`)로 범위를 좁힌 뒤 해당 페이지를 읽는다. 그래프는 커밋하지 않으므로 새 clone에는 없다. 없으면 `wiki-index.md`와 페이지만으로 답하고 그래프를 쓰지 않았다고 밝힌다. 답을 남길 가치가 있으면 범위 안의 새 페이지로 저장하고 `index`를 다시 실행한 뒤 `log --op query`로 기록한다.
-- **점검(lint)** — `python3 .scripts/bin/wiki.py lint`로 깨진 링크·오래된 인덱스·고립 페이지·제목 누락을 확인한다(보고 전용, 과거 페이지에는 깨진 링크가 남아 있을 수 있다). `03-Trends/daily/`는 `wiki-index.md`로 접근하는 날짜순 기록이라 고립 페이지 검사에서 제외한다(`ORPHAN_EXEMPT`). 이어서 에이전트가 페이지 사이의 모순·낡은 주장을 직접 검토하고, 결과를 `log --op lint`로 기록한다.
+- **점검(lint)** — `python3 .scripts/bin/wiki.py lint`로 깨진 링크·오래된 인덱스·고립 페이지·제목 누락을 확인한다(보고 전용). 수준: `ERROR`(`stale-index`, `broken-link`), `WARNING`(`orphan-page`, `missing-title`, 저장소 밖을 가리키는 `outside-repo`), `INFO`(`01-Papers/pdfs/` 아래 없는 원문 PDF `missing-source` — PDF는 커밋하지 않는다). HTML 주석 안의 링크는 검사하지 않으며, `ERROR`가 하나라도 있을 때만 종료 코드 1이다. `03-Trends/daily/`는 `wiki-index.md`로 접근하는 날짜순 기록이라 고립 페이지 검사에서 제외한다(`ORPHAN_EXEMPT`). 이어서 에이전트가 페이지 사이의 모순·낡은 주장을 직접 검토하고, 결과를 `log --op lint`로 기록한다.
 - `wiki-log.md`는 추가만 한다. 기존 항목을 고치거나 지우지 않는다. 로컬 리뷰 브리지가 리뷰를 게시하면 브리지가 직접 `index`와 `log --op ingest`를 실행하므로, 브리지 작업 중인 에이전트는 두 파일을 수정하지 않는다.
 - `verify_harness.py`는 `wiki.py index --check`로 인덱스가 최신인지만 검사한다. `lint`는 검증 단계에 포함하지 않는다.
 - 위키와 지식 그래프는 MCP 서버로 접근하지 않는다. 로컬 리뷰 브리지의 작업 복사본에는 프로젝트 MCP 설정이 없다. 위키·그래프 기능이 더 필요하면 MCP 서버를 추가하지 말고 저장소 CLI `.scripts/bin/wiki.py`를 확장한다.
@@ -142,7 +142,7 @@ omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 �
 - 아이디어는 `critical-validation`의 승인 전 `thought-experiment-runner`로 실행하지 않는다. 초안은 [Argument Auditor](04-Projects/validation/paper-draft-logic-review.md)로 주장–근거 연결을 점검한다.
 - 사용자가 대화에 올린 논문은 Keep 목록에 등록한다. 일일 후보는 채팅에만 제시하며 사용자가 채택하기 전에는 PDF·Keep·JSON을 저장하지 않는다.
 - 매일 논문 후보는 컴퓨터 비전 1편, 멀티모달 1편, 사용자 관심 분야 1편이며 학회 발표·게재가 확인되어야 한다. 반복 실행 시각은 Orca Automation에서 관리한다.
-- 일일 후보 검색은 뉴스, 자동 Git commit/push, 후보 보고서 파일 생성을 수행하지 않는다. 후보는 채팅으로만 보고하고, 날짜별 사용자 선정 계획만 `03-Trends/daily/{날짜}-plan.md`에 둔다. 과거 다이제스트의 정본도 `03-Trends/daily/`이며 `notes/trends/`는 사용하지 않는다.
+- 일일 후보 검색은 뉴스, 자동 Git commit/push, 후보 보고서 파일 생성을 수행하지 않는다. 후보는 채팅으로만 보고하고, 날짜별 사용자 선정 계획만 `03-Trends/daily/{날짜}-plan.md`에 둔다. 과거 다이제스트의 정본도 `03-Trends/daily/`다.
 
 ## 원문 읽기
 

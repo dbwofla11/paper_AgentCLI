@@ -165,7 +165,7 @@ arXiv 1706.03762를 paper-search로 수집해서 Keep과 논문 JSON에 등록�
 
 Codex에서는 `$paper-search`, Claude에서는 `/paper-search`, omp에서는 `/skill:paper-search`로 명시할 수 있다. 자연어 요청도 가능하다. 이 표기는 에이전트 입력란에서 사용하며 셸 명령이 아니다.
 
-원문을 구간별로 읽는지, 수치마다 위치를 붙이는지, 결과가 `01-Papers/pdfs/{category}/`, `reviews/{category}/`, `library/{slug}.json`, `keep.md`, `index.md`에 연결되는지 확인한다. 실행 환경에 PDF 페이지 읽기 도구가 없다면 그 문제부터 해결하고, 읽지 않은 논문을 완료 처리하지 않는다. 공부노트 승격은 사용자가 이해를 확인하고 명시적으로 요청한 뒤 진행한다.
+원문을 구간별로 읽는지, 수치마다 위치를 붙이는지, 결과가 `01-Papers/pdfs/{category}/`, `01-Papers/reviews/{category}/`, `01-Papers/library/{slug}.json`, `keep.md`, `index.md`에 연결되는지 확인한다. 실행 환경에 PDF 페이지 읽기 도구가 없다면 그 문제부터 해결하고, 읽지 않은 논문을 완료 처리하지 않는다. 공부노트 승격은 사용자가 이해를 확인하고 명시적으로 요청한 뒤 진행한다.
 
 ## 7. MCP와 Graphify 확장
 

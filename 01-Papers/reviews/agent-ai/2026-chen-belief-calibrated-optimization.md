@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2609.01861v1"
 doi: ""
 code: "없음"
-pdf: "papers/agent-ai/chen-belief-calibrated-optimization.pdf"
+pdf: "01-Papers/pdfs/agent-ai/chen-belief-calibrated-optimization.pdf"
 read_date: 2026-09-04
 rating: 4
 tags: [agentic optimization, world model, persistent memory, LLM agents, scaffold evolution]

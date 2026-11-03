@@ -135,7 +135,7 @@ docs/                  사람용 시작 페이지·하네스 그래프·스킬 �
 .scripts/              자동화 실행 코드와 탐색 프로토콜
 ```
 
-연구 순서는 [Harness-Graph.md](docs/Harness-Graph.md), 스킬 탐색은 [Skill-Catalog.md](docs/Skill-Catalog.md), 공통 에이전트 규칙은 [AGENTS.md](AGENTS.md)가 정본이다. [Home.md](docs/Home.md)는 폴더와 작업 진입점을 안내하는 MOC이며 같은 규칙을 복제하지 않는다. 루트의 `papers/`, `reviews/`, `notes/`, `library/`, `templates/`, `scripts/`는 과거 링크와 자동화를 유지하기 위한 호환 링크다.
+연구 순서는 [Harness-Graph.md](docs/Harness-Graph.md), 스킬 탐색은 [Skill-Catalog.md](docs/Skill-Catalog.md), 공통 에이전트 규칙은 [AGENTS.md](AGENTS.md)가 정본이다. [Home.md](docs/Home.md)는 폴더와 작업 진입점을 안내하는 MOC이며 같은 규칙을 복제하지 않는다.
 
 리뷰 뒤에는 개념 후보만 `00-Inbox/concept-candidates/`에 초안으로 생길 수 있다. 사용자의 이해 확인·승격 요청 전에는 `02-Concepts/` 학습 정본이 되지 않는다. 아이디어 검증은 필수 문헌 검색, 해시로 동결한 동일 근거 묶음, 독립 3인 심사 순으로 진행하며 상세는 [04-Projects](04-Projects/README.md)를 따른다.
 

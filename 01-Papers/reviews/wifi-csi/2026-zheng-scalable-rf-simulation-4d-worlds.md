@@ -6,7 +6,7 @@ year: 2026
 arxiv: "2508.12176"
 doi: "10.48550/arXiv.2508.12176"
 code: "https://zhiwei-zzz.github.io/WaveVerse/"
-pdf: "papers/wifi-csi/zheng-scalable-rf-simulation-generative-4d-worlds.pdf"
+pdf: "01-Papers/pdfs/wifi-csi/zheng-scalable-rf-simulation-generative-4d-worlds.pdf"
 read_date: 2026-08-13
 rating: 4
 tags: [RF sensing, ray tracing, motion generation, 4D scene generation, phase coherence, SMPL, data augmentation]
@@ -152,7 +152,7 @@ status: 완료
 
 - **직접 기반한 연구**: T2M-GPT(Zhang et al., 2023b) — 모션 토크나이저·자기회귀 구조의 base model로 명시(§4.1, "T2M-GPT, on which our method is built"); HumanML3D(Guo et al., 2022a) 데이터셋; SMPL(Loper et al., 2023) 인체 파라메트릭 모델; 4D 환경 생성은 Yang et al.(2024) 파이프라인 위에 구축.
 - **경쟁·대안 접근**: MDM(Tevet et al., 2023)·OmniControl(Xie et al., 2024)·MotionLCM(Dai et al., 2024) — diffusion 기반 궤적(trajectory) 조건 모션 생성; RF Genesis(Chen & Zhang, 2023) — 학습 기반 RF 신호 합성; Standard ray tracing(Ren et al., 2024; Chen et al., 2025) — 확률적 광선 캐스팅 기반 RF 시뮬레이션 관행.
-- **이 논문 이후**: `[확인 필요]` — `scripts/paper.py meta` 조회 결과 인용 3건으로 나오나, 어떤 후속 연구가 이를 인용·확장했는지는 본 리뷰에서 조사하지 않았다. 필요 시 `/related-work`로 별도 추적 권장.
+- **이 논문 이후**: `[확인 필요]` — `.scripts/bin/paper.py meta` 조회 결과 인용 3건으로 나오나, 어떤 후속 연구가 이를 인용·확장했는지는 본 리뷰에서 조사하지 않았다. 필요 시 `/related-work`로 별도 추적 권장.
 
 한 줄 위치 규정: 텍스트/경로 조건 인체 모션 생성(diffusion 계열의 궤적 조건화 계보)과 RF ray tracing 시뮬레이션(컴퓨터 그래픽스 관행을 계승한 계보)이라는 두 독립적 연구 흐름을, "생성 후 물리 시뮬레이션"이라는 하나의 자동화 파이프라인으로 엮은 응용 통합 연구다.
 

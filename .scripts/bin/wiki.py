@@ -10,7 +10,14 @@ The index header links only the 01-Papers list files that exist. Sections in
 ORPHAN_EXEMPT (Trends: a chronological digest series reached through
 wiki-index.md) are not reported as orphan-page.
 
-Exit codes: 0 ok, 1 check or lint failure, 2 usage error.
+Lint levels (links inside fenced/inline code and HTML comments are skipped):
+  ERROR   stale-index, broken-link (missing local target)
+  WARNING orphan-page, missing-title, outside-repo (target resolves outside the
+          repository root; existence is not checked)
+  INFO    missing-source (missing target under 01-Papers/pdfs/; source PDFs are
+          intentionally not committed)
+
+Exit codes: 0 ok, 1 check failure or any lint ERROR, 2 usage error.
 """
 from __future__ import annotations
 
@@ -48,6 +55,8 @@ LOG_HEADER = "# 작업 기록\n\n추가만 한다. 기존 항목을 수정·삭�
 LOG_OPS = ("ingest", "update", "query", "lint")
 SUMMARY_LIMIT = 120
 GIT_ERROR = "Git 제외 규칙을 확인하지 못해 위키 페이지 목록을 만들지 않았습니다"
+# Missing link targets under this repo-relative prefix are source PDFs kept out of Git (lint INFO).
+SOURCE_PDF_DIR = "01-Papers/pdfs/"
 
 ASCII_PUNCTUATION = frozenset(string.punctuation)
 INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
@@ -463,10 +472,58 @@ def cmd_log(args: argparse.Namespace) -> int:
 
 # ---------------------------------------------------------------- lint
 
+def _visible_text(line: str) -> tuple[str, bool]:
+    """Blank inline code spans and `<!-- … -->` regions outside a comment, scanning left to right.
+
+    Inside a code span `<!--` is literal; returns (visible text, comment still open at line end).
+    """
+    visible = []
+    pos = 0
+    while pos < len(line):
+        tick = line.find("`", pos)
+        opener = line.find("<!--", pos)
+        if opener < 0 and tick < 0:
+            visible.append(line[pos:])
+            break
+        if opener < 0 or 0 <= tick < opener:
+            span = INLINE_CODE.match(line, tick)
+            end = span.end() if span else tick + 1
+            visible.append(line[pos:tick] + (" " * (end - tick) if span else "`"))
+            pos = end
+            continue
+        visible.append(line[pos:opener] + " ")
+        closer = line.find("-->", opener + 4)
+        if closer < 0:
+            return "".join(visible), True
+        pos = closer + 3
+    return "".join(visible), False
+
+
 def iter_links(path: Path):
-    """Yield (line number, destination) for Markdown links outside fenced and inline code."""
-    for number, line in _body_lines(_read(path).splitlines(), 0):
-        line = INLINE_CODE.sub(lambda match: " " * len(match.group(0)), line)
+    """Yield (line number, destination) for Markdown links outside fenced code, inline code, and HTML comments.
+
+    An open HTML comment takes precedence: inside it only `-->` matters and code syntax is literal.
+    Outside comments, fenced code and code spans keep `<!--` literal.
+    """
+    fence = None
+    in_comment = False
+    for number, line in enumerate(_read(path).splitlines(), 1):
+        if in_comment:
+            closer = line.find("-->")
+            if closer < 0:
+                continue
+            in_comment = False
+            line = " " * (closer + 3) + line[closer + 3:]
+        else:
+            marker = re.match(r"^(`{3,}|~{3,})", line.strip())
+            if fence:
+                if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence):
+                    fence = None
+                continue
+            if marker:
+                fence = marker.group(1)
+                continue
+        line, in_comment = _visible_text(line)
         for destination in link_destinations(line):
             yield number, destination
 
@@ -497,6 +554,8 @@ def lint(root: Path | None = None) -> list[dict]:
     link_sources = set(pages) | set(lists)
     page_set = set(pages)
     resolved_root = root.resolve()
+    lexical_root = Path(os.path.normpath(root))
+    source_pdfs = resolved_root / SOURCE_PDF_DIR
     inbound: dict[str, set[str]] = {page: set() for page in pages}
     for source in checked:
         directory = (root / source).parent
@@ -505,13 +564,25 @@ def lint(root: Path | None = None) -> list[dict]:
             if target is None:
                 continue
             absolute = Path(os.path.normpath(directory / target))
-            if not os.path.lexists(absolute):
-                findings.append(_finding("ERROR", "broken-link", source, line, f"missing target {raw}"))
+            try:
+                resolved = (directory / target).resolve()
+            except (OSError, RuntimeError):
+                findings.append(_finding("ERROR", "broken-link", source, line, f"unresolvable target {raw}"))
+                continue
+            if resolved != resolved_root and resolved_root not in resolved.parents:
+                findings.append(_finding("WARNING", "outside-repo", source, line, f"target outside repository {raw}"))
+                continue
+            if not resolved.exists():
+                if source_pdfs in resolved.parents:
+                    findings.append(_finding("INFO", "missing-source", source, line,
+                                             f"원문 PDF는 저장소에 포함되지 않음: {raw}"))
+                else:
+                    findings.append(_finding("ERROR", "broken-link", source, line, f"missing target {raw}"))
                 continue
             if source not in link_sources:
                 continue
             keys = set()
-            for candidate, base in ((absolute, Path(os.path.normpath(root))), (absolute.resolve(), resolved_root)):
+            for candidate, base in ((absolute, lexical_root), (resolved, resolved_root)):
                 try:
                     keys.add(candidate.relative_to(base).as_posix())
                 except ValueError:
@@ -525,7 +596,7 @@ def lint(root: Path | None = None) -> list[dict]:
                                      "no inbound links from other wiki pages or 01-Papers lists"))
         if not page_info(root / page)["has_title"]:
             findings.append(_finding("WARNING", "missing-title", page, None, "no frontmatter title and no H1"))
-    order = {"ERROR": 0, "WARNING": 1}
+    order = {"ERROR": 0, "WARNING": 1, "INFO": 2}
     findings.sort(key=lambda item: (order[item["level"]], item["path"], item["line"] or 0, item["code"], item["detail"]))
     return findings
 
@@ -533,13 +604,14 @@ def lint(root: Path | None = None) -> list[dict]:
 def cmd_lint(args: argparse.Namespace) -> int:
     findings = lint(ROOT)
     errors = sum(item["level"] == "ERROR" for item in findings)
+    warnings = sum(item["level"] == "WARNING" for item in findings)
     if args.json:
         print(json.dumps(findings, ensure_ascii=False, indent=2))
     else:
         for item in findings:
             location = item["path"] + (f":{item['line']}" if item["line"] else "")
             print(f"{item['level']} {item['code']} {location} {item['detail']}")
-        print(f"wiki lint: {errors} error(s), {len(findings) - errors} warning(s)")
+        print(f"wiki lint: {errors} error(s), {warnings} warning(s), {len(findings) - errors - warnings} info")
     return 1 if errors else 0
 
 

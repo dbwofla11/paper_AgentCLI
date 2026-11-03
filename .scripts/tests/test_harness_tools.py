@@ -79,8 +79,10 @@ class ViewTests(unittest.TestCase):
                 with urlopen(base + "/api/status") as response:
                     self.assertFalse(json.load(response)["ready"])
             with self.assertRaises(HTTPError) as error:
-                urlopen(base + "/.mcp.json")
-            self.assertEqual(error.exception.code, 404)
+                with urlopen(base + "/.mcp.json"):
+                    pass
+            with error.exception:
+                self.assertEqual(error.exception.code, 404)
         finally:
             server.shutdown(); server.server_close()
 
@@ -112,8 +114,10 @@ class ViewTests(unittest.TestCase):
                 with urlopen(base + "/api/reviews/example") as response:
                     self.assertEqual(json.load(response)["jobs"][0]["job_id"], job["job_id"])
                 with self.assertRaises(HTTPError) as error:
-                    urlopen(request())
-                self.assertEqual(error.exception.code, 409)
+                    with urlopen(request()):
+                        pass
+                with error.exception:
+                    self.assertEqual(error.exception.code, 409)
             finally:
                 server.shutdown(); server.server_close()
 
@@ -535,8 +539,10 @@ class ResearchPromptTests(unittest.TestCase):
                 self.assertIn("논문 라이브러리", response.read().decode())
             request = Request(base + "/api/reviews", data=b"{}", headers={"Content-Type": "application/json", "Origin": "http://evil.example"}, method="POST")
             with self.assertRaises(HTTPError) as error:
-                urlopen(request)
-            self.assertEqual(error.exception.code, 403)
+                with urlopen(request):
+                    pass
+            with error.exception:
+                self.assertEqual(error.exception.code, 403)
         finally:
             server.shutdown()
             server.server_close()

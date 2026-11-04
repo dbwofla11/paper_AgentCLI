@@ -19,7 +19,8 @@ MARKER = "<!-- managed-research-harness:start -->"
 END_MARKER = "<!-- managed-research-harness:end -->"
 IGNORE_START = "# managed-research-harness:start"
 IGNORE_END = "# managed-research-harness:end"
-IGNORE_PATTERNS = (".research-harness-agent.json", ".research-harness-agent.tmp", ".omp/config.yml", "*.local.md")
+IGNORE_PATTERNS = (".research-harness-agent.json", ".research-harness-agent.tmp", ".omp/config.yml", "*.local.md",
+                   "04-Projects/reader-threads/")
 GUIDANCE = f"""{MARKER}
 ## Shared research harness
 
@@ -187,7 +188,7 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile:
         else:
             operations.append({"action": "create", "path": relative, "data": data, "sha256": digest_bytes(data)})
 
-    add_file("docs/research-harness/README.md", (README + ("\nPapers profile: run `python3 .scripts/bin/onboard_research.py` to connect your CLI and launch the local paper UI.\n" if profile == "papers" else "")).encode())
+    add_file("docs/research-harness/README.md", (README + ("\nPapers profile: run `python3 .scripts/bin/onboard_research.py` to connect your CLI and launch the local research WebUI.\n" if profile == "papers" else "")).encode())
     add_file("docs/research-harness/routes.json", (json.dumps({**ROUTES, "paper_repository_routes": ".scripts/docs/research-workflow-map.json" if profile == "papers" else "not-installed"}, ensure_ascii=False, indent=2) + "\n").encode())
     add_file("AGENTS.md", guidance.encode())
     if "claude" in hosts:
@@ -226,7 +227,9 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile:
         resources = []
         for folder in (".scripts/bin", ".scripts/docs", "90-Templates/paper", "04-Projects/validation"):
             resources.extend(p for p in (ROOT / folder).rglob("*") if p.is_file() and p.suffix in {".py", ".json", ".md"} and "__pycache__" not in p.parts)
-        resources.extend(ROOT / name for name in ("docs/onboarding.md", "docs/paper-review-bridge.md", "docs/Harness-Graph.md", "docs/Skill-Catalog.md", "docs/agent-research-todo.md", "docs/research-harness-installer.md", "100-views/assets/research-ui.css", "100-views/README.md", ".graphifyignore", "00-Inbox/concept-candidate-template.md", "03-Trends/daily/README.md"))
+        resources.extend(ROOT / name for name in ("docs/onboarding.md", "docs/paper-review-bridge.md", "docs/research-webui.md", "docs/Harness-Graph.md", "docs/Skill-Catalog.md", "docs/agent-research-todo.md", "docs/research-harness-installer.md", "100-views/assets/research-ui.css", "100-views/README.md", ".graphifyignore", "00-Inbox/concept-candidate-template.md", "03-Trends/daily/README.md"))
+        # Committed WebUI frontend build: every file type, so onboarding serves the SPA.
+        resources.extend(p for p in (ROOT / "100-views/webui").rglob("*") if p.is_file() and p.name != ".DS_Store")
         resources.extend((ROOT / ".omp/agents").glob("*.md"))
         resources.extend((ROOT / ".omp").glob("*.example.*"))
         resources.extend(ROOT.glob("*.example.*"))

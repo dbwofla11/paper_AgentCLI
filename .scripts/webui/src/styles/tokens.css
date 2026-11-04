@@ -1,0 +1,170 @@
+/*
+ * Research WebUI design tokens (Material AI direction).
+ * Light values live in :root. Dark values apply when the OS prefers dark and the user has not
+ * forced light, or when the user forced dark (`data-theme` is set by public/theme-init.js and
+ * src/theme.ts; storage key `research-webui.theme`). The two dark blocks must stay identical.
+ * Motion values are mirrored in src/motion/tokens.ts.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-muted: #f8f9fa; /* fills only, never text */
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1f3f4;
+  --border: #dadce0;
+  --border-input: #80868b; /* 3.9:1 on --surface (≥ 3:1 for UI parts) */
+
+  /* Text */
+  --text: #3c4043; /* 10.4:1 */
+  --text-strong: #202124;
+  --text-muted: #5f6368; /* 6.0:1 */
+
+  /* Brand */
+  --color-primary: #4285f4; /* indicators, bars, focus — never text on white */
+  --color-primary-strong: #1967d2; /* primary button background, link text (5.4:1) */
+  --color-on-primary: #ffffff;
+  --color-primary-hover: #185abc;
+  --primary-container: #e8f0fe;
+  --on-primary-container: #174ea6; /* 6.9:1 */
+  --primary-container-hover: #d2e3fc; /* tonal button hover; on-primary-container 6.0:1 */
+
+  /* Semantic */
+  --danger: #ea4335;
+  --danger-text: #c5221f; /* 5.8:1 */
+  --danger-container: #fce8e6;
+  --warning: #fbbc05;
+  --warning-text: #b06000; /* 4.65:1 */
+  --warning-container: #fef7e0;
+  --success: #34a853;
+  --success-text: #188038; /* 5.0:1 */
+  --success-container: #e6f4ea;
+  --cyan: #00bcd4; /* decorative only */
+
+  --focus: #4285f4;
+  --gradient-ai: linear-gradient(90deg, #4285f4, #00bcd4 50%, #34a853);
+  --shadow-card: 0 2px 12px rgb(0 0 0 / 0.06);
+  --shadow-raised: 0 6px 24px rgb(0 0 0 / 0.1);
+  --scrim: rgb(32 33 36 / 0.4);
+
+  /* Type */
+  /* Hangul: system fonts after Roboto (no bundled Korean font). */
+  --font-sans: 'Roboto Variable', 'Apple SD Gothic Neo', 'Pretendard', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'Apple SD Gothic Neo', 'Pretendard', 'Malgun Gothic', 'Noto Sans KR', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --text-h1: 2.25rem;
+  --text-h2: 1.5rem;
+  --text-h3: 1.125rem;
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-caption: 0.75rem;
+  --measure: 72ch;
+
+  /* Space (0.25 → 4rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+  --container: 1280px;
+  --gutter: 1.5rem;
+  --header-h: 64px;
+
+  /* Radius: buttons, cards, chips, inputs / sheets, panels / large surfaces */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  /* Layers */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 500;
+
+  /* Motion (mirrored in src/motion/tokens.ts) */
+  --ease-out: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 200ms;
+  --dur-base: 280ms;
+  --dur-enter: 420ms;
+  --stagger: 80ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --surface: #202124;
+    --surface-muted: #292a2d;
+    --surface-raised: #303134;
+    --surface-sunken: #17181b;
+    --border: #3c4043;
+    --border-input: #80868b;
+    --text: #dadce0;
+    --text-strong: #e8eaed;
+    --text-muted: #9aa0a6;
+    --color-primary: #8ab4f8;
+    --color-primary-strong: #8ab4f8;
+    --color-on-primary: #202124;
+    --color-primary-hover: #aecbfa;
+    --primary-container: #1f3760;
+    --on-primary-container: #d2e3fc;
+    --primary-container-hover: #2a4878;
+    --danger: #f28b82;
+    --danger-text: #f28b82;
+    --danger-container: #41201e;
+    --warning: #fdd663;
+    --warning-text: #fdd663;
+    --warning-container: #3f3313;
+    --success: #81c995;
+    --success-text: #81c995;
+    --success-container: #1e3a28;
+    --focus: #8ab4f8;
+    --shadow-card: 0 2px 12px rgb(0 0 0 / 0.32);
+    --shadow-raised: 0 6px 24px rgb(0 0 0 / 0.45);
+    --scrim: rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: #202124;
+  --surface-muted: #292a2d;
+  --surface-raised: #303134;
+  --surface-sunken: #17181b;
+  --border: #3c4043;
+  --border-input: #80868b;
+  --text: #dadce0;
+  --text-strong: #e8eaed;
+  --text-muted: #9aa0a6;
+  --color-primary: #8ab4f8;
+  --color-primary-strong: #8ab4f8;
+  --color-on-primary: #202124;
+  --color-primary-hover: #aecbfa;
+  --primary-container: #1f3760;
+  --on-primary-container: #d2e3fc;
+  --primary-container-hover: #2a4878;
+  --danger: #f28b82;
+  --danger-text: #f28b82;
+  --danger-container: #41201e;
+  --warning: #fdd663;
+  --warning-text: #fdd663;
+  --warning-container: #3f3313;
+  --success: #81c995;
+  --success-text: #81c995;
+  --success-container: #1e3a28;
+  --focus: #8ab4f8;
+  --shadow-card: 0 2px 12px rgb(0 0 0 / 0.32);
+  --shadow-raised: 0 6px 24px rgb(0 0 0 / 0.45);
+  --scrim: rgb(0 0 0 / 0.6);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --text-h1: 1.75rem;
+    --gutter: 1rem;
+  }
+}

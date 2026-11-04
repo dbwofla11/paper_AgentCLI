@@ -18,6 +18,7 @@ __pycache__/
 *.local.md
 .cache/
 node_modules/
+04-Projects/reader-threads/
 
 # Personal research records stay local; shared templates and venue references remain versioned.
 /00-Inbox/concept-candidates/

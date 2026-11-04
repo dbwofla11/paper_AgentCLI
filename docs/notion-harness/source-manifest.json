@@ -9,7 +9,7 @@
   },
   {
     "path": ".agents/skills/daily-digest-loop/SKILL.md",
-    "sha256": "823272b50ff7b3616380921e7ddab01888c3710606be0afb3621c87c26249212"
+    "sha256": "b7a25716ccb1ebef0f894b2b32a7e51003e0ae85d64b0acd5cb55f25c3aad7ef"
   },
   {
     "path": ".agents/skills/graphify/SKILL.md",
@@ -37,7 +37,7 @@
   },
   {
     "path": ".agents/skills/paper-search/SKILL.md",
-    "sha256": "fa291f9d95da146320fbc0f96f57306399f064f1c4212b7260a55183db316d41"
+    "sha256": "b1675fdb18058bbbcfa3ae3ceee9ac74959a186f5d3053086e51bf6d23140447"
   },
   {
     "path": ".agents/skills/paper-summary/SKILL.md",
@@ -81,11 +81,7 @@
   },
   {
     "path": ".scripts/docs/search-protocol.md",
-    "sha256": "92f21f8974cecf77c0e39067eabc21ec1fe92169f0d2bcefa906245bfb592a85"
-  },
-  {
-    "path": "04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md",
-    "sha256": "7c3eb6a4c6075ee20b75a3685dab3c812b0cfb444b21b9932c03037d6d40a68d"
+    "sha256": "f631a3efa1b0de35b8bad6d411d35a54692376b17f4989dae70b57a16f48d7a2"
   },
   {
     "path": "04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md",
@@ -94,10 +90,6 @@
   {
     "path": "04-Projects/thought-experiment-runs/CRITIQUE_TEMPLATE.md",
     "sha256": "5b5246ac00765be15b211e0639c9f052ad39bc3085f14fe71e8482aac0ca7d2b"
-  },
-  {
-    "path": "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md",
-    "sha256": "aaad7df8fcf67b629dd71f7972b6c21fb6319823af4482e4adba70638205414a"
   },
   {
     "path": "04-Projects/validation/critic-output.schema.json",
@@ -125,7 +117,7 @@
   },
   {
     "path": "100-views/README.md",
-    "sha256": "fa073a5a3cfde88002f9213c736c35576bec836c0285403c68f7cddd413bf52e"
+    "sha256": "4a78154198249d286d58ed9ebdcf2583b5e59d5e858a4fa20ed71ff807c56186"
   },
   {
     "path": "90-Templates/paper/review-template.md",
@@ -141,7 +133,7 @@
   },
   {
     "path": "AGENTS.md",
-    "sha256": "31183725b8a9cb80ab2fe2d6b960f3a20ef2b7f6af488bb6b2249ea2686d3dc6"
+    "sha256": "f511f314fd68b3272a178ba2153bd8aacac50c06597a7d5d4874ac608cb8030c"
   },
   {
     "path": "docs/Harness-Graph.md",
@@ -173,30 +165,26 @@
   },
   {
     "path": "docs/design/README.md",
-    "sha256": "d49d4af2b7c8371462aae364336b875bc5089575ce0d9533175bf744c8374fea"
+    "sha256": "d7a4f56eefaf24a4f755b0f2d90a58161f060ec676dbe3aa130b719ac8ce0d85"
   },
   {
     "path": "docs/handoff-paper-harness.md",
-    "sha256": "1978eec0c0b1eb47a71121b92df7123e7304cc216a1450c4a6caca7529f6b5c8"
-  },
-  {
-    "path": "docs/lab-meeting-presentation-plan.md",
-    "sha256": "72759b08e6c4dffe156842c6b5d968286eaa30881b92662f8c386d47005536c8"
-  },
-  {
-    "path": "docs/lab-meeting-slide-content.md",
-    "sha256": "8be8dfe73445d5d07209630e8381cfd588c2ae54af60d3b46f9fd6ee0e962766"
+    "sha256": "92ecf81ab39530075c4b76f0ba9915b65bbae3b4a848048be6204793cf3f192b"
   },
   {
     "path": "docs/onboarding.md",
-    "sha256": "c1b6cca75dfec184bcaa6da61ba46bf5cfe971d5a0ea2cc2162f92ba592e391a"
+    "sha256": "2da2c4f9c57d8099da35acd875b4a0c93fe5aa13001456aeb52ca2476d89effa"
   },
   {
     "path": "docs/paper-review-bridge.md",
-    "sha256": "d776e3e98c51ccefc3fa333a56dba28e317c055488c85e3521e1e5be1c9a5b09"
+    "sha256": "cf20a1a758149d6504b751a66bd5fc54d8169a9f091da88b6a2eff74c6ab9293"
   },
   {
     "path": "docs/research-harness-installer.md",
     "sha256": "66838588a7799c80d15b68ff8a1945e7cd1193d7cf81f9dc30c063b4f27af223"
+  },
+  {
+    "path": "docs/research-webui.md",
+    "sha256": "c3e3ff5e52026ac51c93f992c565ae7ae849e53dfffe57860316a114bd4a6f87"
   }
 ]

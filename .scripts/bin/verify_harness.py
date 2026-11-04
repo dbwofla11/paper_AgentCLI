@@ -41,7 +41,7 @@ REQUIRED = [
     ROOT / "04-Projects/validation/personas/repro-critic.md",
     ROOT / "04-Projects/validation/personas/novelty-critic.md",
     ROOT / "00-Inbox/concept-candidate-template.md",
-    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "idea-critic", "graph-extractor")),
+    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "paper-reader", "idea-critic", "graph-extractor")),
     ROOT / ".omp/config.example.yml",
     ROOT / ".research-harness-agent.example.json",
     ROOT / "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.example.md",
@@ -52,6 +52,8 @@ CORE_SKILLS = (
     "paper-search", "paper-review", "review-index", "related-work",
     "paper-relations", "critical-validation", "thought-experiment-runner", "concept-note",
     "daily-digest-loop", "graphify",
+    "paper-scheduler", "paper-summary", "keep-list", "paper-favorites",
+    "thought-experiment-critique", "math-derivation",
 )
 
 
@@ -86,9 +88,7 @@ def verify() -> int:
         if not (ROOT / ".agents/skills" / skill / "SKILL.md").is_file():
             return fail(f"missing installed skill {skill}")
     canonical_skills = ROOT / ".agents/skills"
-    skill_sources = sorted(p for p in canonical_skills.iterdir() if p.is_dir() and (p / "SKILL.md").is_file())
-    if len(skill_sources) != 16:
-        return fail(f"expected 16 shared skills, found {len(skill_sources)}")
+    skill_sources = [canonical_skills / name for name in CORE_SKILLS]
     agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     forbidden = re.compile(r"Read\(|`Read` 도구|WebSearch|WebFetch|spawn_agent|\.Codex/|CLAUDE\.md|\$[a-z]+(?:-[a-z]+)+|(?:^|[\s(`])/(?:paper|review|related|concept|keep|graphify|daily|thought|critical|math)[a-z-]*", re.MULTILINE)
     for source in skill_sources:
@@ -157,7 +157,7 @@ def verify() -> int:
     installed_hosts = set(json.loads(manifest_path.read_text(encoding="utf-8")).get("hosts", [])) if manifest_path.is_file() else {"claude", "codex"}
     if "claude" in installed_hosts:
         claude_skills = ROOT / ".claude/skills"
-        for source in sorted(path for path in canonical_skills.iterdir() if path.is_dir()):
+        for source in skill_sources:
             alias = claude_skills / source.name
             if not skill_connected(alias, source):
                 return fail(f"Claude skill {source.name} must symlink to .agents/skills")

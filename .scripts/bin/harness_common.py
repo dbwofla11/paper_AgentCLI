@@ -51,13 +51,52 @@ def orca_executable() -> str:
     return os.environ.get("ORCA_CLI_COMMAND") or ("orca-ide" if sys.platform.startswith("linux") and shutil.which("orca-ide") else "orca")
 
 
-def omp_model_roles(root: Path = ROOT) -> dict[str, str]:
+class OmpConfigError(RuntimeError):
+    """`omp config get` could not report a setting (timeout, non-zero exit, malformed JSON)."""
+
+
+class OmpMissing(OmpConfigError):
+    """The omp CLI is not installed, so no omp setting can be read."""
+
+
+def omp_config_value(key: str, root: Path = ROOT) -> object:
+    """Effective omp setting (project `.omp/config.yml` merged over global) for one key.
+
+    `omp config get <key> --json` prints `{"key", "value", "type", "description"}`; a bare value
+    is accepted too. Raises OmpMissing when omp is not installed and OmpConfigError for any other
+    failure, so callers can tell "could not read" from "read, and not set".
+    """
     try:
-        result = subprocess.run(["omp", "config", "get", "modelRoles", "--json"], cwd=root, capture_output=True, text=True, timeout=15, check=True)
-        roles = json.loads(result.stdout)
-        return {key: value for key, value in roles.items() if isinstance(key, str) and isinstance(value, str)} if isinstance(roles, dict) else {}
-    except (OSError, subprocess.SubprocessError, ValueError):
-        return {}
+        result = subprocess.run(["omp", "config", "get", key, "--json"], cwd=root, capture_output=True, text=True, timeout=15, check=False)
+    except FileNotFoundError as exc:
+        raise OmpMissing(f"omp CLI를 찾을 수 없습니다: {exc}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise OmpConfigError(f"omp config get {key} 시간 초과") from exc
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise OmpConfigError(f"omp config get {key} 실행 실패: {exc}") from exc
+    if result.returncode != 0:
+        detail = ((result.stderr or "") + (result.stdout or "")).strip()[-500:]
+        raise OmpConfigError(f"omp config get {key} 종료 코드 {result.returncode}: {detail}")
+    try:
+        data = json.loads(result.stdout)
+    except (ValueError, TypeError) as exc:
+        raise OmpConfigError(f"omp config get {key}가 올바른 JSON을 내지 않았습니다: {exc}") from exc
+    if isinstance(data, dict) and data.get("key") == key and "value" in data:
+        return data["value"]
+    return data
+
+
+def omp_config_get(key: str, root: Path = ROOT, default: object = None) -> object:
+    """`omp_config_value`, or `default` on any failure (for optional, best-effort lookups)."""
+    try:
+        return omp_config_value(key, root)
+    except OmpConfigError:
+        return default
+
+
+def omp_model_roles(root: Path = ROOT) -> dict[str, str]:
+    roles = omp_config_get("modelRoles", root, {})
+    return {key: value for key, value in roles.items() if isinstance(key, str) and isinstance(value, str)} if isinstance(roles, dict) else {}
 
 
 def resolve_model(value: str | None, root: Path = ROOT) -> str | None:

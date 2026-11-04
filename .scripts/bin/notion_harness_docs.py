@@ -103,7 +103,7 @@ def build_diagrams():
         node(1200,235,'사용자가 채택','선택한 논문만 PDF·Keep·JSON 등록','paper-search','green'),
         node(60,535,'HTML 리뷰 요청','논문 하나를 선택하고 리뷰 시작','100-views/paper-library.html'),
         node(440,535,'본인 에이전트 연결','온보딩이 CLI·로그인·지원 옵션 확인','onboard_research.py · research_agent.py','amber'),
-        node(820,535,'로컬 리뷰 실행','연결된 에이전트가 임시 폴더에서 정독','paper_review_bridge.py · paper-review'),
+        node(820,535,'로컬 리뷰 실행','연결된 에이전트가 임시 폴더에서 정독','research_webui.py · webui/reviews.py'),
         node(1200,535,'검증 후 저장','리뷰·JSON·인덱스 저장 · 화면 재생성','paper_record.py · review queue','green'),
     ],[
         arrow([(390,315),(440,315)]),arrow([(770,315),(820,315)]),arrow([(1150,315),(1200,315)]),
@@ -120,7 +120,7 @@ def build_pages():
     add('experiment',None,'실험 설계','실험을 시작하기 전에 성공·반증 기준, 최소 대조군, 데이터·seed·정보 경계·컴퓨트를 고정한다. 결과를 본 뒤 기준을 임의로 바꾸지 않고 관측값과 해석을 구분한다.\n\n## 실행과 기록\n\n1. 승인된 brief와 심사 결과를 확인한다.\n2. 기본 범위는 단일 가설, 12개 이하 condition, 고정 seed의 작은 결정론적 실험이다.\n3. manifest.md에 조건 ID·입력·환경·버전·기준을 남긴다.\n4. results.md에 criterion별 측정·누락·실패·원자료 경로를 남긴다.\n5. 사람이 결과를 보고 가설 채택·변경과 다음 실험을 결정한다.\n\n## 실행 조건\n\n기존 실행 가능한 코드·데이터가 있어야 한다. 새 의존성·대규모 다운로드·장시간 학습·유료 API는 기본 소규모 실행 범위에 포함되지 않는다. Paper2Agent는 준비성을 점검하며 실제 agentification은 별도 생성 요청이 필요하다.', ['.agents/skills/thought-experiment-runner/SKILL.md'])
     add('data',None,'데이터 저장·관리','원문 PDF, 사람용 리뷰, 기계 판독 JSON, 가설, 실행 증거를 각각 정본 경로에 보관한다. 이 Notion 공간에는 운영 안내와 도식을 정리하며 개별 논문 PDF나 연구 데이터 전체를 복제하지 않는다.\n\n## 논문 저장\n\n- 원문: 01-Papers/pdfs/{category}/\n- 리뷰: 01-Papers/reviews/{category}/ · 한 논문 한 파일\n- 첫 판정: 01-Papers/triage/\n- 구조화 기록: 01-Papers/library/{slug}.json\n- 읽기 상태: index.md · 읽기/조사 대기열: keep.md · 선호: favorites.md\n\n분야는 wifi-csi / game-ai / agent-ai / computer-vision / other다. 파일명은 연도-제1저자성-짧은슬러그를 따른다. JSON은 수집 시 메타데이터를 기록하고 리뷰 후 근거가 있는 5축 분석을 보강한다.\n\n## 사고실험 저장\n\n- 가설·반증 조건: 05-Ideas/thought-experiments/\n- 기획·심사·실행 증거: 04-Projects/thought-experiment-runs/{slug}/\n- 문헌 조사 작업: 04-Projects/research-todo/queue.json\n- 자동 리뷰 작업: 04-Projects/review-queue/queue.json\n- 현재 진척 backend: notion · repository 선택 시 progress.md가 상태 정본\n\n## 재생성\n\nHTML은 정본에서 다시 만든다. Graphify는 검증된 정본에서 관계를 추출한다. 개념 후보는 사용자가 이해를 확인하고 승격 요청하기 전에는 학습 정본·지식 그래프로 들어가지 않는다.', ['AGENTS.md','.scripts/docs/paper-record.schema.json','.scripts/docs/idea-analysis.schema.json','04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md'], '03-data-flow')
     add('ops',None,'루프·운영 설정','예약 시각은 Orca Automation에서 관리한다. 날짜별 선정 기준·사용자 확인 단계·에이전트 연결·문헌 조사 대기열·지식 동기화 규칙을 설명한다. 실제 실행 상태와 계정 설정은 로컬 자동화 도구에서 확인한다.\n\n## 일일 후보 루프\n\nOrca Automation이 `$daily-digest-loop` 스킬을 예약 실행한다. 컴퓨터 비전·멀티모달·사용자 관심 분야별 후보를 검증해 채팅으로 제시한다. 채택 전에는 논문 파일을 저장하지 않는다.\n\n## 사용자 확인 지점\n\n후보 채택, 개념 승격, 사고실험 기획 승인, 독립 심사 후 진행 결정은 사용자에게 있다. 문헌 TODO dispatch는 명시적 실행 요청이 필요하다.', ['docs/daily-orca-automation.md','docs/onboarding.md','docs/agent-research-todo.md','04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md'], '04-operation-loops')
-    add('views',None,'HTML 화면','저장소의 기록을 찾고 읽는 세 화면이다. 개별 HTML은 정본 데이터를 대체하지 않으며 생성기로 갱신한다. 리뷰 시작은 본인 에이전트와 로컬 브리지가 연결되어 있어야 한다.', ['100-views/README.md'])
+    add('views',None,'HTML 화면','저장소의 기록을 찾고 읽는 세 화면이다. 개별 HTML은 정본 데이터를 대체하지 않으며 생성기로 갱신한다. 리뷰 시작은 본인 에이전트와 로컬 WebUI 서버(research_webui.py)가 연결되어 있어야 한다.', ['100-views/README.md'])
     add('skills',None,'스킬 목록','스킬은 특정 요청을 처리하는 작업 지침이다. 공통 정본은 .agents/skills/이며 Codex·Claude 호스트 진입점에서 참조한다. 아래 스킬은 모두 순서대로 실행하는 목록이 아니다. 현재 작업의 단계와 사용자 요청에 따라 선택한다.\n\n## 실행 순서를 정하는 곳\n\nAGENTS.md와 docs/Harness-Graph.md, research_workflow.py, research-workflow-map.json이 단계와 조건을 안내한다. Skill-Catalog.md는 찾기 위한 목록이다.', ['docs/Skill-Catalog.md','.scripts/docs/research-workflow-map.json'])
 
     specs = {
@@ -150,7 +150,7 @@ def build_pages():
       ('catalog','skills','스킬 찾기 · Skill-Catalog','docs/Skill-Catalog.md','스킬과 운영 도구의 역할을 찾는 보기 전용 목록이다. 실행 순서를 결정하지 않는다.'),
       ('onboarding','ops','본인 에이전트 연결 · 온보딩','docs/onboarding.md','onboard_research.py가 설치된 Codex·Claude 로그인과 비대화형 옵션을 확인하고 준비된 에이전트를 선택한다. 본인 브라우저 로그인은 사용자가 완료한다. 이름만 설정에 저장하고 로컬 서버와 화면을 연다. 실제 Claude 모델 응답·신규 OAuth는 기존 검증 범위 밖이다.'),
       ('installer','ops','다른 저장소에 설치','docs/research-harness-installer.md','skills / papers 프로필, dry-run, manifest, 충돌 보존·안전한 제거를 관리한다. 개인 PDF·리뷰·계정·MCP 비밀 설정을 복사하지 않는다.'),
-      ('bridge','ops','HTML에서 리뷰 실행 · 로컬 브리지','docs/paper-review-bridge.md','선택 논문 한 편을 queue에 넣고 연결된 에이전트로 임시 작업 폴더에서 리뷰한다. 산출물 검증·충돌 확인 후 저장하고 HTML을 재생성한다. 공유 그래프 충돌은 pending, 리뷰 정본 충돌은 저장 중단이다.'),
+      ('bridge','ops','HTML에서 리뷰 실행 · 로컬 WebUI 서버','docs/paper-review-bridge.md','로컬 WebUI 서버(research_webui.py)가 선택 논문 한 편을 queue에 넣고 연결된 에이전트로 임시 작업 폴더에서 리뷰한다. 산출물 검증·충돌 확인 후 저장하고 HTML을 재생성한다. 공유 그래프 충돌은 pending, 리뷰 정본 충돌은 저장 중단이다. 모든 요청은 Host 검사를, 리뷰 요청은 Origin·CSRF 토큰 검사를 거친다.'),
       ('daily','ops','일일 예약 운영','docs/daily-orca-automation.md','Orca가 예약을 관리하고 daily-digest-loop가 후보를 채팅으로 제시한다. 실제 설정은 로컬 런타임에서 확인한다.'),
       ('todo','ops','에이전트 문헌 조사 TODO','docs/agent-research-todo.md','queue.json에 질문·brief 해시·예산을 고정한다. 명시적 dispatch 요청 후 솔루션·레퍼런스·반대 근거 탐색을 병렬 수행하고 별도 verifier로 원문을 확인한다. publish 검증 뒤에만 completed다. 이 조사 역할은 비판 심사 페르소나와 다르다.'),
       ('handoff','ops','구현 요구사항·작업 인계','docs/handoff-paper-harness.md','대시보드, 리뷰 버튼, 온보딩, 사고실험 화면, 문헌 TODO의 구현 요구사항과 범위를 보관한다. 최초 요청 기록이므로 현재 구현 상태는 실제 코드·원장을 우선한다.'),
@@ -173,7 +173,7 @@ def build_pages():
 
     for key,title,path,desc,generator in [
       ('dashboard','하네스 안내 화면','100-views/harness-dashboard.html','흐름·단계를 선택해 역할·입력·결과·다음 조건을 확인하고 스킬과 설정 상태를 찾는다. 안내 순서는 현재 작업 진척 상태와 별개다.','harness_dashboard.py'),
-      ('library','논문 라이브러리 화면','100-views/paper-library.html','논문 JSON에서 검색·필터·원문·리뷰를 보여준다. 새 리뷰는 localhost 브리지와 준비된 본인 CLI가 필요하다.','paper_catalog_html.py'),
+      ('library','논문 라이브러리 화면','100-views/paper-library.html','논문 JSON에서 검색·필터·원문·리뷰를 보여준다. 새 리뷰는 localhost WebUI 서버와 준비된 본인 CLI가 필요하다.','paper_catalog_html.py'),
       ('ideas','사고실험 목록 화면','100-views/thought-experiments.html','가설·반증 조건·문헌·심사·실험·TODO 상태와 근거를 찾아본다. 출처끼리 충돌하면 표시하며 자동 조정하지 않는다.','thought_experiments_html.py')]:
         add('view-'+key,'views',title,desc+f'\n\n## 갱신\n\n생성기: .scripts/bin/{generator}. 공통 CSS: 100-views/assets/research-ui.css. 화면은 정본에서 다시 생성하므로 상태를 HTML에 직접 관리하지 않는다.',[path,f'.scripts/bin/{generator}','100-views/README.md'])
     add('view-graph','views','지식 그래프 탐색 화면','논문·개념·주장 사이 관계 후보를 찾아보는 Graphify의 시각화다. 자체 출력 정본은 graphify-out/graph.html이며 직접 만든 세 운영 화면과 저장 위치가 다르다. 그래프 연결은 원문 증거를 대신하지 않는다. 관계 확정은 paper-relations와 원문 확인을 따른다.', ['graphify-out/graph.html','.agents/skills/graphify/SKILL.md','.agents/skills/paper-relations/SKILL.md'])

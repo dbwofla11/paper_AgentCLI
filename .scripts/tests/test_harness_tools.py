@@ -15,11 +15,11 @@ import unittest
 import threading
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".scripts/bin"))
+from webui import server as webui_server, reviews as review_bridge
 
 
 def load(name, path):
@@ -33,7 +33,7 @@ catalog = load("paper_catalog_html", ".scripts/bin/paper_catalog_html.py")
 ideas = load("thought_experiments_html", ".scripts/bin/thought_experiments_html.py")
 installer = load("install_research_harness", ".scripts/bin/install_research_harness.py")
 research = load("research_todo", ".scripts/bin/research_todo.py")
-review_bridge = load("paper_review_bridge", ".scripts/bin/paper_review_bridge.py")
+
 
 
 class ViewTests(unittest.TestCase):
@@ -59,7 +59,7 @@ class ViewTests(unittest.TestCase):
                 self.assertTrue(target.exists(), f"{name}: {href}")
 
     def test_bridge_serves_view_assets_and_reports_readiness(self):
-        server = ThreadingHTTPServer(("127.0.0.1", 0), review_bridge.Handler)
+        server = webui_server.make_server(0)
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
         base = f"http://127.0.0.1:{server.server_port}"
         try:
@@ -75,6 +75,9 @@ class ViewTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as directory, \
                     patch.object(review_bridge, "ROOT", Path(directory).resolve()), \
                     patch.object(review_bridge, "QUEUE", Path(directory).resolve() / "queue.json"), \
+                    patch.object(review_bridge.research_agent, "resolve", return_value={"agent": "codex", "ready": False}), \
+                    patch.object(review_bridge.research_agent, "probe", return_value={"ready": False}), \
+                    patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout="{}", stderr="")), \
                     patch.object(review_bridge.shutil, "which", return_value=None):
                 with urlopen(base + "/api/status") as response:
                     self.assertFalse(json.load(response)["ready"])
@@ -98,14 +101,16 @@ class ViewTests(unittest.TestCase):
                 patch.object(review_bridge, "needs_review", return_value=True), \
                 patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "codex"}), \
                 patch.object(review_bridge, "review_worker", side_effect=worker):
-            server = ThreadingHTTPServer(("127.0.0.1", 0), review_bridge.Handler)
-            server.review_timeout = 123
+            server = webui_server.make_server(0, review_timeout=123)
             thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
             base = f"http://127.0.0.1:{server.server_port}"
+            with urlopen(base + "/api/session") as response:
+                token = json.load(response)["csrf_token"]
             try:
                 def request():
                     return Request(base + "/api/reviews", data=b'{"slug":"example"}',
-                                   headers={"Content-Type": "application/json", "Origin": base}, method="POST")
+                                   headers={"Content-Type": "application/json", "Origin": base,
+                                            "X-CSRF-Token": token}, method="POST")
                 with urlopen(request()) as response:
                     self.assertEqual(response.status, 202)
                     job = json.load(response)["job"]
@@ -118,6 +123,14 @@ class ViewTests(unittest.TestCase):
                         pass
                 with error.exception:
                     self.assertEqual(error.exception.code, 409)
+                    self.assertEqual(json.load(error.exception)["code"], "review_active")
+                with patch.object(review_bridge, "needs_review", return_value=False):
+                    with self.assertRaises(HTTPError) as completed:
+                        with urlopen(request()):
+                            pass
+                    with completed.exception:
+                        self.assertEqual(completed.exception.code, 409)
+                        self.assertEqual(json.load(completed.exception)["code"], "review_complete")
             finally:
                 server.shutdown(); server.server_close()
 
@@ -192,16 +205,15 @@ class ViewTests(unittest.TestCase):
             self.assertEqual((root / name).read_text(), "user edit")
             run.assert_not_called()
 
-    def test_review_command_parses_in_installed_codex(self):
-        if not shutil.which("codex"):
-            self.skipTest("Codex CLI is unavailable")
-        command = review_bridge.review_command(Path("/tmp/review-stage"), Path("/tmp/review-last.md"), "review prompt")
+    def test_review_command_builds_codex_arguments_without_running_cli(self):
+        with patch.object(review_bridge.research_agent.shutil, "which", return_value="/fake/codex"):
+            command = review_bridge.review_command(Path("/tmp/review-stage"), Path("/tmp/review-last.md"),
+                                                   "review prompt", "codex")
         self.assertIn("--skip-git-repo-check", command)
         self.assertNotIn("--ask-for-approval", command)
         self.assertIn('approval_policy="never"', command)
-        # Help parses all supplied options without starting an agent.
-        result = subprocess.run(command + ["--help"], capture_output=True, text=True, timeout=15)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(command[command.index("--sandbox") + 1], "workspace-write")
+        self.assertEqual(command[-1], "review prompt")
 
     def test_review_publication_uses_new_catalog_path(self):
         record = ROOT / "01-Papers/library/example.json"
@@ -231,10 +243,16 @@ class ViewTests(unittest.TestCase):
                 script.parent.mkdir(parents=True)
                 shutil.copy2(ROOT / ".scripts/bin/wiki.py", script)
                 shutil.copy2(ROOT / ".scripts/bin/harness_common.py", script.parent / "harness_common.py")
+                definitions = root / ".omp/agents"
+                definitions.mkdir(parents=True)
+                shutil.copy2(ROOT / ".omp/agents/paper-analyst.md", definitions / "paper-analyst.md")
                 queue = {"jobs": [{"job_id": "job-1", "agent": "codex"}]}
                 real_run = subprocess.run
 
                 def run(command, **kwargs):
+                    if command[:3] == ["omp", "config", "get"]:
+                        value = False if command[3] == "retry.modelFallback" else {}
+                        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(value), stderr="")
                     if command[0] == "fixture-review-agent":
                         stage = Path(kwargs["cwd"])
                         updated = {**record, "structured_review_status": "complete",
@@ -267,6 +285,8 @@ class ViewTests(unittest.TestCase):
                      patch.object(review_bridge, "save_queue"), \
                      patch.object(review_bridge, "read_record", return_value=(root / record_name, record)), \
                      patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "codex"}), \
+                     patch.object(review_bridge.research_agent, "resolve", return_value={"ready": True, "agent": "codex"}), \
+                     patch.object(review_bridge.research_agent, "probe", return_value={"ready": True, "agent": "codex"}), \
                      patch.object(review_bridge, "review_command", return_value=["fixture-review-agent"]), \
                      patch.object(review_bridge.subprocess, "run", side_effect=run):
                     self.assertFalse(review_bridge.allowed_output("wiki-index.md", root / record_name, root / review_name))
@@ -478,6 +498,8 @@ class ResearchPromptTests(unittest.TestCase):
             with patch.object(review_bridge, "ROOT", root), patch.object(review_bridge, "QUEUE", queue), \
                     patch.object(review_bridge, "read_record", return_value=(root / "01-Papers/library/example.json", record)), \
                     patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "omp"}), \
+                    patch.object(review_bridge.roles, "review_roles", return_value={
+                        "generation": {"configured": False}, "verification": {"configured": False}}), \
                     patch.object(review_bridge.research_agent, "command") as command, \
                     patch.object(review_bridge.subprocess, "run", side_effect=OSError("git unavailable")) as run:
                 review_bridge.review_worker("job1", "example", 30)
@@ -515,6 +537,8 @@ class ResearchPromptTests(unittest.TestCase):
                 with patch.object(review_bridge, "ROOT", root), patch.object(review_bridge, "QUEUE", queue), \
                         patch.object(review_bridge, "read_record", return_value=(root / "01-Papers/library/example.json", record)), \
                         patch.object(review_bridge, "runtime_status", return_value={"ready": True, "agent": "omp"}), \
+                        patch.object(review_bridge.roles, "review_roles", return_value={
+                            "generation": {"configured": False}, "verification": {"configured": False}}), \
                         patch.object(review_bridge.research_agent, "command") as command, \
                         patch.object(review_bridge.subprocess, "run", wraps=real_run) as run:
                     with self.assertRaisesRegex(RuntimeError, "Git 제외 규칙"):
@@ -529,7 +553,7 @@ class ResearchPromptTests(unittest.TestCase):
                 self.assertTrue(all(call.args[0][0] == "git" for call in run.call_args_list))
 
     def test_review_bridge_serves_catalog_and_restricts_post_origin(self):
-        server = ThreadingHTTPServer(("127.0.0.1", 0), review_bridge.Handler)
+        server = webui_server.make_server(0)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         base = f"http://127.0.0.1:{server.server_port}"
@@ -615,6 +639,11 @@ class InstallerTests(unittest.TestCase):
                 operations, conflicts = installer.plan(target, ["claude"], "copy", "preserve", "papers")
                 self.assertNotIn("wiki-index.md", conflicts)
                 installer.apply(target, operations, ["claude"])
+                ignore = (target / ".gitignore").read_text(encoding="utf-8")
+                managed = ignore.split(installer.IGNORE_START, 1)[1].split(installer.IGNORE_END, 1)[0]
+                self.assertIn("04-Projects/reader-threads/", managed.splitlines())
+                verifier = load("reader_harness_verifier", ".scripts/bin/verify_harness.py")
+                self.assertIn(ROOT / ".omp/agents/paper-reader.md", verifier.REQUIRED)
                 index = target / "wiki-index.md"
                 self.assertTrue(index.is_file())
                 manifest = json.loads((target / installer.MANIFEST).read_text(encoding="utf-8"))

@@ -1,0 +1,309 @@
+/* ── 사고실험 (#/ideas) ── */
+
+.ideas-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ideas-skeleton {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Empty state: keep skill names whole instead of breaking at their hyphens. */
+.ideas-skill-name {
+  white-space: nowrap;
+}
+
+/* Six columns: search (5) + sort (1), then the six state selects, then the count line.
+   Three columns below 1024px, two below 640px. */
+.ideas-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-3);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+}
+
+.ideas-search {
+  grid-column: span 5;
+}
+
+.ideas-filters-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) 0.75rem;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1023px) {
+  .ideas-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ideas-search {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 639px) {
+  .ideas-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .ideas-search,
+  .ideas-sort {
+    grid-column: 1 / -1;
+  }
+}
+
+.idea-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.idea-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: 1.25rem 1.5rem;
+}
+
+.idea-card-head {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.idea-card-facts {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.idea-card-facts > span + span::before {
+  content: '·';
+  margin: 0 0.5rem;
+}
+
+.idea-card-title {
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.idea-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+/* Label + state badge pairs (심사 상태, 사용자 결정, 문헌, 실험, 조사 TODO). */
+.idea-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+
+.idea-states > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.idea-states dt {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.idea-states dd {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Badge text is free-form state from the notes: allow wrapping instead of overflowing narrow cards. */
+.idea-card .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.idea-conflict .notice-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.idea-conflict .notice-title svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--warning-text);
+}
+
+.idea-conflict-rows {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.idea-conflict-rows > div {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.idea-conflict-rows dt {
+  color: var(--text-strong);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.idea-conflict-rows dd,
+.idea-conflict-hint {
+  margin: 0;
+  font-size: var(--text-small);
+}
+
+/* Label column + value: hypothesis, falsification, role critiques. */
+.idea-facts,
+.idea-link-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.idea-facts > div,
+.idea-link-row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  align-items: baseline;
+}
+
+.idea-facts dt,
+.idea-link-row dt {
+  color: var(--text-muted);
+  font-size: var(--text-small);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.idea-facts dd,
+.idea-link-row dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.idea-facts dd {
+  max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+.idea-hypothesis {
+  color: var(--text-strong);
+}
+
+.idea-facts dd[data-unrecorded] {
+  color: var(--text-muted);
+}
+
+.idea-links {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.idea-links-title {
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.idea-link-list {
+  gap: var(--space-2);
+  font-size: var(--text-small);
+}
+
+.idea-path-list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.idea-paths-more > summary {
+  width: fit-content;
+  color: var(--color-primary-strong);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.idea-paths-more[open] > summary {
+  margin-bottom: var(--space-1);
+}
+
+.idea-task-ids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+
+.idea-paper-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  text-decoration: none;
+}
+
+.idea-paper-link code {
+  min-width: 0;
+  color: var(--color-primary-strong);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.idea-paper-link:hover code {
+  color: var(--color-primary-hover);
+}
+
+.idea-paper-link svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-primary-strong);
+}
+
+.idea-paper-ids {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+}
+
+@media (max-width: 767px) {
+  .idea-card {
+    padding: 1.125rem 1.25rem;
+  }
+
+  .idea-facts > div,
+  .idea-link-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

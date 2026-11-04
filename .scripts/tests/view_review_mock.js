@@ -8,7 +8,13 @@
  window.setTimeout=(fn,ms,...args)=>originalTimeout(fn,ms===1500?1:ms,...args);
  window.fetch=async(url,options={})=>{
    if(url==='/api/status')return {ok:true,json:async()=>({ready:true,runner:'codex-cli'})};
-   if(url==='/api/reviews'){posts++;return {ok:true,json:async()=>({job:{job_id:'mock-current'}})};}
+   if(url==='/api/session')return {ok:true,json:async()=>({csrf_token:'mock-csrf'})};
+   if(url==='/api/reviews'){
+     assert(options.method==='POST','review request is not POST');
+     assert(options.headers?.['X-CSRF-Token']==='mock-csrf','review request missing CSRF token');
+     assert(options.headers?.['Content-Type']==='application/json','review request missing JSON content type');
+     posts++;return {ok:true,json:async()=>({job:{job_id:'mock-current'}})};
+   }
    if(url.startsWith('/api/reviews/')){polled++;return {ok:true,json:async()=>({jobs:mode==='empty'?[]:[{job_id:'old-job',status:'running'},{job_id:'mock-current',status:'failed',message:'mock failure'}]})};}
    throw Error('Unexpected request '+url);
  };

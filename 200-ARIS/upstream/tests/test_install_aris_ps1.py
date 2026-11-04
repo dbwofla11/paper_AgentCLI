@@ -1,0 +1,816 @@
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+INSTALL_PS1 = REPO_ROOT / "tools" / "install_aris.ps1"
+
+
+def resolve_powershell() -> str | None:
+    override = os.environ.get("ARIS_TEST_POWERSHELL")
+    if override:
+        return shutil.which(override) or override
+    return shutil.which("pwsh") or shutil.which("powershell") or shutil.which("powershell.exe")
+
+
+PS_EXE = resolve_powershell()
+
+
+def file_symlink_supported() -> bool:
+    if os.name != "nt":
+        return False
+    with tempfile.TemporaryDirectory(prefix="aris-symlink-check-") as tmp:
+        root = Path(tmp)
+        source = root / "source.md"
+        target = root / "target.md"
+        source.write_text("test\n", encoding="utf-8")
+        try:
+            target.symlink_to(source)
+        except OSError:
+            return False
+        return target.is_symlink()
+
+
+FILE_SYMLINK_SUPPORTED = file_symlink_supported()
+requires_file_symlink = pytest.mark.skipif(
+    not FILE_SYMLINK_SUPPORTED,
+    reason="Windows file symlinks require Developer Mode or symbolic-link privilege",
+)
+
+pytestmark = pytest.mark.skipif(
+    os.name != "nt" or PS_EXE is None,
+    reason="install_aris.ps1 manages Windows junctions via Windows PowerShell",
+)
+
+
+def run_ps(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [PS_EXE, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(INSTALL_PS1), *args],
+        cwd=REPO_ROOT,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=check,
+    )
+
+
+def ps_value(command: str) -> str:
+    result = subprocess.run(
+        [PS_EXE, "-NoProfile", "-Command", command],
+        cwd=REPO_ROOT,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def path_item_exists(path: Path) -> bool:
+    command = f"if (Get-Item -LiteralPath '{path}' -Force -ErrorAction SilentlyContinue) {{ 'true' }} else {{ 'false' }}"
+    return ps_value(command) == "true"
+
+
+def junction_target(path: Path) -> Path:
+    target = ps_value(f"(Get-Item -LiteralPath '{path}' -Force).Target")
+    return Path(target)
+
+
+def junction_type(path: Path) -> str:
+    return ps_value(f"(Get-Item -LiteralPath '{path}' -Force).LinkType")
+
+
+def make_junction(path: Path, target: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ps_value(f"New-Item -ItemType Junction -Path '{path}' -Target '{target}' | Out-Null")
+
+
+def remove_link(path: Path) -> None:
+    ps_value(f"[System.IO.Directory]::Delete('{path}', $false)")
+
+
+def make_skill(path: Path, body: str = "# skill\n") -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "SKILL.md").write_text(body, encoding="utf-8")
+
+
+def make_minimal_repo(root: Path) -> Path:
+    repo = root / "aris"
+    make_skill(repo / "skills" / "alpha", "# claude alpha\n")
+    make_skill(repo / "skills" / "beta", "# claude beta\n")
+    make_skill(repo / "skills" / "skills-codex" / "alpha", "# codex alpha\n")
+    make_skill(repo / "skills" / "skills-codex" / "beta", "# codex beta\n")
+    make_skill(repo / "skills" / "skills-codex-claude-review" / "alpha", "# overlay alpha\n")
+    (repo / "skills" / "shared-references").mkdir(parents=True)
+    (repo / "skills" / "shared-references" / "routing.md").write_text("claude support\n", encoding="utf-8")
+    (repo / "skills" / "skills-codex" / "shared-references").mkdir(parents=True)
+    (repo / "skills" / "skills-codex" / "shared-references" / "routing.md").write_text(
+        "codex support\n", encoding="utf-8"
+    )
+    (repo / "tools").mkdir(parents=True)
+    (repo / "tools" / "helper.py").write_text("# helper\n", encoding="utf-8")
+    leaf_agent = repo / "agents" / "aris-fanout-leaf.md"
+    leaf_agent.parent.mkdir()
+    leaf_agent.write_text("---\nname: aris-fanout-leaf\n---\n# leaf\n", encoding="utf-8")
+    return repo
+
+
+def test_install_aris_ps1_codex_dry_run_has_no_project_writes(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-DryRun"])
+
+    assert "DRY-RUN" in result.stdout
+    assert not (project / ".aris").exists()
+    assert not (project / ".agents").exists()
+    assert not (project / "AGENTS.md").exists()
+
+
+def test_install_aris_ps1_codex_apply_reconcile_and_uninstall(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    manifest = project / ".aris" / "installed-skills-codex.txt"
+    assert manifest.exists()
+    manifest_text = manifest.read_text(encoding="utf-8")
+    assert f"repo_root\t{repo}" in manifest_text
+    assert "\tskills/skills-codex/alpha\t.agents/skills/alpha\tjunction" in manifest_text
+    assert junction_type(project / ".agents" / "skills" / "alpha") == "Junction"
+    assert junction_target(project / ".agents" / "skills" / "alpha") == repo / "skills" / "skills-codex" / "alpha"
+    assert junction_target(project / ".agents" / "skills" / "shared-references") == (
+        repo / "skills" / "skills-codex" / "shared-references"
+    )
+    assert junction_type(project / ".aris" / "tools") == "Junction"
+    assert junction_target(project / ".aris" / "tools") == repo / "tools"
+    assert not path_item_exists(project / ".claude" / "agents" / "aris-fanout-leaf.md")
+    agents_text = (project / "AGENTS.md").read_text(encoding="utf-8")
+    assert "ARIS Codex Skill Scope" in agents_text
+    assert ".agents/skills/<skill-name>" in agents_text
+    assert ".agents/skills/aris" not in agents_text
+
+    (project / ".agents" / "skills" / "local-only").mkdir()
+    (repo / "skills" / "skills-codex" / "alpha" / "SKILL.md").unlink()
+    (repo / "skills" / "skills-codex" / "alpha").rmdir()
+    make_skill(repo / "skills" / "skills-codex" / "gamma", "# codex gamma\n")
+
+    # gamma is a brand-new upstream skill; selective-install parity (#366) now
+    # requires an explicit -AddNew (or interactive y/N) to pick it up on
+    # reconcile instead of silently auto-installing every new upstream skill.
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Reconcile", "-AddNew"])
+
+    assert not path_item_exists(project / ".agents" / "skills" / "alpha")
+    assert junction_target(project / ".agents" / "skills" / "gamma") == repo / "skills" / "skills-codex" / "gamma"
+    assert (project / ".agents" / "skills" / "local-only").exists()
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Uninstall", "-DryRun"])
+    assert (project / ".aris" / "installed-skills-codex.txt").exists()
+    assert "ARIS Codex Skill Scope" in (project / "AGENTS.md").read_text(encoding="utf-8")
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert (project / ".agents" / "skills" / "local-only").exists()
+    assert not (project / ".agents" / "skills" / "beta").exists()
+    assert not (project / ".aris" / "tools").exists()
+    assert not (project / ".aris" / "installed-skills-codex.txt").exists()
+    assert (project / ".aris" / "installed-skills-codex.txt.prev").exists()
+    assert "ARIS Codex Skill Scope" not in (project / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_install_aris_ps1_repo_alias_reconcile_and_uninstall_reuse_junctions(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    repo_alias = tmp_path / "repo-alias"
+    make_junction(repo_alias, repo)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+    skill = project / ".agents" / "skills" / "alpha"
+    tools = project / ".aris" / "tools"
+    original_skill_target = junction_target(skill)
+    original_tools_target = junction_target(tools)
+
+    reconcile = run_ps([
+        str(project), "-Platform", "codex", "-ArisRepo", str(repo_alias), "-Reconcile"
+    ])
+
+    assert "UPDATE_TARGET: 0" in reconcile.stdout
+    assert junction_target(skill) == original_skill_target
+    assert junction_target(tools) == original_tools_target
+
+    run_ps([
+        str(project), "-Platform", "codex", "-ArisRepo", str(repo_alias), "-Uninstall"
+    ])
+
+    assert not path_item_exists(skill)
+    assert not path_item_exists(tools)
+
+
+def test_install_aris_ps1_claude_uses_mainline_flat_junctions(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+
+    assert (project / ".aris" / "installed-skills.txt").exists()
+    assert junction_target(project / ".claude" / "skills" / "alpha") == repo / "skills" / "alpha"
+    assert junction_target(project / ".claude" / "skills" / "shared-references") == repo / "skills" / "shared-references"
+    assert not (project / ".claude" / "skills" / "skills-codex").exists()
+    assert not (project / ".claude" / "skills" / "aris").exists()
+    claude_text = (project / "CLAUDE.md").read_text(encoding="utf-8")
+    assert ".claude/skills/<skill-name>" in claude_text
+    assert ".claude/skills/aris" not in claude_text
+    leaf_target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    assert not path_item_exists(leaf_target), "non-fan-out selections must not install the leaf"
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    assert not path_item_exists(leaf_target)
+
+
+def test_install_aris_ps1_claude_nonfanout_ignores_leaf_conflict(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    target.parent.mkdir(parents=True)
+    target.write_text("user-owned\n", encoding="utf-8")
+
+    result = run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+
+    assert result.returncode == 0
+    assert target.read_text(encoding="utf-8") == "user-owned\n"
+    assert (project / ".aris" / "installed-skills.txt").exists()
+
+
+def test_install_aris_ps1_claude_fanout_requires_leaf_source(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    (repo / "agents" / "aris-fanout-leaf.md").unlink()
+    project = tmp_path / "project"
+    project.mkdir()
+
+    result = run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)], check=False)
+
+    assert result.returncode != 0
+    assert "leaf agent not found" in (result.stderr or "") + (result.stdout or "")
+    assert not (project / ".aris" / "installed-skills.txt").exists()
+    assert not path_item_exists(project / ".claude" / "skills" / "idea-creator")
+
+
+def test_install_aris_ps1_claude_dry_run_plans_leaf_symlink(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+
+    result = run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-DryRun"])
+
+    assert "symbolic link" in result.stdout
+    assert not path_item_exists(project / ".claude" / "agents" / "aris-fanout-leaf.md")
+
+
+def test_install_aris_ps1_claude_preserves_leaf_conflicts(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "research-lit", "# fan-out skill\n")
+    project = tmp_path / "project"
+    target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    target.parent.mkdir(parents=True)
+    user_content = "---\nname: aris-fanout-leaf\n---\nuser-owned\n"
+    target.write_text(user_content, encoding="utf-8")
+
+    result = run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)], check=False)
+
+    assert result.returncode != 0
+    assert "CONFLICT" in (result.stderr or "") + (result.stdout or "")
+    assert target.read_text(encoding="utf-8") == user_content
+    assert not (project / ".aris" / "installed-skills.txt").exists()
+    assert not path_item_exists(project / ".claude" / "skills" / "alpha")
+
+
+@requires_file_symlink
+def test_install_aris_ps1_claude_uninstall_removes_managed_leaf_symlink(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "proof-checker", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    assert target.is_symlink()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Uninstall"])
+    assert not path_item_exists(target)
+
+
+@requires_file_symlink
+def test_install_aris_ps1_claude_records_leaf_ownership(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+
+    ownership = project / ".aris" / "installed-agents.txt"
+    assert ownership.is_file()
+    ownership_text = ownership.read_text(encoding="utf-8").replace("\\", "/")
+    assert "agents/aris-fanout-leaf.md" in ownership_text
+    assert ".claude/agents/aris-fanout-leaf.md" in ownership_text
+
+
+@requires_file_symlink
+def test_install_aris_ps1_repo_alias_reuses_and_uninstalls_owned_leaf(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    repo_alias = tmp_path / "repo-alias"
+    make_junction(repo_alias, repo)
+    project = tmp_path / "project"
+    project.mkdir()
+    leaf = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    original_target = junction_target(leaf)
+
+    reconcile = run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo_alias), "-Reconcile"
+    ])
+
+    assert "UPDATE_TARGET: 0" in reconcile.stdout
+    assert "owned leaf reused" in reconcile.stdout
+    assert leaf.is_symlink()
+    assert junction_target(leaf) == original_target
+
+    run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo_alias), "-Uninstall"
+    ])
+
+    assert not path_item_exists(leaf)
+    assert not (project / ".aris" / "installed-agents.txt").exists()
+
+
+@requires_file_symlink
+def test_install_aris_ps1_project_alias_accepts_leaf_ownership(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    project_alias = tmp_path / "project-alias"
+    make_junction(project_alias, project)
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    run_ps([
+        str(project_alias), "-Platform", "claude", "-ArisRepo", str(repo), "-Reconcile"
+    ])
+
+    leaf = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    assert leaf.is_symlink()
+    assert (project / ".aris" / "installed-agents.txt").is_file()
+
+
+@requires_file_symlink
+def test_install_aris_ps1_uninstall_removes_owned_dangling_leaf(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    leaf = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    (repo / "agents" / "aris-fanout-leaf.md").unlink()
+    assert leaf.is_symlink()
+    assert not leaf.exists()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert not path_item_exists(leaf)
+    assert not (project / ".aris" / "installed-agents.txt").exists()
+
+
+@requires_file_symlink
+def test_install_aris_ps1_preserves_preexisting_matching_leaf_on_uninstall(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "proof-checker", "# fan-out skill\n")
+    project = tmp_path / "project"
+    target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    target.parent.mkdir(parents=True)
+    target.symlink_to(repo / "agents" / "aris-fanout-leaf.md")
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    assert not (project / ".aris" / "installed-agents.txt").exists()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert target.is_symlink()
+    assert junction_target(target) == repo / "agents" / "aris-fanout-leaf.md"
+
+
+@requires_file_symlink
+def test_install_aris_ps1_reconcile_removes_leaf_after_last_fanout_skill(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    make_skill(repo / "skills" / "research-lit", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    target = project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    ownership = project / ".aris" / "installed-agents.txt"
+
+    run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo),
+        "-Skills", "idea-creator,research-lit",
+    ])
+    run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo),
+        "-Reconcile", "-Exclude", "idea-creator",
+    ])
+    assert target.is_symlink()
+    assert ownership.is_file()
+
+    run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo),
+        "-Reconcile", "-Skills", "alpha", "-Exclude", "research-lit",
+    ])
+
+    assert not path_item_exists(target)
+    assert not ownership.exists()
+    assert path_item_exists(project / ".claude" / "skills" / "alpha")
+
+
+@requires_file_symlink
+def test_install_aris_ps1_skill_apply_failure_rolls_back_new_leaf(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    skills_path = project / ".claude" / "skills"
+    skills_path.parent.mkdir(parents=True)
+    skills_path.write_text("user-owned\n", encoding="utf-8")
+
+    result = run_ps(
+        [str(project), "-Platform", "claude", "-ArisRepo", str(repo)],
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert skills_path.read_text(encoding="utf-8") == "user-owned\n"
+    assert not path_item_exists(project / ".claude" / "agents" / "aris-fanout-leaf.md")
+    assert not (project / ".aris" / "installed-agents.txt").exists()
+    assert not (project / ".aris" / "installed-skills.txt").exists()
+
+
+@requires_file_symlink
+def test_install_aris_ps1_rejects_agent_manifest_from_another_project(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    first_project = tmp_path / "first-project"
+    first_project.mkdir()
+    run_ps([str(first_project), "-Platform", "claude", "-ArisRepo", str(repo)])
+
+    second_project = tmp_path / "second-project"
+    (second_project / ".aris").mkdir(parents=True)
+    shutil.copy2(
+        first_project / ".aris" / "installed-agents.txt",
+        second_project / ".aris" / "installed-agents.txt",
+    )
+    second_target = second_project / ".claude" / "agents" / "aris-fanout-leaf.md"
+    second_target.parent.mkdir(parents=True)
+    second_target.symlink_to(repo / "agents" / "aris-fanout-leaf.md")
+
+    result = run_ps([
+        str(second_project), "-Platform", "claude", "-ArisRepo", str(repo),
+        "-Skills", "alpha",
+    ], check=False)
+
+    assert result.returncode != 0
+    assert second_target.is_symlink()
+    assert not (second_project / ".aris" / "installed-skills.txt").exists()
+
+
+@requires_file_symlink
+def test_install_aris_ps1_uninstall_preserves_leaf_under_linked_agents_parent(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "proof-checker", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    agents_dir = project / ".claude" / "agents"
+    target = agents_dir / "aris-fanout-leaf.md"
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    target.unlink()
+    agents_dir.rmdir()
+    external_agents = tmp_path / "external-agents"
+    external_agents.mkdir()
+    external_target = external_agents / "aris-fanout-leaf.md"
+    external_target.symlink_to(repo / "agents" / "aris-fanout-leaf.md")
+    make_junction(agents_dir, external_agents)
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert external_target.is_symlink()
+    assert junction_target(external_target) == repo / "agents" / "aris-fanout-leaf.md"
+
+
+def test_install_aris_ps1_claude_nonfanout_ignores_available_fanout_leaf_paths(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    (repo / "agents" / "aris-fanout-leaf.md").unlink()
+    project = tmp_path / "project"
+    project.mkdir()
+    external_agents = tmp_path / "external-agents"
+    external_agents.mkdir()
+    user_leaf = external_agents / "aris-fanout-leaf.md"
+    user_leaf.write_text("user-owned\n", encoding="utf-8")
+    make_junction(project / ".claude" / "agents", external_agents)
+
+    result = run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Skills", "alpha"
+    ])
+
+    assert result.returncode == 0
+    assert (project / ".aris" / "installed-skills.txt").exists()
+    assert user_leaf.read_text(encoding="utf-8") == "user-owned\n"
+    assert path_item_exists(project / ".claude" / "skills" / "alpha")
+    assert not path_item_exists(project / ".claude" / "skills" / "idea-creator")
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_install_aris_ps1_claude_rejects_linked_agents_parent_before_mutation(
+    tmp_path: Path,
+    dry_run: bool,
+) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "idea-creator", "# fan-out skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    external_agents = tmp_path / "external-agents"
+    external_agents.mkdir()
+    make_junction(project / ".claude" / "agents", external_agents)
+    args = [str(project), "-Platform", "claude", "-ArisRepo", str(repo)]
+    if dry_run:
+        args.append("-DryRun")
+
+    result = run_ps(args, check=False)
+
+    assert result.returncode != 0
+    assert not (project / ".aris" / "installed-skills.txt").exists()
+    assert not path_item_exists(project / ".claude" / "skills" / "alpha")
+    assert not (external_agents / "aris-fanout-leaf.md").exists()
+
+
+def test_install_aris_ps1_codex_ignores_claude_agents_junction(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    external_agents = tmp_path / "external-agents"
+    external_agents.mkdir()
+    make_junction(project / ".claude" / "agents", external_agents)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    assert result.returncode == 0
+    assert (project / ".aris" / "installed-skills-codex.txt").exists()
+    assert junction_target(project / ".agents" / "skills" / "alpha") == repo / "skills" / "skills-codex" / "alpha"
+    assert not (external_agents / "aris-fanout-leaf.md").exists()
+
+
+def test_install_aris_ps1_skips_upstream_junctions_outside_repo(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    external = tmp_path / "external-source" / "escape"
+    make_skill(external, "# external escape\n")
+    make_junction(repo / "skills" / "skills-codex" / "escape", external)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    assert "skipping upstream link leading outside ARIS repo" in result.stderr + result.stdout
+    assert not path_item_exists(project / ".agents" / "skills" / "escape")
+    assert "escape" not in (project / ".aris" / "installed-skills-codex.txt").read_text(encoding="utf-8")
+
+
+def test_install_aris_ps1_skips_upstream_source_root_junction_outside_repo(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    codex_root = repo / "skills" / "skills-codex"
+    external_root = tmp_path / "external-source"
+    make_skill(external_root / "escape", "# external escape\n")
+    shutil.rmtree(codex_root)
+    make_junction(codex_root, external_root)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)], check=False)
+
+    assert result.returncode != 0
+    assert "skipping upstream link leading outside ARIS repo" in result.stderr + result.stdout
+    assert not path_item_exists(project / ".agents" / "skills" / "escape")
+
+
+def test_install_aris_ps1_replace_link_rejects_indirect_external_target(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    external = tmp_path / "external-source" / "beta"
+    make_skill(external, "# external beta\n")
+    shutil.rmtree(repo / "skills" / "skills-codex" / "beta")
+    make_junction(repo / "skills" / "skills-codex" / "beta", external)
+    alpha_link = project / ".agents" / "skills" / "alpha"
+    make_junction(alpha_link, repo / "skills" / "skills-codex" / "beta")
+
+    result = run_ps(
+        [str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-ReplaceLink", "alpha"],
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "CONFLICT" in result.stderr + result.stdout
+    assert junction_target(alpha_link) == repo / "skills" / "skills-codex" / "beta"
+
+
+def test_install_aris_ps1_manifest_retargeted_external_parent_junction_conflicts(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    external_root = tmp_path / "user-fork"
+    make_skill(external_root / "alpha", "# user fork alpha\n")
+    alias = repo / "skills" / "skills-codex" / "alias"
+    make_junction(alias, external_root)
+    apparent_external = alias / "alpha"
+    alpha_link = project / ".agents" / "skills" / "alpha"
+    remove_link(alpha_link)
+    make_junction(alpha_link, apparent_external)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Reconcile"], check=False)
+
+    assert result.returncode != 0
+    assert "CONFLICT" in result.stderr + result.stdout
+    assert junction_target(alpha_link) == apparent_external
+
+
+def test_install_aris_ps1_uninstall_keeps_tools_for_alias_equivalent_manifest(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    repo_alias = tmp_path / "repo-alias"
+    make_junction(repo_alias, repo)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo_alias)])
+
+    run_ps([
+        str(project), "-Platform", "codex", "-ArisRepo", str(repo_alias), "-Uninstall"
+    ])
+
+    assert junction_target(project / ".aris" / "tools") == repo / "tools"
+    assert (project / ".aris" / "installed-skills.txt").exists()
+
+    run_ps([
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo_alias), "-Uninstall"
+    ])
+
+    assert not path_item_exists(project / ".aris" / "tools")
+
+
+def test_install_aris_ps1_uninstall_keeps_tools_for_other_platform_manifest(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo)])
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert junction_target(project / ".aris" / "tools") == repo / "tools"
+    assert (project / ".aris" / "installed-skills.txt").exists()
+    assert not (project / ".aris" / "installed-skills-codex.txt").exists()
+
+    run_ps([str(project), "-Platform", "claude", "-ArisRepo", str(repo), "-Uninstall"])
+
+    assert not path_item_exists(project / ".aris" / "tools")
+
+
+def test_install_aris_ps1_conflicts_stop_and_replace_link_relinks_junction(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    conflicting_real = project / ".agents" / "skills" / "alpha"
+    conflicting_real.mkdir(parents=True)
+    (conflicting_real / "SKILL.md").write_text("# user-owned\n", encoding="utf-8")
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)], check=False)
+
+    assert result.returncode != 0
+    assert "CONFLICT" in result.stderr + result.stdout
+    assert (conflicting_real / "SKILL.md").read_text(encoding="utf-8") == "# user-owned\n"
+
+    shutil.rmtree(conflicting_real)
+    wrong_target = repo / "skills" / "skills-codex" / "beta"
+    make_junction(conflicting_real, wrong_target)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)], check=False)
+    assert result.returncode != 0
+    assert junction_target(conflicting_real) == wrong_target
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-ReplaceLink", "alpha"])
+    assert junction_target(conflicting_real) == repo / "skills" / "skills-codex" / "alpha"
+
+
+def test_install_aris_ps1_manifest_retargeted_external_junction_conflicts(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)])
+
+    alpha_link = project / ".agents" / "skills" / "alpha"
+    external = tmp_path / "user-fork" / "alpha"
+    make_skill(external, "# user fork alpha\n")
+    remove_link(alpha_link)
+    make_junction(alpha_link, external)
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Reconcile"], check=False)
+    assert result.returncode != 0
+    assert "CONFLICT" in result.stderr + result.stdout
+    assert junction_target(alpha_link) == external
+
+    result = run_ps(
+        [str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-Reconcile", "-ReplaceLink", "alpha"],
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "CONFLICT" in result.stderr + result.stdout
+    assert junction_target(alpha_link) == external
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_install_aris_ps1_from_old_handles_real_skill_named_aris(
+    tmp_path: Path,
+    dry_run: bool,
+) -> None:
+    repo = make_minimal_repo(tmp_path)
+    make_skill(repo / "skills" / "aris", "# real aris skill\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    legacy = project / ".claude" / "skills" / "aris"
+    make_junction(legacy, repo / "skills")
+    args = [
+        str(project), "-Platform", "claude", "-ArisRepo", str(repo),
+        "-FromOld", "-Skills", "aris",
+    ]
+    if dry_run:
+        args.append("-DryRun")
+
+    result = run_ps(args, check=False)
+
+    assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
+    if dry_run:
+        assert junction_target(legacy) == repo / "skills"
+        assert not (project / ".aris" / "installed-skills.txt").exists()
+    else:
+        assert junction_target(legacy) == repo / "skills" / "aris"
+        assert "\taris\t" in (project / ".aris" / "installed-skills.txt").read_text(encoding="utf-8")
+
+
+def test_install_aris_ps1_from_old_removes_nested_legacy_junction(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    legacy = project / ".agents" / "skills" / "aris"
+    make_junction(legacy, repo / "skills" / "skills-codex")
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)], check=False)
+    assert result.returncode != 0
+    assert legacy.exists()
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-FromOld"])
+
+    assert not legacy.exists()
+    assert junction_target(project / ".agents" / "skills" / "alpha") == repo / "skills" / "skills-codex" / "alpha"
+
+
+def test_install_aris_ps1_clear_stale_lock(tmp_path: Path) -> None:
+    repo = make_minimal_repo(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+    lock_dir = project / ".aris" / ".install-codex.lock.d"
+    lock_dir.mkdir(parents=True)
+    (lock_dir / "owner.pid").write_text("999999\n", encoding="utf-8")
+    (lock_dir / "owner.host").write_text("stale-host\n", encoding="utf-8")
+
+    result = run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo)], check=False)
+    assert result.returncode != 0
+    assert lock_dir.exists()
+
+    run_ps([str(project), "-Platform", "codex", "-ArisRepo", str(repo), "-ClearStaleLock"])
+    assert not lock_dir.exists()
+    assert junction_target(project / ".agents" / "skills" / "alpha") == repo / "skills" / "skills-codex" / "alpha"

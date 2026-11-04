@@ -141,6 +141,7 @@ omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 �
 - 아이디어 심사 전 지원·대안·반대 문헌 검색은 필수다. 검색이 부족하면 독립 심사를 시작하지 않는다. 같은 SHA-256 근거 묶음을 세 비판 페르소나에 제공하고 `.scripts/bin/idea_analysis.py validate`로 심사 완결성과 상태 일관성을 검사한다.
 - 아이디어는 `critical-validation`의 승인 전 `thought-experiment-runner`로 실행하지 않는다. 초안은 [Argument Auditor](04-Projects/validation/paper-draft-logic-review.md)로 주장–근거 연결을 점검한다.
 - 사용자가 대화에 올린 논문은 Keep 목록에 등록한다. 일일 후보는 채팅에만 제시하며 사용자가 채택하기 전에는 PDF·Keep·JSON을 저장하지 않는다.
+- 논문 검색과 추천에는 사용자가 제공한 `01-Papers/reference/cs-conferences.csv`를 학술대회 참고 목록으로 활용한다. ARIS를 포함한 모든 검색에서 관련 분야의 학회를 탐색하고 결과의 학회명·유형을 확인할 때 참고한다. 이 목록은 엄격한 허용 목록이 아니며 등급이나 포함 여부만으로 품질·게재 사실을 단정하지 않는다. 사용자가 특정 논문이나 범위를 지정하면 그 요청을 우선한다.
 - 매일 논문 후보는 컴퓨터 비전 1편, 멀티모달 1편, 사용자 관심 분야 1편이며 학회 발표·게재가 확인되어야 한다. 반복 실행 시각은 Orca Automation에서 관리한다.
 - 일일 후보 검색은 뉴스, 자동 Git commit/push, 후보 보고서 파일 생성을 수행하지 않는다. 후보는 채팅으로만 보고하고, 날짜별 사용자 선정 계획만 `03-Trends/daily/{날짜}-plan.md`에 둔다. 과거 다이제스트의 정본도 `03-Trends/daily/`다.
 

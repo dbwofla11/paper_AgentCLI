@@ -18,6 +18,7 @@
 - 아이디어 분석 JSON 데이터 계약: [`docs/idea-analysis.schema.json`](docs/idea-analysis.schema.json)
 - 논문 탐색 프로토콜: [`docs/search-protocol.md`](docs/search-protocol.md)
 - 리뷰 연결·실행: `bin/onboard_research.py --agent codex|claude|omp`. 개인 런타임·Orca 선택은 `.research-harness-agent.json`에 둔다.
+- localhost WebUI 서버: [`bin/research_webui.py`](bin/research_webui.py) `serve [--port 8765] [--agent auto|codex|claude|omp] [--timeout 3600] [--no-browser]` / `check`. 서버 패키지 [`bin/webui/`](bin/webui/)는 HTTP·가드(`server.py`, `security.py`), 작업 브로커(`jobs.py`), LLM 스트리밍 실행기(`llm.py`), 논문 리뷰 큐·게시(`reviews.py`)를 담는다. HTTP·SSE 계약: [`docs/webui-api.md`](docs/webui-api.md). 프런트엔드 소스는 `webui/`(Vite + React + TS), 빌드 결과는 `100-views/webui/`. 사람용 안내: [Research WebUI](../docs/research-webui.md).
 
 검사는 저장소 루트에서 `python3 .scripts/bin/verify_harness.py`로 실행한다. CLI 회귀 검사는 `python3 -B -m unittest discover -s .scripts/tests -v`로 실행한다. 논문 JSON은 `paper_record.py validate`, 아이디어 JSON은 `idea_analysis.py validate`로 검사한다.
 

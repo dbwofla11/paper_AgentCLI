@@ -69,10 +69,10 @@ def check(root: Path, host: str | None, with_mcp: bool = False,
     except (OSError, SyntaxError, UnicodeError):
         report(False, "paper.py 구문")
     skills_root = root / ".agents/skills"
-    names = sorted({*SKILLS, *(p.name for p in skills_root.iterdir() if p.is_dir() or p.is_symlink())}) if skills_root.is_dir() else list(SKILLS)
+    names = sorted({*SKILLS, *(p.name for p in skills_root.iterdir() if (p / "SKILL.md").is_file())}) if skills_root.is_dir() else list(SKILLS)
     for name in names:
         report((skills_root / name / "SKILL.md").is_file(), f"공통 스킬: {name}")
-        if host == "claude":
+        if host == "claude" and name in SKILLS:
             alias = root / ".claude/skills" / name
             report((alias / "SKILL.md").is_file(), f"Claude 스킬 진입점: {name}")
             if alias.is_symlink():

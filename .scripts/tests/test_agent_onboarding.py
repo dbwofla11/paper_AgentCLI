@@ -1,4 +1,9 @@
 import json
+import contextlib
+import hashlib
+import io
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
 from pathlib import Path
 import subprocess
@@ -9,6 +14,8 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'bin'))
 import research_agent as agents
 import install_research_harness as installer
+import onboard_research as onboard
+from webui import server as webui_server
 
 
 class AgentOnboardingTests(unittest.TestCase):
@@ -47,12 +54,64 @@ class AgentOnboardingTests(unittest.TestCase):
                 '/bin/codex', 'exec', '--skip-git-repo-check', '--cd', str(stage),
                 '--sandbox', 'workspace-write', '-c', 'approval_policy="never"',
                 '--output-last-message', str(last), 'review'])
-            self.assertEqual(agents.command('claude', stage, last, 'review'), [
-                '/bin/claude', '--print', '--output-format', 'text', '--restricted',
-                '--permission-mode', 'dontAsk', '--tools', 'Read,Edit,Write,Bash,Glob,Grep,WebSearch,WebFetch',
-                '--allowedTools', 'Read,Edit,Write,Bash,Glob,Grep,WebSearch,WebFetch',
-                '--settings', '{"sandbox": {"enabled": true, "autoAllowBashIfSandboxed": true, "allowUnsandboxedCommands": false}}',
-                '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', 'review'])
+            claude = agents.command('claude', stage, last, 'review')
+        self.assertEqual(claude[:10], [
+            '/bin/claude', '--print', '--output-format', 'text', '--restricted',
+            '--permission-mode', 'dontAsk', '--tools', 'Read,Edit,Write,Bash,Glob,Grep,WebSearch,WebFetch',
+            '--allowedTools'])
+        self.assertEqual(claude[10], 'Read,Edit,Write,Bash,Glob,Grep,WebSearch,WebFetch')
+        self.assertIn('--strict-mcp-config', claude)
+        self.assertEqual(claude[claude.index('--mcp-config') + 1], '{"mcpServers":{}}')
+        self.assertEqual(claude[-3], '--settings')
+        self.assertEqual(json.loads(claude[-2]), {
+            'sandbox': {'enabled': True, 'autoAllowBashIfSandboxed': True,
+                        'allowUnsandboxedCommands': False}})
+        self.assertEqual(claude[-1], 'review')
+
+    def test_review_commands_forward_explicit_model_and_effort(self):
+        stage, last = Path('/tmp/stage'), Path('/tmp/last')
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(agents.shutil, 'which', side_effect=lambda name: '/fake/' + name):
+            root = Path(directory)
+            claude = agents.command('claude', stage, last, 'PROMPT', root=root,
+                                    timeout_seconds=30, model='model-a', effort='high')
+            codex = agents.command('codex', stage, last, 'PROMPT', root=root,
+                                   timeout_seconds=30, model='model-b', effort='high')
+            omp = agents.command('omp', stage, last, 'PROMPT', root=root,
+                                 timeout_seconds=30, model='vendor/model-c:high', effort='high')
+        self.assertEqual(claude[claude.index('--model') + 1], 'model-a')
+        self.assertEqual(claude[claude.index('--effort') + 1], 'high')
+        self.assertEqual(claude[-3], '--settings')
+        self.assertEqual(claude[-1], 'PROMPT')
+        self.assertEqual(codex[codex.index('-m') + 1], 'model-b')
+        self.assertIn('model_reasoning_effort="high"', codex)
+        self.assertEqual(omp[omp.index('--model') + 1], 'vendor/model-c:high')
+
+    def test_verifier_command_is_read_only_and_schema_constrained(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(agents.shutil, 'which', side_effect=lambda name: '/fake/' + name):
+            root = Path(directory)
+            schema = root / 'schema.json'
+            schema.write_text('{"type":"object"}', encoding='utf-8')
+            codex = agents.verify_command('codex', root, 'VERIFY', schema_path=schema,
+                                          model='model-b', effort='high', timeout_seconds=30, root=root)
+            claude = agents.verify_command('claude', root, 'VERIFY', schema_path=schema,
+                                           model='model-a', effort='high', timeout_seconds=30, root=root)
+            omp = agents.verify_command('omp', root, 'VERIFY', schema_path=schema,
+                                        model='vendor/model-c:high', effort='high', timeout_seconds=30, root=root)
+        self.assertEqual(codex[codex.index('--sandbox') + 1], 'read-only')
+        self.assertEqual(codex[codex.index('--output-schema') + 1], str(schema))
+        self.assertEqual(codex[codex.index('-m') + 1], 'model-b')
+        self.assertIn('model_reasoning_effort="high"', codex)
+        self.assertEqual(codex[-2:], ['--', 'VERIFY'])
+        self.assertEqual(json.loads(claude[claude.index('--json-schema') + 1]), {'type': 'object'})
+        self.assertEqual(claude[claude.index('--tools') + 1], 'Read,Glob,Grep,Bash')
+        self.assertEqual(claude[claude.index('--mcp-config') + 1], '{"mcpServers":{}}')
+        self.assertEqual(claude[-3], '--settings')
+        self.assertEqual(claude[-1], 'VERIFY')
+        self.assertEqual(omp[omp.index('--tools') + 1], 'read,grep,glob,bash')
+        self.assertEqual(omp[omp.index('--model') + 1], 'vendor/model-c:high')
+        self.assertEqual(omp[-2:], ['--', 'VERIFY'])
 
     @unittest.skipIf(os.name == 'nt', 'Executable fixture uses Unix permissions')
     def test_omp_argv_with_and_without_role(self):
@@ -124,6 +183,57 @@ class AgentOnboardingTests(unittest.TestCase):
             check = subprocess.run([sys.executable, str(root / '.scripts/bin/verify_harness.py')], cwd=root, env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
             self.assertIn('0 records', result.stdout)
+
+    def test_onboarding_reuse_requires_matching_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
+            status = {'agent': 'codex', 'ready': True, 'installed': True,
+                      'authenticated': True, 'reason': 'ready'}
+            class StatusHandler(BaseHTTPRequestHandler):
+                agent = 'omp'
+                def do_GET(self):
+                    body = json.dumps({'workspace_id': workspace, 'agent': self.agent}).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Length', str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                def log_message(self, *args):
+                    pass
+            stub = ThreadingHTTPServer(('127.0.0.1', 0), StatusHandler)
+            thread = threading.Thread(target=stub.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for running, expected in (('omp', 1), ('codex', 0)):
+                    with self.subTest(running=running):
+                        StatusHandler.agent = running
+                        output = io.StringIO()
+                        argv = ['onboard_research.py', '--agent', 'codex',
+                                '--port', str(stub.server_port)]
+                        with patch.object(onboard, 'ROOT', root), \
+                             patch.object(sys, 'argv', argv), \
+                             patch.object(agents, 'resolve', return_value=status), \
+                             patch.object(agents, 'connect', return_value=status), \
+                             patch.object(onboard.shutil, 'which', return_value='/fake/pdftotext'), \
+                             patch.object(onboard.subprocess, 'run'), \
+                             patch.object(webui_server, 'make_server', side_effect=OSError('port in use')), \
+                             patch.object(onboard.webbrowser, 'open') as browser, \
+                             contextlib.redirect_stdout(output):
+                            result = onboard.main()
+                        self.assertEqual(result, expected)
+                        if expected:
+                            self.assertNotIn('이미 실행 중인 이 저장소의 실행기에 연결합니다', output.getvalue())
+                            self.assertIn('다릅니다', output.getvalue())
+                            self.assertIn('에이전트(omp)', output.getvalue())
+                            self.assertIn('에이전트(codex)', output.getvalue())
+                            browser.assert_not_called()
+                        else:
+                            self.assertIn('이미 실행 중인 이 저장소의 실행기에 연결합니다', output.getvalue())
+                            browser.assert_called_once()
+            finally:
+                stub.shutdown()
+                stub.server_close()
+                thread.join(2)
 
     def test_claude_adapter_uses_restricted_sandboxed_mode(self):
         with patch.object(agents.shutil, 'which', return_value='/user/bin/claude'):

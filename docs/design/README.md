@@ -17,3 +17,13 @@ Blurple `#5865f2`, canvas `#0a0d3a`, indigo surface `#1e2353`, magenta `#ec48bd`
 ABC Ginto Nord·ggsans는 저장소에 포함되어 있지 않다. CSS는 문서의 대체 폰트와 시스템 sans-serif를 차례로 사용하며 외부 폰트를 자동 다운로드하지 않는다. 실제 글꼴은 기기에 설치된 폰트에 따라 달라진다.
 
 스타일 수정은 즉시 반영된다. 헤더·화면 내용 수정은 해당 `.scripts/bin/*_html.py` 또는 `harness_dashboard.py`로 다시 생성한다. Graphify 자체 생성 화면은 이 UI 테마의 관리 범위에 포함하지 않는다.
+
+## WebUI 토큰
+
+Research WebUI(`100-views/webui/`, 소스 `.scripts/webui/`)는 위 정적 화면 테마와 별개다. Material 계열 밝은·어두운 테마를 쓰며 정본은 `.scripts/webui/src/styles/tokens.css`다.
+
+- 색: 표면·테두리·글자·주색·의미색(위험·주의·성공)을 라이트·다크 값 쌍으로 정의한다. 본문 글자는 바탕 대비 4.5:1 이상이다. 주 버튼은 `#1967D2` 바탕에 흰 글자(5.4:1)이고, `#4285F4`는 표시줄·막대·초점 표시처럼 글자가 아닌 곳에만 쓴다. 순수 검정은 그림자와 배경 막에만 쓴다.
+- 글꼴: Roboto, 코드·경로는 JetBrains Mono(저장소에 번들된 가변 글꼴). 한글은 시스템 글꼴(Apple SD Gothic Neo, Pretendard, Malgun Gothic, Noto Sans KR 순)을 쓴다.
+- 형태: 반경 8px(버튼·카드·칩·입력), 16px(시트·패널), 24px(큰 면). z-index는 기본 0 / 고정 머리글 100 / 겹침 200 / 모달 300 / 알림 500.
+- 모션: 등장 420ms, 기본 280ms, 빠름 200ms, 목록 시차 80ms. 같은 값을 `.scripts/webui/src/motion/tokens.ts`에 둔다. 동작 줄이기 설정을 존중한다.
+- 테마 선택(시스템·라이트·다크)은 `localStorage`의 `research-webui.theme`에 저장한다.

@@ -53,7 +53,7 @@ cd paper_AgentCLI
 python3 .scripts/bin/onboard_research.py
 ```
 
-설치된 Codex·Claude·omp의 준비 상태를 검사하고 자동 선택한다. 순서는 Codex → Claude → omp이며 기존 연결이 있으면 그 선택을 유지한다. CLI 로그인 안내 뒤 로컬 리뷰 서버를 시작하고 라이브러리를 브라우저에서 연다.
+설치된 Codex·Claude·omp의 준비 상태를 검사하고 자동 선택한다. 순서는 Codex → Claude → omp이며 기존 연결이 있으면 그 선택을 유지한다. CLI 로그인 안내 뒤 로컬 WebUI 서버를 시작하고 `http://127.0.0.1:8765/100-views/webui/`를 브라우저에서 연다. 연결을 마친 뒤에는 `python3 .scripts/bin/research_webui.py serve`로 서버만 띄울 수 있다. 주소·보안 모델은 [Research WebUI 안내](research-webui.md)를 본다.
 
 연결 파일 `.research-harness-agent.json`은 개인 에이전트 선택과 선택적인 Orca 설정을 보관한다. 인증 정보는 보관하지 않는다. `.research-harness-agent.example.json`, `.omp/config.example.yml`, `AGENTS.local.example.md`의 로컬 사본을 만드는 방법은 [AGENTS.md](../AGENTS.md#개인-설정과-로컬-덮어쓰기)를 따른다.
 
@@ -210,7 +210,7 @@ python3 -B .scripts/bin/onboarding_check.py --host codex --with-mcp --with-graph
 
 위키와 지식 그래프는 MCP 서버로 접근하지 않는다. 로컬 리뷰 브리지의 작업 복사본에는 프로젝트 MCP 설정(`.mcp.json`, `.codex/`, `.claude/`)이 복사되지 않는다. 위키·그래프 기능이 더 필요하면 MCP 서버를 추가하지 말고 저장소 CLI `.scripts/bin/wiki.py`를 확장한다.
 
-HTML 화면은 `100-views/harness-dashboard.html`, `paper-library.html`, `thought-experiments.html`을 브라우저에서 열면 된다. 화면과 실제 에이전트 실행의 차이는 [로컬 리뷰 실행기](paper-review-bridge.md)를 본다. 일일 자동 검색은 별도 Orca Automation이 필요하며, `$paper-scheduler`는 날짜별 주제 계획만 기록한다.
+주 화면은 로컬 서버(`python3 .scripts/bin/research_webui.py serve`)가 띄우는 WebUI다. 논문 라이브러리(`#/`)에서 리뷰를 시작하고, 하네스(`#/harness`)에서 스킬 흐름과 검사를 확인한다. 정적 화면 `100-views/harness-dashboard.html`, `paper-library.html`, `thought-experiments.html`은 서버 없이 브라우저에서 바로 열 수 있고, 정적 라이브러리의 리뷰 시작도 서버가 켜져 있으면 계속 동작한다. 화면과 실제 에이전트 실행의 차이는 [로컬 리뷰 실행기](paper-review-bridge.md)를 본다. 일일 자동 검색은 별도 Orca Automation이 필요하며, `$paper-scheduler`는 날짜별 주제 계획만 기록한다.
 
 ## 8. 막힐 때
 

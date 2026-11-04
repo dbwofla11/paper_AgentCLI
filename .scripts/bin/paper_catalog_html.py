@@ -30,14 +30,27 @@ PDF_TITLE_FALLBACKS = {
     "2026-chng-sensesearch": "SenseSearch: Empowering Vision-Language Models with High-Resolution Agentic Search-Reasoning via Reinforcement Learning",
     "2019-khalilsarai-wifi-multiband-phase-retrieval": "WiFi-Based Indoor Localization via Multi-Band Splicing and Phase Retrieval",
 }
+LABELS = {
+    "category": {"wifi-csi": "WiFi CSI", "game-ai": "Game AI", "agent-ai": "Agent AI",
+                 "computer-vision": "Computer Vision", "other": "기타"},
+    "reading_status": {"candidate": "후보", "keep": "Keep", "triage": "트리아지", "reading": "읽는 중",
+                       "reviewed": "리뷰 완료", "rejected": "제외"},
+}
+QUEUED_STATUSES = ["candidate", "keep", "triage", "reading"]
 
 
-def pdf_title(record: dict) -> str:
+def pdf_title(record: dict, root: Path | None = None) -> str:
     """Read PDF title metadata when the structured record has no title."""
-    source_path = record.get("source", {}).get("pdf_path")
-    if PDFINFO and source_path:
-        pdf_path = (ROOT / source_path).resolve()
-        if pdf_path.is_relative_to(ROOT) and pdf_path.is_file():
+    root = ROOT if root is None else root
+    source = record.get("source")
+    source_path = source.get("pdf_path") if isinstance(source, dict) else None
+    if PDFINFO and isinstance(source_path, str) and source_path:
+        try:
+            pdf_path = (root / source_path).resolve()
+            usable = pdf_path.is_relative_to(root.resolve()) and pdf_path.is_file()
+        except (OSError, RuntimeError, ValueError):  # e.g. a NUL byte or a symlink loop
+            usable = False
+        if usable:
             result = subprocess.run([PDFINFO, str(pdf_path)], capture_output=True, text=True, check=False)
             for line in result.stdout.splitlines():
                 if line.startswith("Title:"):
@@ -45,6 +58,41 @@ def pdf_title(record: dict) -> str:
                     if title:
                         return title
     return ""
+
+
+def display_title(record: dict, root: Path | None = None) -> str:
+    """Record title, else PDF metadata title, else a checked fallback, else the title-cased slug."""
+    title = record.get("title")
+    title = title.strip() if isinstance(title, str) else ""
+    if title:
+        return title
+    slug = record.get("slug")
+    slug = slug if isinstance(slug, str) and slug else "제목 확인 필요"
+    title = pdf_title(record, root) or PDF_TITLE_FALLBACKS.get(slug, "")
+    return title or slug.replace("-", " ").title()
+
+
+def source_url(record: dict) -> str:
+    """First safe HTTP(S) source URL of the record, or ``""``."""
+    source = record.get("source")
+    urls = source.get("urls") if isinstance(source, dict) else None
+    for url in urls if isinstance(urls, list) else []:
+        if not isinstance(url, str):
+            continue
+        try:
+            parsed = urlsplit(url.strip())
+            usable = (parsed.scheme in {"https", "http"} and bool(parsed.hostname)
+                      and not any(ch.isspace() for ch in parsed.netloc))
+        except ValueError:  # e.g. "https://[" (unbalanced IPv6 bracket): skip this URL
+            continue
+        if usable:
+            return url.strip()
+    return ""
+
+
+def review_needed(record: dict, review_exists: bool) -> bool:
+    """A review is needed unless the record says complete and the review file exists."""
+    return record.get("structured_review_status") != "complete" or not review_exists
 
 
 def original_target(record: dict) -> str:
@@ -55,13 +103,7 @@ def original_target(record: dict) -> str:
         local_path = (ROOT / pdf_path).resolve()
         if local_path.is_relative_to(ROOT) and local_path.is_file():
             return local_path.relative_to(ROOT).as_posix()
-    for url in source.get("urls", []):
-        if not isinstance(url, str):
-            continue
-        parsed = urlsplit(url.strip())
-        if parsed.scheme in {"https", "http"} and parsed.hostname and not any(ch.isspace() for ch in parsed.netloc):
-            return url.strip()
-    return ""
+    return source_url(record)
 
 
 def load_records() -> list[dict]:
@@ -73,24 +115,18 @@ def load_records() -> list[dict]:
             raise SystemExit(f"{path.relative_to(ROOT)}: {exc}") from exc
         if not isinstance(record, dict) or not isinstance(record.get("title"), str):
             raise SystemExit(f"{path.relative_to(ROOT)}: expected a JSON paper record with a title")
-        title = record.get("title", "").strip()
-        if not title:
-            title = pdf_title(record) or PDF_TITLE_FALLBACKS.get(record.get("slug", ""), "")
-        record["catalog_display_title"] = title or record.get("slug", "제목 확인 필요").replace("-", " ").title()
+        record["catalog_display_title"] = display_title(record)
         record["catalog_original_url"] = original_target(record)
         record["catalog_original_status"] = "available" if record["catalog_original_url"] else "missing"
         review_path = record.get("source", {}).get("review_path")
         if not review_path:
             review_path = f"01-Papers/reviews/{record.get('category', 'other')}/{record.get('slug', path.stem)}.md"
-        record["catalog_review_path_exists"] = False
-        record["catalog_review_needed"] = record.get("structured_review_status") != "complete"
-        if review_path:
-            local_review = (ROOT / review_path).resolve()
-            if local_review.is_relative_to(ROOT) and local_review.is_file():
-                record["catalog_review_markdown"] = local_review.read_text(encoding="utf-8")
-                record["catalog_review_path_exists"] = True
-        if not record["catalog_review_path_exists"]:
-            record["catalog_review_needed"] = True
+        local_review = (ROOT / review_path).resolve() if review_path else None
+        review_exists = bool(local_review and local_review.is_relative_to(ROOT) and local_review.is_file())
+        record["catalog_review_path_exists"] = review_exists
+        record["catalog_review_needed"] = review_needed(record, review_exists)
+        if review_exists:
+            record["catalog_review_markdown"] = local_review.read_text(encoding="utf-8")
         records.append(record)
     return records
 
@@ -148,7 +184,7 @@ __PAGE_HEADER__
 <script>
 "use strict";
 const papers = JSON.parse(document.getElementById("paper-data").textContent);
-const labels = {"wifi-csi":"WiFi CSI","game-ai":"Game AI","agent-ai":"Agent AI","computer-vision":"Computer Vision",other:"기타",candidate:"후보",keep:"Keep",triage:"트리아지",reading:"읽는 중",reviewed:"리뷰 완료",rejected:"제외"};
+const labels = __LABELS__;
 const $ = (id) => document.getElementById(id);
 const value = (v, fallback="미상") => v === null || v === undefined || v === "" ? fallback : String(v);
 function addOptions(id, values, formatter=(v)=>v){
@@ -168,7 +204,7 @@ const byCategory={};for(const p of papers){const k=value(p.category,"분야 미�
 drawBars("year-chart",byYear);drawBars("category-chart",byCategory,v=>labels[v]||v);
 $("total").textContent=papers.length;
 $("reviewed").textContent=papers.filter(p=>p.structured_review_status==="complete").length;
-$("queued").textContent=papers.filter(p=>["candidate","keep","triage","reading"].includes(p.reading_status)).length;
+$("queued").textContent=papers.filter(p=>__QUEUED__.includes(p.reading_status)).length;
 $("categories").textContent=categories.length;
 function make(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
 function renderMarkdown(source){
@@ -259,7 +295,9 @@ async function startReview(p,statusNode,button){
     const status=await reviewRequest("/api/status");
     if(!["codex-cli","claude-cli","omp-cli"].includes(status.runner))throw new Error("리뷰 실행기가 아닌 주소입니다.");
     if(!status.ready)throw new Error(status.reason||"에이전트 연결이 필요합니다. 온보딩 명령을 실행하세요.");
-    const accepted=await reviewRequest("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:p.slug})});
+    const session=await reviewRequest("/api/session");
+    if(!session.csrf_token)throw new Error("실행기 세션 토큰을 받지 못했습니다.");
+    const accepted=await reviewRequest("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":session.csrf_token},body:JSON.stringify({slug:p.slug})});
     const job=accepted.job;
     if(!job?.job_id)throw new Error("작업 ID를 받지 못했습니다.");
     update("리뷰 작업을 대기열에 넣었습니다.",true);
@@ -355,13 +393,20 @@ restoreActiveReviews();
 '''
 
 
+def script_json(value) -> str:
+    """Compact JSON that is safe inside an HTML ``<script>`` element."""
+    text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return text.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+
+
 def main() -> None:
     argparse.ArgumentParser(description=__doc__).parse_args()
     records = load_records()
-    embedded = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
-    embedded = embedded.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+    embedded = script_json(records)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(HTML.replace("__PAPER_DATA__", embedded).replace("__SHARED_STYLE__", STYLESHEET).replace("__PAGE_HEADER__", page_header('papers', '다음 발견이 시작되는 곳', 'PAPER LIBRARY', '관심 있는 논문을 찾고, 원문과 리뷰를 이어서 읽으세요. 읽기 상태와 연구 분야도 함께 정리할 수 있습니다.', '논문 찾아보기', '#search')), encoding="utf-8")
+    html = HTML.replace("__LABELS__", script_json({**LABELS["category"], **LABELS["reading_status"]}))
+    html = html.replace("__QUEUED__", script_json(QUEUED_STATUSES))
+    OUTPUT.write_text(html.replace("__PAPER_DATA__", embedded).replace("__SHARED_STYLE__", STYLESHEET).replace("__PAGE_HEADER__", page_header('papers', '다음 발견이 시작되는 곳', 'PAPER LIBRARY', '관심 있는 논문을 찾고, 원문과 리뷰를 이어서 읽으세요. 읽기 상태와 연구 분야도 함께 정리할 수 있습니다.', '논문 찾아보기', '#search')), encoding="utf-8")
     print(f"Generated {OUTPUT.relative_to(ROOT)} with {len(records)} records ({date.today().isoformat()}).")
 
 

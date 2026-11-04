@@ -62,7 +62,7 @@
     "key": "views",
     "parent": null,
     "title": "HTML 화면",
-    "content": "## 역할\n\n저장소의 기록을 찾고 읽는 세 화면이다. 개별 HTML은 정본 데이터를 대체하지 않으며 생성기로 갱신한다. 리뷰 시작은 본인 에이전트와 로컬 브리지가 연결되어 있어야 한다.\n\n## 근거 문서\n\n- `100-views/README.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "content": "## 역할\n\n저장소의 기록을 찾고 읽는 세 화면이다. 개별 HTML은 정본 데이터를 대체하지 않으며 생성기로 갱신한다. 리뷰 시작은 본인 에이전트와 로컬 WebUI 서버(research_webui.py)가 연결되어 있어야 한다.\n\n## 근거 문서\n\n- `100-views/README.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       "100-views/README.md"
     ],
@@ -292,8 +292,8 @@
   {
     "key": "doc-bridge",
     "parent": "ops",
-    "title": "HTML에서 리뷰 실행 · 로컬 브리지",
-    "content": "## 역할\n\n선택 논문 한 편을 queue에 넣고 연결된 에이전트로 임시 작업 폴더에서 리뷰한다. 산출물 검증·충돌 확인 후 저장하고 HTML을 재생성한다. 공유 그래프 충돌은 pending, 리뷰 정본 충돌은 저장 중단이다.\n\n## 근거 문서\n\n- `docs/paper-review-bridge.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "title": "HTML에서 리뷰 실행 · 로컬 WebUI 서버",
+    "content": "## 역할\n\n로컬 WebUI 서버(research_webui.py)가 선택 논문 한 편을 queue에 넣고 연결된 에이전트로 임시 작업 폴더에서 리뷰한다. 산출물 검증·충돌 확인 후 저장하고 HTML을 재생성한다. 공유 그래프 충돌은 pending, 리뷰 정본 충돌은 저장 중단이다. 모든 요청은 Host 검사를, 리뷰 요청은 Origin·CSRF 토큰 검사를 거친다.\n\n## 근거 문서\n\n- `docs/paper-review-bridge.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       "docs/paper-review-bridge.md"
     ],
@@ -478,7 +478,7 @@
     "key": "view-library",
     "parent": "views",
     "title": "논문 라이브러리 화면",
-    "content": "## 역할\n\n논문 JSON에서 검색·필터·원문·리뷰를 보여준다. 새 리뷰는 localhost 브리지와 준비된 본인 CLI가 필요하다.\n\n## 갱신\n\n생성기: .scripts/bin/paper_catalog_html.py. 공통 CSS: 100-views/assets/research-ui.css. 화면은 정본에서 다시 생성하므로 상태를 HTML에 직접 관리하지 않는다.\n\n## 근거 문서\n\n- `100-views/paper-library.html`\n- `.scripts/bin/paper_catalog_html.py`\n- `100-views/README.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "content": "## 역할\n\n논문 JSON에서 검색·필터·원문·리뷰를 보여준다. 새 리뷰는 localhost WebUI 서버와 준비된 본인 CLI가 필요하다.\n\n## 갱신\n\n생성기: .scripts/bin/paper_catalog_html.py. 공통 CSS: 100-views/assets/research-ui.css. 화면은 정본에서 다시 생성하므로 상태를 HTML에 직접 관리하지 않는다.\n\n## 근거 문서\n\n- `100-views/paper-library.html`\n- `.scripts/bin/paper_catalog_html.py`\n- `100-views/README.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       "100-views/paper-library.html",
       ".scripts/bin/paper_catalog_html.py",

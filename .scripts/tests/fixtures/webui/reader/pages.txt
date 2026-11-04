@@ -1,0 +1,9 @@
+1 Introduction
+A compact baseline.
+2 Methods
+Figure 4: Architecture overview.
+3 Evaluation
+Table 1: Results of the evaluation.
+The accuracy was 87.9 percent.
+4 Discussion
+An additional discussion.

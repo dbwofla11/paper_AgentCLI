@@ -30,7 +30,7 @@ Notion은 기능을 설명하는 안내 공간이다. 실제 작업은 이 저�
 python3 .scripts/bin/onboard_research.py
 ```
 
-**에이전트 감지 → 로그인 확인 → 연결 설정 저장 → HTML 실행** 순서로 진행한다. 자동 선택 순서는 Codex → Claude → omp이며, 이전 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다.
+**에이전트 감지 → 로그인 확인 → 연결 설정 저장 → WebUI 실행** 순서로 진행한다. 자동 선택 순서는 Codex → Claude → omp이며, 이전 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다.
 
 Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. omp에는 별도의 OS 샌드박스 검사가 없다. 설치 방법은 [온보딩 안내](docs/onboarding.md)를 따른다.
 
@@ -43,7 +43,9 @@ Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotex
 | `python3 .scripts/bin/onboard_research.py --connect-only` | 화면을 생성하고 연결 설정을 저장한 뒤 종료 |
 | `python3 .scripts/bin/onboard_research.py --no-browser` | 브라우저 자동 열기 없이 실행 |
 
-기본 화면 주소는 `http://127.0.0.1:8765/100-views/paper-library.html`이다. HTML에서 연결된 에이전트와 준비 상태를 확인하고 **리뷰 시작**을 누르면 본인 계정의 에이전트가 해당 논문을 분석한다. 같은 저장소의 실행기가 이미 켜져 있으면 그 실행기에 연결한다. 다른 포트를 사용하려면 `--port 8766`처럼 지정한다.
+기본 화면 주소는 `http://127.0.0.1:8765/100-views/webui/`(WebUI)다. 첫 화면 논문 라이브러리(`#/`)에서 PDF가 있고 리뷰가 필요한 논문의 **리뷰 시작**을 누르면 본인 계정의 에이전트가 해당 논문을 분석한다. 에이전트가 준비되지 않았으면 버튼이 이유와 함께 비활성화되고, 준비 상태는 `#/status`에서 확인한다. 정적 논문 라이브러리(`http://127.0.0.1:8765/100-views/paper-library.html`)에서 시작하는 방법도 계속 동작한다. 같은 저장소의 서버가 이미 켜져 있으면 그 서버에 연결한다. 다른 포트를 사용하려면 `--port 8766`처럼 지정한다.
+
+연결을 마친 뒤에는 `python3 .scripts/bin/research_webui.py serve`로 서버만 띄울 수 있다. `research_webui.py check`는 에이전트·`pdftotext`·프런트엔드 빌드 준비 상태를 JSON으로 출력한다. 주소·보안 모델·프런트엔드 개발 방법은 [Research WebUI 안내](docs/research-webui.md)를 본다.
 
 연결 파일 `.research-harness-agent.json`은 개인 파일이며 에이전트 이름과 선택적인 Orca 설정을 저장한다. 인증은 본인의 CLI가 관리하며 계정·토큰·API 키를 저장소에 복사하지 않는다. 개인 설정 예시와 복사 방법은 [AGENTS.md](AGENTS.md#개인-설정과-로컬-덮어쓰기)를 본다. HTML 파일을 직접 열면 검색·필터·리뷰 보기를 사용할 수 있고, 새 리뷰 실행은 위 명령으로 연 로컬 화면에서 진행한다.
 

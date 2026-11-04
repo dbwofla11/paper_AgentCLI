@@ -8,15 +8,22 @@ import json
 import re
 from datetime import date
 from pathlib import Path
+from typing import Callable
 
 from research_ui import STYLESHEET, page_header
 
 ROOT = Path(__file__).resolve().parents[2]
-IDEAS = ROOT / "05-Ideas/thought-experiments"
-RUNS = ROOT / "04-Projects/thought-experiment-runs"
+IDEAS_DIR = "05-Ideas/thought-experiments"
+RUNS_DIR = "04-Projects/thought-experiment-runs"
+REGISTRY_NAME = "CRITICAL_VALIDATION_REGISTRY.md"
+TODO_QUEUE_PATH = "04-Projects/research-todo/queue.json"
+IDEAS = ROOT / IDEAS_DIR
+RUNS = ROOT / RUNS_DIR
 OUTPUT = ROOT / "100-views" / "thought-experiments.html"
-REGISTRY = RUNS / "CRITICAL_VALIDATION_REGISTRY.md"
-TODO_QUEUE = ROOT / "04-Projects/research-todo/queue.json"
+REGISTRY = RUNS / REGISTRY_NAME
+TODO_QUEUE = ROOT / TODO_QUEUE_PATH
+# Repository data faults scan() degrades on when it is given an ``errors`` list.
+DATA_FAULTS = (OSError, ValueError, AttributeError, TypeError, KeyError)
 
 
 def section(text: str, heading: str) -> str:
@@ -26,11 +33,12 @@ def section(text: str, heading: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[#*`]", "", match.group(1))).strip()
 
 
-def registry_rows() -> dict[str, dict[str, str]]:
+def registry_rows(registry: Path | None = None) -> dict[str, dict[str, str]]:
+    registry = REGISTRY if registry is None else registry
     rows: dict[str, dict[str, str]] = {}
-    if not REGISTRY.is_file():
+    if not registry.is_file():
         return rows
-    for line in REGISTRY.read_text(encoding="utf-8").splitlines():
+    for line in registry.read_text(encoding="utf-8").splitlines():
         if not line.startswith("|") or "thought-experiments/" not in line:
             continue
         cells = [cell.strip().strip("`") for cell in line.strip("|").split("|")]
@@ -44,22 +52,86 @@ def registry_rows() -> dict[str, dict[str, str]]:
     return rows
 
 
-def scan() -> list[dict]:
+TODO_TASK_FIELDS = ("idea_path", "status", "task_id", "result_path")
+
+
+def todo_task_fault(task: object) -> str | None:
+    """Why a queue task cannot be used (not an object, or a present field that is not a string)."""
+    if not isinstance(task, dict):
+        return "task is not an object"
+    bad = [field for field in TODO_TASK_FIELDS if field in task and not isinstance(task[field], str)]
+    return f"not a string: {', '.join(bad)}" if bad else None
+
+
+def todo_tasks_by_idea(queue: Path | None = None,
+                       skip: Callable[[int, str], None] | None = None) -> dict[str, list[dict]]:
+    """Queue tasks grouped by ``idea_path``. With ``skip`` (tolerant mode) the queue must be an
+    object whose ``tasks`` is a list, else ``ValueError("queue is not an object")`` or
+    ``ValueError("tasks is not a list")`` is raised; a malformed task (``todo_task_fault``) is left
+    out and reported as ``skip(index, reason)``. Without ``skip`` every task is used as is."""
+    queue = TODO_QUEUE if queue is None else queue
+    todo_data = json.loads(queue.read_text(encoding="utf-8")) if queue.is_file() else {"tasks": []}
+    if skip is not None:
+        if not isinstance(todo_data, dict):
+            raise ValueError("queue is not an object")
+        if not isinstance(todo_data.get("tasks", []), list):
+            raise ValueError("tasks is not a list")
+    todo_by_idea: dict[str, list[dict]] = {}
+    for index, task in enumerate(todo_data.get("tasks", [])):
+        reason = todo_task_fault(task) if skip is not None else None
+        if reason is not None:
+            skip(index, reason)
+            continue
+        todo_by_idea.setdefault(task.get("idea_path", ""), []).append(task)
+    return todo_by_idea
+
+
+def scan(root: Path | None = None, errors: list[dict] | None = None) -> list[dict]:
+    """Idea records. ``root`` selects a repository (the module paths when omitted). Without
+    ``errors`` a malformed queue, registry, analysis or note raises. With an ``errors`` list the
+    fault is appended as ``{"section", "error"}`` instead: the queue or registry is treated as
+    empty for every idea, a malformed queue task is skipped, a malformed ``analysis.json`` is
+    read as ``{}`` for its idea only, an unreadable note drops that idea, and an unreadable
+    library record is skipped."""
+    if root is None:
+        root, ideas_dir, runs, registry_path, queue = ROOT, IDEAS, RUNS, REGISTRY, TODO_QUEUE
+    else:
+        root = Path(root).resolve()  # run directories are found via resolved links
+        ideas_dir, runs, queue = root / IDEAS_DIR, root / RUNS_DIR, root / TODO_QUEUE_PATH
+        registry_path = runs / REGISTRY_NAME
+
+    def fault(section_name: str, path: Path, exc: Exception) -> None:
+        if errors is None:
+            raise exc
+        try:
+            where = path.relative_to(root).as_posix()
+        except ValueError:
+            where = path.as_posix()
+        errors.append({"section": section_name, "error": f"{where}: {type(exc).__name__}: {exc}"[:500]})
+
     items = []
-    registry = registry_rows()
+    try:
+        registry = registry_rows(registry_path)
+    except DATA_FAULTS as exc:
+        fault("registry", registry_path, exc)
+        registry = {}
     paper_paths: dict[str, str] = {}
-    for record_path in (ROOT / "01-Papers/library").glob("*.json"):
+    for record_path in (root / "01-Papers/library").glob("*.json"):
         try:
             paper = json.loads(record_path.read_text(encoding="utf-8"))
-            paper_paths[paper.get("paper_id", "")] = record_path.relative_to(ROOT).as_posix()
+            paper_paths[paper.get("paper_id", "")] = record_path.relative_to(root).as_posix()
         except (OSError, json.JSONDecodeError):
             continue
-    todo_data = json.loads(TODO_QUEUE.read_text(encoding="utf-8")) if TODO_QUEUE.is_file() else {"tasks": []}
-    todo_by_idea: dict[str, list[dict]] = {}
-    for task in todo_data.get("tasks", []):
-        todo_by_idea.setdefault(task.get("idea_path", ""), []).append(task)
-    for path in sorted(IDEAS.glob("*.md")):
-        text = path.read_text(encoding="utf-8")
+        except DATA_FAULTS as exc:
+            fault("library", record_path, exc)
+    try:
+        todo_by_idea = todo_tasks_by_idea(queue, None if errors is None else
+                                          lambda index, reason: fault("todo_queue", queue, ValueError(f"tasks[{index}]: {reason}")))
+    except DATA_FAULTS as exc:
+        fault("todo_queue", queue, exc)
+        todo_by_idea = {}
+
+    def idea(path: Path, text: str, trust_analysis: bool) -> dict:
         title = next((line.lstrip("# ").strip() for line in text.splitlines() if line.startswith("# ")), path.stem)
         hypothesis = section(text, "핵심 가설") or section(text, "축소된 핵심 가설") or section(text, "가설") or "미기록"
         falsification = section(text, "반증 조건") or "미기록"
@@ -67,20 +139,20 @@ def scan() -> list[dict]:
         for href in re.findall(r"\[[^]]+\]\(([^)]+)\)", text):
             candidate = (path.parent / href.split("#", 1)[0]).resolve()
             try:
-                candidate.relative_to(RUNS.resolve())
+                candidate.relative_to(runs.resolve())
             except ValueError:
                 continue
             run_dir = candidate if candidate.is_dir() else candidate.parent
             break
         if run_dir is None:
-            direct = RUNS / path.stem
+            direct = runs / path.stem
             run_dir = direct if direct.is_dir() else None
-        registry_entry = registry.get(path.relative_to(ROOT).as_posix(), {})
+        registry_entry = registry.get(path.relative_to(root).as_posix(), {})
         if run_dir is None and registry_entry.get("slug"):
-            candidate = RUNS / registry_entry["slug"]
+            candidate = runs / registry_entry["slug"]
             run_dir = candidate if candidate.is_dir() else None
         analyses = list(run_dir.glob("analysis.json")) if run_dir and run_dir.is_dir() else []
-        analysis = json.loads(analyses[0].read_text(encoding="utf-8")) if analyses else {}
+        analysis = json.loads(analyses[0].read_text(encoding="utf-8")) if analyses and trust_analysis else {}
         brief = run_dir / "brief.md" if run_dir and run_dir.is_dir() else None
         results = run_dir / "results.md" if run_dir and run_dir.is_dir() else None
         critics = analysis.get("critics", {})
@@ -100,37 +172,58 @@ def scan() -> list[dict]:
         evidence_links = []
         if registry_entry:
             for label, target in re.findall(r"\[([^]]+)\]\(([^)]+)\)", registry_entry.get("evidence", "")):
-                candidate = (REGISTRY.parent / target).resolve()
+                candidate = (registry_path.parent / target).resolve()
                 try:
-                    relative = candidate.relative_to(ROOT.resolve()).as_posix()
+                    relative = candidate.relative_to(root.resolve()).as_posix()
                 except ValueError:
                     continue
                 if candidate.is_file():
                     evidence_links.append(relative)
-        run_files = {p.name: p.relative_to(ROOT).as_posix() for p in run_dir.iterdir()} if run_dir and run_dir.is_dir() else {}
-        artifacts = sorted(p.relative_to(ROOT).as_posix() for p in run_dir.rglob("*") if p.is_file() and p.suffix in {".json", ".csv", ".png", ".svg"}) if run_dir else []
-        criticisms = sorted(p.relative_to(ROOT).as_posix() for p in run_dir.glob("critique*.md")) if run_dir else []
+        run_files = {p.name: p.relative_to(root).as_posix() for p in run_dir.iterdir()} if run_dir and run_dir.is_dir() else {}
+        artifacts = sorted(p.relative_to(root).as_posix() for p in run_dir.rglob("*") if p.is_file() and p.suffix in {".json", ".csv", ".png", ".svg"}) if run_dir else []
+        criticisms = sorted(p.relative_to(root).as_posix() for p in run_dir.glob("critique*.md")) if run_dir else []
         related_papers = [p.get("paper_id", "") for p in analysis.get("literature_search", {}).get("included_papers", []) if p.get("paper_id")]
         related_paper_paths = [paper_paths[p] for p in related_papers if p in paper_paths]
-        linked_todos = todo_by_idea.get(path.relative_to(ROOT).as_posix(), [])
+        linked_todos = todo_by_idea.get(path.relative_to(root).as_posix(), [])
         todo_status = ", ".join(task.get("status", "unknown") for task in linked_todos) or "미기록"
-        items.append({
+        return {
             "id": path.stem, "title": title, "hypothesis": hypothesis, "falsification": falsification,
             "topics": "미기록", "updated": update, "literature": search, "review": review_status,
             "decision": decision, "experiment": "기록 있음" if results and results.is_file() else "미기록",
-            "note": path.relative_to(ROOT).as_posix(),
-            "brief": brief.relative_to(ROOT).as_posix() if brief and brief.is_file() else "",
-            "results": results.relative_to(ROOT).as_posix() if results and results.is_file() else "",
+            "note": path.relative_to(root).as_posix(),
+            "brief": brief.relative_to(root).as_posix() if brief and brief.is_file() else "",
+            "results": results.relative_to(root).as_posix() if results and results.is_file() else "",
             "todo": "docs/agent-research-todo.md",
             "registry": registry_entry, "validation": registry_entry.get("overall", "미기록"),
             "noteDecision": note_decision, "noteStatus": note_status,
             "decisionConflict": decision_conflict, "statusConflict": status_conflict,
-            "manifest": run_files.get("manifest.md", ""), "analysis": analyses[0].relative_to(ROOT).as_posix() if analyses else "",
+            "manifest": run_files.get("manifest.md", ""), "analysis": analyses[0].relative_to(root).as_posix() if analyses else "",
             "critiques": criticisms, "evidence": evidence_links, "papers": related_papers,
             "paperPaths": related_paper_paths, "artifacts": artifacts,
             "todoStatus": todo_status, "todoTasks": [task.get("task_id", "") for task in linked_todos],
             "todoResults": [task.get("result_path", "") for task in linked_todos],
-        })
+        }
+
+    for path in sorted(ideas_dir.glob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except DATA_FAULTS as exc:
+            fault(f"idea:{path.stem}", path, exc)
+            continue
+        try:
+            items.append(idea(path, text, trust_analysis=True))
+            continue
+        except DATA_FAULTS as exc:
+            if errors is None:
+                raise
+            first = exc
+        try:  # retry without analysis.json content: a malformed analysis degrades only its idea
+            item = idea(path, text, trust_analysis=False)
+        except DATA_FAULTS as exc:
+            fault(f"idea:{path.stem}", path, exc)
+            continue
+        items.append(item)
+        fault(f"idea:{path.stem}", root / item["analysis"] if item["analysis"] else path, first)
     return items
 
 

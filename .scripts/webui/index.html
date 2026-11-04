@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#202124" />
+    <meta name="referrer" content="no-referrer" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231967D2'/%3E%3Cpath d='M16 7c.8 4.3 3.7 7.2 8 8-4.3.8-7.2 3.7-8 8-.8-4.3-3.7-7.2-8-8 4.3-.8 7.2-3.7 8-8z' fill='%23FFFFFF'/%3E%3C/svg%3E"
+    />
+    <title>연구 하네스 WebUI</title>
+    <!-- Blocking on purpose: applies a forced light/dark theme before first paint (no inline scripts under the CSP). -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <noscript>이 화면은 JavaScript가 필요합니다. 브라우저에서 JavaScript를 켠 뒤 다시 여세요.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

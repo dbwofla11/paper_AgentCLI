@@ -4,35 +4,47 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
-MAP = ROOT / ".scripts/docs/research-workflow-map.json"
+MAP_RELATIVE = ".scripts/docs/research-workflow-map.json"
+MAP = ROOT / MAP_RELATIVE
 
 
-def load_paths() -> list[dict]:
-    return json.loads(MAP.read_text(encoding="utf-8"))["paths"]
+def load_paths(root: Path | None = None) -> list[dict]:
+    """Workflow paths of the map file (``MAP``, or the map under ``root``)."""
+    path = MAP if root is None else Path(root) / MAP_RELATIVE
+    return json.loads(path.read_text(encoding="utf-8"))["paths"]
 
 
-def skill_data() -> list[dict]:
-    paths = load_paths()
+def skill_data(root: Path | None = None, readable: Callable[[Path], bool] | None = None) -> list[dict]:
+    """Every ``.agents/skills/*/SKILL.md`` with its description, body and workflow uses.
+
+    ``readable(source)`` decides whether a SKILL.md may be read at all; a refused file is not
+    opened and gets ``title`` = its name, the default description and ``instructions: None``."""
+    paths = load_paths(root)
+    root = ROOT if root is None else Path(root)
     result = []
-    for source in sorted((ROOT / ".agents/skills").glob("*/SKILL.md")):
-        text = source.read_text(encoding="utf-8")
-        frontmatter = text.split("---", 2)[1] if text.startswith("---") else ""
+    for source in sorted((root / ".agents/skills").glob("*/SKILL.md")):
+        text = source.read_text(encoding="utf-8") if readable is None or readable(source) else None
+        frontmatter = text.split("---", 2)[1] if text and text.startswith("---") else ""
         match = re.search(r"^description:\s*(.+)$", frontmatter, re.M)
         description = match[1].strip().strip('\"\'') if match else "설명 미기록"
-        title = re.search(r"^#\s+(.+)$", text, re.M)
+        title = re.search(r"^#\s+(.+)$", text, re.M) if text else None
         uses = [dict(step, path_id=path["id"], path_title=path["title"], order=i + 1)
                 for path in paths for i, step in enumerate(path["steps"])
                 if step.get("skill") == source.parent.name]
         result.append({"name": source.parent.name, "title": title[1] if title else source.parent.name,
-                       "description": description, "source": source.relative_to(ROOT).as_posix(),
+                       "description": description, "source": source.relative_to(root).as_posix(),
                        "instructions": text, "uses": uses})
     return result
 
 
-def guide_html() -> str:
-    payload = json.dumps({"paths": load_paths(), "skills": skill_data()}, ensure_ascii=False)
+def guide_html(guide: dict | None = None) -> str:
+    """The guide section; ``guide`` is ``{"paths", "skills"}`` (read from ``ROOT`` when omitted)."""
+    if guide is None:
+        guide = {"paths": load_paths(), "skills": skill_data()}
+    payload = json.dumps({"paths": guide["paths"], "skills": guide["skills"]}, ensure_ascii=False)
     payload = payload.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     return GUIDE.replace("__GUIDE_DATA__", payload)
 

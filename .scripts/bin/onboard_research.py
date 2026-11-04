@@ -55,35 +55,34 @@ def main() -> int:
     if not shutil.which('pdftotext'):
         print('PDF 읽기 도구 필요: pdftotext (Poppler). 설치 후 같은 온보딩 명령을 실행하세요.')
         return 1
-    import paper_review_bridge as bridge
-    import http.server
+    from webui.server import WEBUI_HOME, make_server, serve_until_stopped
     try:
-        server = http.server.ThreadingHTTPServer(('127.0.0.1', args.port), bridge.Handler)
+        server = make_server(args.port, agent_status=status, review_timeout=3600)
     except OSError:
         try:
             with urlopen(f'http://127.0.0.1:{args.port}/api/status', timeout=3) as response:
                 existing = json.load(response)
-            if existing.get('workspace_id') != hashlib.sha256(str(ROOT.resolve()).encode()).hexdigest()[:16]:
+            if not isinstance(existing, dict) or existing.get('workspace_id') != hashlib.sha256(str(ROOT.resolve()).encode()).hexdigest()[:16]:
                 raise ValueError('different workspace')
         except (OSError, ValueError):
             print(f'포트 {args.port}를 다른 프로그램이 사용합니다. --port로 다른 포트를 지정하세요.')
             return 1
-        url = f'http://127.0.0.1:{args.port}/100-views/paper-library.html'
+        running_agent = existing.get('agent')
+        if running_agent != status['agent']:
+            shown = running_agent if running_agent in research_agent.AGENTS else '알 수 없음'
+            print(f"포트 {args.port}에서 실행 중인 이 저장소 서버의 에이전트({shown})가 "
+                  f"방금 연결한 에이전트({status['agent']})와 다릅니다. 실행 중인 서버를 종료(그 터미널에서 Ctrl+C)한 뒤 "
+                  '같은 온보딩 명령을 다시 실행하세요.')
+            return 1
+        url = f'http://127.0.0.1:{args.port}{WEBUI_HOME}'
         print('이미 실행 중인 이 저장소의 실행기에 연결합니다: ' + url)
         if not args.no_browser: webbrowser.open(url)
         return 0
-    server.review_timeout = 3600
-    server.agent_status = status
-    url = f'http://127.0.0.1:{server.server_port}/100-views/paper-library.html'
+    url = f'http://127.0.0.1:{server.server_port}{WEBUI_HOME}'
     print(url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.server_close()
+    serve_until_stopped(server)
     return 0
 
 

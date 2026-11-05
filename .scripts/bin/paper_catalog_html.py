@@ -209,7 +209,7 @@ $("categories").textContent=categories.length;
 function make(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
 function renderMarkdown(source){
   const escape=(s)=>s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-  const inline=(s)=>escape(s)
+  const inline=(s)=>escape(s).replace(/\\\$/g,"$")
     .replace(/`([^`]+)`/g,"<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g,"<em>$1</em>")

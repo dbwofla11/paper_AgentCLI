@@ -48,7 +48,7 @@ function ReaderLink(props: ComponentPropsWithoutRef<'a'> & ExtraProps) {
 const READER_COMPONENTS: Components = { a: ReaderLink };
 const READER_PLUGINS = [remarkPageRefs];
 
-/** Review or answer Markdown: the shared Markdown (GFM, flowcharts) with page references linked to the PDF. */
+/** Review or answer Markdown: the shared Markdown (GFM, flowcharts, TeX) with page references linked to the PDF. */
 export const ReaderMarkdown = memo(function ReaderMarkdown({ markdown, className }: { markdown: string; className?: string }) {
-  return <Markdown markdown={markdown} className={className} remarkPlugins={READER_PLUGINS} components={READER_COMPONENTS} />;
+  return <Markdown markdown={markdown} className={className} remarkPlugins={READER_PLUGINS} components={READER_COMPONENTS} math />;
 });

@@ -73,10 +73,25 @@ function pdfjsAssets(): Plugin {
   };
 }
 
+/**
+ * KaTeX's stylesheet lists every math font as woff2, woff, and ttf. Every browser the WebUI targets
+ * loads woff2, so dropping the other two keeps ~870 KB of unused fonts out of the committed build.
+ */
+function katexWoff2Only(): Plugin {
+  return {
+    name: 'katex-woff2-only',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.split('?')[0].endsWith('/katex/dist/katex.min.css')) return null;
+      return code.replace(/,url\(fonts\/[\w-]+\.(?:woff|ttf)\) format\("(?:woff|truetype)"\)/g, '');
+    },
+  };
+}
+
 // Relative paths resolve against this directory (.scripts/webui), the Vite root.
 export default defineConfig({
   base: BASE,
-  plugins: [react(), pdfjsAssets()],
+  plugins: [react(), pdfjsAssets(), katexWoff2Only()],
   build: {
     // Committed build output served by the WebUI server (decision D2).
     outDir: '../../100-views/webui',

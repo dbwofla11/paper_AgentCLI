@@ -122,6 +122,15 @@
   font-size: inherit;
 }
 
+/* Wide display equations scroll inside the column instead of widening it. */
+.md .katex-display {
+  max-width: 100%;
+  margin: 0 0 1em;
+  padding: 0.25em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .md hr {
   margin: 1.75em 0;
   border: 0;

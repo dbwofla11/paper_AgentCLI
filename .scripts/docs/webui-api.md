@@ -328,10 +328,11 @@ WebUI `#/harness` 화면의 데이터와 검사 실행이다. 데이터는 정�
 ```
 
 - `hrefs` 값은 아래 "정적 파일" 규칙으로 이 서버가 그 경로를 제공할 때만 문자열이다. `.omp/agents/…`처럼 허용 루트 밖이거나 없는 파일은 `null`이고, 화면은 경로만 보여 준다.
-- 파일 본문은 정적 파일 경계를 넘지 않는다. 워크플로 맵, `SKILL.md`, `sync-state.json`은 **읽기 전에** 같은 정책(`security.resolve_static`: 허용 루트, 민감 이름, 대소문자, 심볼릭 링크의 실제 대상)을 통과한 일반 파일일 때만 연다. 거부된 `SKILL.md`는 열지 않고 `instructions: null`, `title`은 스킬 이름, `description`은 `설명 미기록`이며 `errors`에 `{"section": "guide", "error": "<경로>: 정적 파일 정책 밖 경로라 읽지 않습니다."}`를 남긴다. 맵이 거부되면 `guide`가 비고 같은 형식의 오류가 남는다. `sync-state.json`이 거부되면 `graphify.error`에 사유가 들어간다.
+- 파일 본문은 정적 파일 경계를 넘지 않는다. 워크플로 맵과 `sync-state.json`은 **읽기 전에** 같은 정책(`security.resolve_static`: 허용 루트, 민감 이름, 대소문자, 심볼릭 링크의 실제 대상)을 통과한 일반 파일일 때만 연다. 맵이 거부되면 `guide`가 비고 `errors`에 `{"section": "guide", "error": "<경로>: 정적 파일 정책 밖 경로라 읽지 않습니다."}`가 남는다. `sync-state.json`이 거부되면 `graphify.error`에 사유가 들어간다.
+- `SKILL.md`는 전용 규칙(`harness_dashboard._skill_file`)으로 읽는다. 공유 스킬은 `.agents/skills/<name> -> ../../200-ARIS/upstream/skills/…`처럼 스킬 폴더 자체가 심볼릭 링크로 설치되고 그 실제 대상이 정적 허용 루트 밖이라, 정적 정책으로는 읽을 수 없기 때문이다. 조건: `.agents`·`.agents/skills`는 심볼릭 링크가 아닌 실제 폴더이고, 심볼릭 링크는 `<name>` 항목에만 허용하며 그 실제 대상은 저장소 실제 경로 안이고 어느 조각도 민감 이름(`.git`, `.claude`, `.codex` 등 아래 "정적 파일" 목록)이 아니어야 한다. 그 폴더의 `SKILL.md`는 심볼릭 링크가 아닌 일반 파일이어야 하고, 이 이름의 파일만 읽는다. 거부된 `SKILL.md`는 열지 않고 `instructions: null`, `title`은 스킬 이름, `description`은 `설명 미기록`이며 `errors`에 같은 형식의 오류를 남긴다. 이 규칙은 응답 본문에만 적용되고 정적 파일 제공은 바꾸지 않는다. 따라서 공유 스킬의 `hrefs` 값은 `null`이다.
 - `.omp/agents`는 정적 파일로 제공하지 않는다. 에이전트 `description`은 파일의 실제 경로가 정확히 `<저장소 실제 경로>/.omp/agents/<name>.md`(경로 어디에도 심볼릭 링크 없음)인 일반 파일일 때만 앞 64 KiB의 frontmatter에서 읽고, 아니면 `null`이다.
 - 데이터 오류(맵 JSON 깨짐, 디렉터리 없음, `sync-state.json` 깨짐 등)는 500이 아니다. 그 구역만 빈 값으로 두고 `errors`에 적는다. `sync-state.json`을 읽지 못하면 `graphify.error`에도 사유가 들어간다.
-- 응답 크기는 SKILL.md 전문을 포함해 약 150 KB(스킬 16개 기준)다. 정적 `harness-dashboard.html`도 같은 데이터로 생성한다.
+- 응답 크기는 SKILL.md 전문을 포함해 약 1.6 MB(스킬 103개 기준)다. 정적 `harness-dashboard.html`도 같은 데이터로 생성한다.
 
 ### `POST /api/harness/checks`
 

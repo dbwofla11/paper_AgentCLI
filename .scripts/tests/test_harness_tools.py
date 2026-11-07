@@ -222,8 +222,35 @@ class ViewTests(unittest.TestCase):
         self.assertFalse(review_bridge.allowed_output("paper-library.html", record, review))
         self.assertFalse(review_bridge.allowed_output("100-views/harness-dashboard.html", record, review))
 
+    def test_review_figure_allowlist_and_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = (Path(directory) / "live").resolve()
+            stage = Path(directory) / "stage"
+            record = root / "01-Papers/library/example.json"
+            review = root / "01-Papers/reviews/other/example.md"
+            base = "01-Papers/reviews/other/figures/"
+            names = {base + "example-method.svg", base + "example-method.html"}
+            with patch.object(review_bridge, "ROOT", root):
+                for name in names:
+                    self.assertTrue(review_bridge.allowed_output(name, record, review))
+                    path = stage / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text("figure")
+                for name in (base + "evil.sh", base + "other-method.svg",
+                             base + "example-Method.svg", base + "nested/example-method.svg",
+                             "01-Papers/reviews/agent-ai/figures/example-method.svg"):
+                    self.assertFalse(review_bridge.allowed_output(name, record, review), name)
+            root.mkdir()
+            before = review_bridge.snapshot(root)
+            with patch.object(review_bridge, "ROOT", root), \
+                 patch.object(review_bridge.subprocess, "run", return_value=SimpleNamespace(returncode=0, stderr="")):
+                published, _ = review_bridge.publish_review_outputs(stage, names, before, record, review)
+            for name in names:
+                self.assertIn(name, published)
+                self.assertEqual((root / name).read_text(), "figure")
+
     def test_review_worker_refreshes_live_wiki_and_rejects_staged_wiki_edits(self):
-        for forbidden in (None, "wiki-index.md", "wiki-log.md", "wiki-failure"):
+        for forbidden in (None, "wiki-index.md", "wiki-log.md", "wiki-failure", "comment", "missing-scope"):
             with self.subTest(forbidden=forbidden), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory).resolve()
                 subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
@@ -261,12 +288,17 @@ class ViewTests(unittest.TestCase):
                         (stage / record_name).write_text(json.dumps(updated), encoding="utf-8")
                         review = stage / review_name
                         review.parent.mkdir(parents=True, exist_ok=True)
-                        review.write_text("# Published review\n읽은 범위: 1\n", encoding="utf-8")
+                        text = "# Published review\n"
+                        if forbidden != "missing-scope":
+                            text += "읽은 범위: 1\n"
+                        if forbidden == "comment":
+                            text += "<!-- instruction -->\n"
+                        review.write_text(text, encoding="utf-8")
                         (stage / "01-Papers/index.md").write_text("# Papers\nexample\n", encoding="utf-8")
                         state = stage / "graphify-out/sync-state.json"
                         state.parent.mkdir(parents=True, exist_ok=True)
                         state.write_text(json.dumps({"sources": {record_name: {"status": "success"}}}), encoding="utf-8")
-                        if forbidden and forbidden != "wiki-failure":
+                        if forbidden in ("wiki-index.md", "wiki-log.md"):
                             (stage / forbidden).write_text("agent injected content\n", encoding="utf-8")
                         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
                     if len(command) > 1 and command[1].endswith("paper_record.py"):
@@ -293,7 +325,13 @@ class ViewTests(unittest.TestCase):
                     self.assertFalse(review_bridge.allowed_output("wiki-log.md", root / record_name, root / review_name))
                     review_bridge.review_worker("job-1", "example", 30)
                 job = queue["jobs"][0]
-                if forbidden and forbidden != "wiki-failure":
+                if forbidden in ("comment", "missing-scope"):
+                    self.assertEqual(job["status"], "failed", job.get("message"))
+                    self.assertTrue(job.get("message"))
+                    if forbidden == "comment":
+                        self.assertIn("review still contains template instruction comments", job["message"])
+                    self.assertFalse((root / review_name).exists())
+                elif forbidden and forbidden != "wiki-failure":
                     self.assertEqual(job["status"], "failed", job.get("message"))
                     self.assertIn("outside allowed outputs", job["message"])
                     self.assertIn(forbidden, job["message"])
@@ -799,6 +837,14 @@ class InstallerTests(unittest.TestCase):
                 result = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],
                                         cwd=target, env=env, capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                template = target / "90-Templates/paper/review-template.md"
+                original_template = template.read_text(encoding="utf-8")
+                template.write_text(original_template + "\n```mermaid\nflowchart LR\n```\n", encoding="utf-8")
+                invalid = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],
+                                         cwd=target, env=env, capture_output=True, text=True, timeout=30)
+                self.assertEqual(invalid.returncode, 1, invalid.stdout + invalid.stderr)
+                self.assertIn("FAIL", invalid.stdout)
+                template.write_text(original_template, encoding="utf-8")
                 index = target / "wiki-index.md"
                 index.write_text(index.read_text(encoding="utf-8") + "\nstale fixture\n", encoding="utf-8")
                 stale = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],

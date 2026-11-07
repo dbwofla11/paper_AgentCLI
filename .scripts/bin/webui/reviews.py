@@ -14,6 +14,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import posixpath
 import shutil
 import stat
 import subprocess
@@ -25,7 +26,7 @@ from pathlib import Path
 from typing import Iterator
 import research_agent
 from harness_common import git_visible_files, sha256_file, write_json_atomic
-from webui import roles
+from webui import roles, security
 
 ROOT = Path(__file__).resolve().parents[3]
 LIBRARY = ROOT / "01-Papers/library"
@@ -129,7 +130,12 @@ def allowed_source(path: Path) -> bool:
 def allowed_output(name: str, record_path: Path, review_path: Path) -> bool:
     record_name = root_relative(record_path).as_posix()
     review_name = root_relative(review_path).as_posix()
-    return name in {record_name, review_name, "01-Papers/index.md", "100-views/paper-library.html"} or name.startswith("graphify-out/") or name.startswith("00-Inbox/concept-candidates/")
+    if name in {record_name, review_name, "01-Papers/index.md", "100-views/paper-library.html"} or name.startswith("graphify-out/") or name.startswith("00-Inbox/concept-candidates/"):
+        return True
+    # This review's method figure files: `<review dir>/figures/<slug>-<suffix>.(svg|html)`.
+    figures = f"{posixpath.dirname(review_name)}/{security.FIGURE_DIR}/"
+    return (name.startswith(figures) and "/" not in name[len(figures):]
+            and security.figure_name_ok(Path(review_name).stem, name[len(figures):], ("svg", "html")))
 
 
 STAGING_IGNORES = (".git", "__pycache__", "*.pyc", "pdfs", ".mcp.json",
@@ -262,7 +268,9 @@ def generation_prompt(slug: str, record: dict, configured: bool) -> str:
         "in ranges of at most 10 pages; record the pages actually read in the review. "
         "Stop if actual pages cannot be read or extracted text is empty. Do not use only the abstract. "
         "Follow 3 passes, cite all factual claims and numbers, update only this paper's Markdown review, "
-        "its JSON record, 01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
+        f"its JSON record, its method figure files under figures/ beside the review ({slug}-method.html and {slug}-method.svg), "
+        "01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
+        "Remove every template instruction comment (<!-- ... -->) from the review. "
         "Do not edit wiki-index.md or wiki-log.md; the bridge updates them after publishing. "
         "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review."
     )
@@ -802,6 +810,8 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             review_text = staged_review.read_text(encoding="utf-8")
             if "읽은 범위" not in review_text and "읽은 구간" not in review_text:
                 raise RuntimeError("review is missing its actually-read range")
+            if "<!--" in review_text:
+                raise RuntimeError("review still contains template instruction comments")
             if not staged_review.relative_to(stage).as_posix().startswith("01-Papers/reviews/"):
                 raise RuntimeError("review path is outside the canonical reviews directory")
             if updated.get("source", {}).get("review_path") != root_relative(target).as_posix():

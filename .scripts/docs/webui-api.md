@@ -25,6 +25,7 @@
 | 모든 응답 | `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY` |
 | `/api/*` | `Cache-Control: no-store` |
 | `/100-views/webui/` 아래 | `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'` |
+| `GET`·`HEAD /api/papers/{slug}/figures/{name}` 200 | 위 `/api/*` 헤더에 더해 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:`, `Content-Disposition: inline; filename="<name>"` |
 
 CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` 등)은 inline script를 쓰므로 CSP를 적용하지 않는다.
 
@@ -50,6 +51,7 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 | GET | `/api/papers` | `PapersPayload`: `{"papers": [PaperSummary], "errors": [{"file", "error"}], "labels", "queued_statuses"}`(아래 "논문 리더") |
 | GET | `/api/papers/{slug}` | `PaperBundle`. 잘못된 slug 400 `bad_request`, 레코드 없음 404 `not_found` |
 | GET | `/api/papers/{slug}/pdf` | `application/pdf` 본문과 `Content-Length`. 400, 404, PDF가 없거나 `01-Papers/pdfs` 밖이면 409 `pdf_missing` |
+| GET·HEAD | `/api/papers/{slug}/figures/{name}` | 리뷰 방법 구조도 SVG(아래 "리뷰 그림"). 200 `image/svg+xml`, `Content-Length`, `Last-Modified`. 잘못된 slug·이름 400 `bad_request`, 레코드·파일 없음 404 `not_found` |
 | GET | `/api/papers/{slug}/threads` | `{"slug", "threads": [Thread]}`. 진행 중 턴은 브로커 기준으로 다시 확인한다. 400, 404 |
 | DELETE | `/api/papers/{slug}/threads/{thread_id}` | 본문 `{}`. 200 `{"deleted": "t_…"}`. 400, 404 `not_found`(레코드)·`thread_not_found`, 진행 중 턴이 있으면 409 `thread_busy` |
 | POST | `/api/papers/{slug}/ask` | 202 `{"job": record, "thread": Thread}`. 오류는 아래 "질문 오류" |
@@ -109,7 +111,7 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 
 ## 검증 보고서
 
-리뷰 작업은 생성 결과가 기존 검증(JSON 스키마·5축·읽은 범위·인덱스·카탈로그)을 통과한 뒤, 게시하기 **전에** 같은 staged 작업 공간에서 `paper-verifier`를 읽기 전용으로 실행한다. 프롬프트는 `.omp/agents/paper-verifier.md` 본문, staged 리뷰 경로, PDF 경로, 그 파일 frontmatter의 출력 스키마다. 스키마는 임시 파일로 써서 codex `--output-schema`·claude `--json-schema`에 넘긴다. 답은 필수 키·타입·판정 값(`supported`·`mismatch`·`unsupported`·`unverifiable`)을 검사한다.
+리뷰 작업은 생성 결과가 기존 검증(허용 출력·JSON 스키마·5축·읽은 범위·템플릿 지시문 주석 `<!--` 없음·인덱스·카탈로그)을 통과한 뒤, 게시하기 **전에** 같은 staged 작업 공간에서 `paper-verifier`를 읽기 전용으로 실행한다. 허용 출력은 그 논문의 레코드 JSON·리뷰 Markdown, 리뷰 옆 `figures/{slug}-<이름>.svg|html`(다른 slug 접두·확장자·하위 폴더는 불허), `01-Papers/index.md`, `100-views/paper-library.html`, `graphify-out/*`, `00-Inbox/concept-candidates/*`다. 프롬프트는 `.omp/agents/paper-verifier.md` 본문, staged 리뷰 경로, PDF 경로, 그 파일 frontmatter의 출력 스키마다. 스키마는 임시 파일로 써서 codex `--output-schema`·claude `--json-schema`에 넘긴다. 답은 필수 키·타입·판정 값(`supported`·`mismatch`·`unsupported`·`unverifiable`)을 검사한다.
 
 변경 감사: 검증 전후로 staged 작업 공간 **전체**를 제외 없이 기록한다(`audit_snapshot`: 선택한 PDF·캐시 포함, 일반 파일은 SHA-256, 심볼릭 링크는 대상, 디렉터리·특수 파일은 종류). 하나라도 다르면(덮어쓰기·삭제·생성·파일→디렉터리·심볼릭 링크 교체 포함) 검증 `error`다. 보고서의 `review_sha256`·`pdf_sha256`은 검증 **전에** 잰 staged 리뷰·PDF 값이다.
 
@@ -195,6 +197,16 @@ PDF를 읽으며 선택 텍스트·선택 영역·쪽·리뷰 항목을 앵커�
 - `errors`는 읽지 못한 레코드 파일(JSON 오류, 잘못된 slug 이름)이다. 목록의 나머지는 그대로 준다.
 - `display_title`·`source_url`·`review_needed`·`labels`·`queued_statuses`는 정적 논문 라이브러리와 같은 함수·상수(`paper_catalog_html.display_title`·`source_url`·`review_needed`·`LABELS`·`QUEUED_STATUSES`)에서 나온다. `source_url`은 로컬 PDF가 있어도 원문 주소가 있으면 준다. `javascript:`, 호스트 없는 주소, 호스트에 공백이 있는 주소는 `null`이다.
 - 저장된 앵커의 `text`는 앞뒤 공백을 지우고, 좌표는 소수 6자리로 반올림한다.
+
+### 리뷰 그림 `GET`·`HEAD /api/papers/{slug}/figures/{name}`
+
+리뷰 Markdown의 `![…](figures/{slug}-method.svg)`를 리더가 표시할 때 쓰는 경로다(구현 `reader.open_paper_figure`, `server._api_paper_figure`). 파일은 리뷰 Markdown과 같은 폴더(`01-Papers/reviews/{category}/`, 하위 폴더 리뷰면 그 폴더)의 `figures/`에 있고, 같은 폴더의 `{slug}-method.html`은 diagram-design 원본이라 제공하지 않는다. 검사 순서:
+
+1. slug·레코드: 잘못된 slug 400 `bad_request`, 레코드 없음 404 `not_found`(`/api/papers/{slug}`와 같다).
+2. 이름: `^{slug}-[a-z0-9][a-z0-9-]*\.svg$`가 아니면 400 `bad_request`. 이름은 percent-decoding하지 않으므로 `%2F`·`..`·대문자·`.html`은 모두 여기서 걸린다.
+3. 위치: `review_path`(실제 경로가 `01-Papers/reviews` 밖이거나 없으면 카테고리 기본 경로)의 폴더 아래 `figures/{name}`. 검사와 열기는 한 동작이다. 저장소 루트 디렉터리 디스크립터에서 시작해 `01-Papers` → `reviews` → 리뷰 폴더의 각 조각 → `figures`를 하나씩 `dir_fd` + `O_DIRECTORY|O_NOFOLLOW`로 열고, 파일은 `O_NOFOLLOW|O_NONBLOCK`으로 연 뒤 `fstat`으로 일반 파일인지 확인하고 그 디스크립터 그대로 스트리밍한다. 어느 조각이든 없거나, 심볼릭 링크이거나(요청 도중 바뀐 경우 포함), 디렉터리가 아니거나, 파일이 일반 파일이 아니면 404 `not_found`다.
+
+응답은 `image/svg+xml` 본문과 위 "응답 헤더"의 그림 전용 CSP·`Content-Disposition: inline`이다. CSP가 스크립트·외부 요청을 모두 막으므로 SVG를 직접 열어도 스크립트가 실행되지 않는다. 이 그림은 정적 파일로 제공하지 않는다(아래 "정적 파일").
 
 ### 질문 오류 (`POST …/ask`)
 
@@ -384,6 +396,7 @@ WebUI `#/ideas` 화면의 데이터다. 아이디어 레코드는 정적 `100-vi
 - 경로의 각 조각이 디스크의 실제 이름과 대소문자까지 같아야 한다. 대소문자 변형(`/100-VIEWS/…`)은 404다.
 - 심볼릭 링크를 따라 resolve한 경로가 저장소 밖이거나 허용 목록 밖이면 404다.
 - `.git`, `.env*`, `.mcp.json`, `.secrets`, `credentials.json`, `.claude`, `.codex`, `.research-harness-agent.json`, `reader-threads`(논문 리더 스레드)는 허용 경로 안에 있어도 404다.
+- `01-Papers/reviews/` 아래 어느 깊이든 `figures` 조각(대소문자 무시)이 있는 경로와 그 아래 모든 경로(리뷰 그림 `*.html`·`*.svg`, 하위 폴더 리뷰의 `…/nested/figures/` 포함)는 404다. 심볼릭 링크의 실제 대상이 그 아래여도 404다. 에이전트가 만든 HTML·SVG가 CSP 없이 같은 출처에서 실행되지 않도록, SVG만 위 "리뷰 그림" API로 제공한다.
 - 디렉터리 목록은 보여주지 않는다. 슬래시 없는 디렉터리 요청은 301로 슬래시를 붙이고, `index.html`이 없으면 404다.
 
 ## 작업 레코드

@@ -1,6 +1,7 @@
 /*
  * Shared Markdown (`.md`, components/Markdown.tsx) and flowchart (`.flow`, components/Flowchart.tsx)
- * styles. Reading surfaces tune three custom properties instead of overriding rules:
+ * styles, including callouts (markdown/callouts.ts), footnotes, and the reader's figures
+ * (reader/RichText.tsx). Reading surfaces tune three custom properties instead of overriding rules:
  *   --md-font-size   (default 1rem)   body size; the reader maps its S/M/L control here
  *   --md-line-height (default 1.7)
  *   --md-measure     (default 68ch)   maximum line length
@@ -60,8 +61,15 @@
 .md ol,
 .md blockquote,
 .md pre,
-.md .md-table {
+.md .md-table,
+.md .callout,
+.md .md-figure-block {
   margin: 0 0 1em;
+}
+
+/* Section and footnote targets of in-page links keep a little air above them. */
+.md [id^='user-content-'] {
+  scroll-margin-block: 0.5em;
 }
 
 .md p {
@@ -171,6 +179,187 @@
 .md-image-alt {
   color: var(--text-muted);
   font-size: 0.875em;
+}
+
+/* ── Callouts: `> [!type] Title`; `-` / `+` fold into details ── */
+
+.md .callout {
+  --callout-accent: var(--color-primary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--callout-accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--surface-muted);
+}
+
+/* Unknown types keep note style; `important` is a deeper blue so it differs from note. */
+.md .callout-important {
+  --callout-accent: var(--color-primary-strong);
+}
+
+.md .callout-tip {
+  --callout-accent: var(--success);
+}
+
+.md .callout-warning {
+  --callout-accent: var(--warning);
+}
+
+.md .callout-caution {
+  --callout-accent: var(--danger);
+}
+
+.md .callout-title {
+  margin: 0;
+  padding: 0.5em 0.875em;
+  color: var(--text-strong);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.md .callout-body {
+  padding: 0 0.875em 0.75em;
+}
+
+.md .callout-body > :first-child {
+  margin-top: 0;
+}
+
+.md .callout-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Unknown type: its own name in front of the title. */
+.md .callout-kind {
+  margin-right: 0.125em;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8125em;
+  font-weight: 500;
+}
+
+/* Clip the summary's hover fill to the rounded box; its focus ring is drawn inside. */
+.md details.callout {
+  overflow: hidden;
+}
+
+.md details.callout > summary {
+  display: block;
+  list-style: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.md details.callout > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron: points right when closed, down when open. */
+.md details.callout > summary::before {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin: 0 0.7em 0.15em 0.15em;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  vertical-align: middle;
+  transform: rotate(-45deg);
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.md details.callout[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.md details.callout > summary:hover {
+  background: var(--surface-sunken);
+}
+
+.md details.callout > summary:focus-visible {
+  outline-offset: -2px;
+}
+
+.md details.callout[open] > summary {
+  margin-bottom: 0.25em;
+}
+
+/* ── Footnotes (GFM `[^id]`): references in the text, definitions at the end ── */
+
+.md sup {
+  line-height: 0;
+}
+
+.md a[data-footnote-ref] {
+  padding: 0 0.15em;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.md a[data-footnote-ref]:hover {
+  text-decoration: underline;
+}
+
+.md .footnotes {
+  margin-top: 2em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-small);
+  line-height: 1.6;
+}
+
+.md .md-footnotes-label {
+  margin: 0 0 0.5em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.md .footnotes li > :last-child {
+  margin-bottom: 0;
+}
+
+.md .data-footnote-backref {
+  margin-left: 0.125em;
+  padding: 0 0.25em;
+  text-decoration: none;
+}
+
+/* ── Figures (reader): an exported SVG on its light panel, scrolling sideways in narrow panels ── */
+
+.md-figure {
+  margin: 0;
+}
+
+.md-figure-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Labels are drawn for a ~960px canvas; below 45rem they would be too small to read. */
+.md-figure-scroll img {
+  display: block;
+  width: 100%;
+  min-width: 45rem;
+  height: auto;
+  aspect-ratio: auto 8 / 5;
+}
+
+.md-figure figcaption {
+  margin-top: 0.5em;
+  color: var(--text-muted);
+  font-size: var(--text-small);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md details.callout > summary,
+  .md details.callout > summary::before {
+    transition: none;
+  }
 }
 
 /* ── Flowchart ── */

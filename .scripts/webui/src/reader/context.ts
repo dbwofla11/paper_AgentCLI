@@ -13,6 +13,11 @@ export interface ReaderActions {
   showAnchor: (anchor: ReaderAnchor) => void;
   /** Starts a new question about `anchor` in the 질문 tab; `preview` is a blob: URL of a region crop. */
   askAbout: (anchor: ReaderAnchor, preview?: string | null) => void;
+  /**
+   * Figure API URL for an image path in the review: `figures/{slug}-….svg` (optionally `./`) beside
+   * the review file. Null for any other path, which then shows only its alt text.
+   */
+  figureUrl: (src: string) => string | null;
 }
 
 export const ReaderContext = createContext<ReaderActions | null>(null);

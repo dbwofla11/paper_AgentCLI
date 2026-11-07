@@ -309,6 +309,34 @@ def parse_frontmatter(path: Path) -> dict[str, Any]:
     return values
 
 
+LEGACY_TLDR = re.compile(r"^>\s*\*\*TL;DR\*\*\s*[—-]\s*(.+)$", re.MULTILINE)
+CALLOUT_TLDR = re.compile(r"^>[ \t]*\[![A-Za-z]+\][+-]?[ \t]*TL;DR[ \t]*\r?$", re.MULTILINE)
+QUOTE_LINE = re.compile(r"^[ \t]*>[ \t]?(.*)$")
+
+
+def review_tldr(body: str) -> str:
+    """TL;DR of a review body: legacy ``> **TL;DR** — text`` or the callout form
+    ``> [!abstract] TL;DR`` whose first quoted paragraph (following ``>`` lines, joined) is the text."""
+    legacy = LEGACY_TLDR.search(body)
+    if legacy:
+        return legacy.group(1).strip()
+    callout = CALLOUT_TLDR.search(body)
+    if not callout:
+        return ""
+    parts: list[str] = []
+    for line in body[callout.end():].split("\n")[1:]:
+        quote = QUOTE_LINE.match(line)
+        if quote is None:
+            break
+        text = quote.group(1).strip()
+        if not text:
+            if parts:
+                break
+            continue
+        parts.append(text)
+    return " ".join(parts)
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or f"paper-{hashlib.sha256(value.encode('utf-8')).hexdigest()[:10]}"
@@ -333,9 +361,7 @@ def imported_record(pdf: Path, category: str, review: Path | None, metadata: dic
     if year is None:
         match = re.match(r"^(18|19|20|21)\d{2}-", pdf.name)
         year = int(pdf.name[:4]) if match else None
-    body = metadata.get("_body", "")
-    summary_match = re.search(r"^>\s*\*\*TL;DR\*\*\s*[—-]\s*(.+)$", body, re.MULTILINE)
-    summary = summary_match.group(1).strip() if summary_match else ""
+    summary = review_tldr(metadata.get("_body", ""))
     has_review = review is not None
     return {
         "schema_version": "1.0",

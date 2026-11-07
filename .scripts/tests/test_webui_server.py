@@ -110,6 +110,106 @@ class ServerSecurityTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.request('GET', path)[0], 404)
 
+    def test_review_figure_api_and_static_isolation(self):
+        library = self.root / '01-Papers/library'
+        library.mkdir(parents=True)
+        review_dir = self.root / '01-Papers/reviews/other'
+        figures = review_dir / 'figures'
+        figures.mkdir(parents=True)
+        content = b'<svg xmlns="http://www.w3.org/2000/svg"></svg>'
+        figure = figures / 'example-method.svg'
+        figure.write_bytes(content)
+        (figures / 'a.svg').write_bytes(content)
+        (figures / 'a.html').write_text('<script>1</script>')
+        (review_dir / 'example.md').write_text('review')
+        (library / 'example.json').write_text(json.dumps({
+            'slug': 'example', 'title': 'Example',
+            'source': {'review_path': '01-Papers/reviews/other/example.md'},
+        }))
+        with patch.object(reviews, 'LIBRARY', library):
+            url = '/api/papers/example/figures/example-method.svg'
+            status, headers, body = self.request('GET', url)
+            self.assertEqual((status, body), (200, content))
+            self.assertEqual(headers['Content-Type'], 'image/svg+xml')
+            self.assertEqual(headers['Content-Security-Policy'], "default-src 'none'; style-src 'unsafe-inline'; img-src data:")
+            self.assertEqual(headers['X-Content-Type-Options'], 'nosniff')
+            self.assertEqual(headers['Cache-Control'], 'no-store')
+            self.assertEqual(int(headers['Content-Length']), len(content))
+            self.assertIn('Last-Modified', headers)
+            self.assertEqual(headers['Content-Disposition'], 'inline; filename="example-method.svg"')
+            status, head_headers, body = self.request('HEAD', url)
+            self.assertEqual((status, body), (200, b''))
+            self.assertEqual(int(head_headers['Content-Length']), len(content))
+            for name in ('other-method.svg', 'x.html', '..%2F', 'example-Method.svg'):
+                with self.subTest(name=name):
+                    self.assertIn(self.request('GET', '/api/papers/example/figures/' + name)[0], (400, 404))
+            for path, expected, code in (
+                ('/api/papers/example/figures/example-missing.svg', 404, 'not_found'),
+                ('/api/papers/absent/figures/absent-method.svg', 404, 'not_found'),
+                ('/api/papers/%2e%2e%2fx/figures/example-method.svg', 400, 'bad_request'),
+            ):
+                status, _, body = self.request('GET', path)
+                self.assertEqual((status, json.loads(body)['code']), (expected, code))
+            figure.unlink()
+            figure.symlink_to(Path(self.outside.name) / 'secret')
+            self.assertEqual(self.request('GET', url)[0], 404)
+            figure.unlink()
+            (figures / 'a.svg').unlink()
+            (figures / 'a.html').unlink()
+            figures.rmdir()
+            figures.symlink_to(Path(self.outside.name), target_is_directory=True)
+            (Path(self.outside.name) / 'example-method.svg').write_bytes(content)
+            self.assertEqual(self.request('GET', url)[0], 404)
+        figures.unlink()
+        figures.mkdir()
+        for name in ('a.html', 'a.svg'):
+            (figures / name).write_bytes(content)
+            self.assertEqual(self.request('GET', '/01-Papers/reviews/other/figures/' + name)[0], 404)
+        self.assertEqual(self.request('GET', '/01-Papers/reviews/other/example.md')[0], 200)
+
+    def test_figure_api_rejects_category_replaced_by_outside_symlink(self):
+        library = self.root / '01-Papers/library'
+        library.mkdir(parents=True)
+        category = self.root / '01-Papers/reviews/other'
+        figures = category / 'figures'
+        figures.mkdir(parents=True)
+        (category / 'example.md').write_text('review')
+        (figures / 'example-method.svg').write_bytes(b'<svg></svg>')
+        (library / 'example.json').write_text(json.dumps({
+            'slug': 'example', 'title': 'Example',
+            'source': {'review_path': '01-Papers/reviews/other/example.md'},
+        }))
+        url = '/api/papers/example/figures/example-method.svg'
+        with patch.object(reviews, 'LIBRARY', library):
+            self.assertEqual(self.request('GET', url)[0], 200)
+            outside_category = Path(self.outside.name) / 'other'
+            category.rename(outside_category)
+            category.symlink_to(outside_category, target_is_directory=True)
+            self.assertEqual(self.request('GET', url)[0], 404)
+
+    def test_nested_review_figures_are_not_served_statically(self):
+        library = self.root / '01-Papers/library'
+        library.mkdir(parents=True)
+        review_dir = self.root / '01-Papers/reviews/other/nested'
+        figures = review_dir / 'figures'
+        figures.mkdir(parents=True)
+        (review_dir / 'x.md').write_text('review')
+        (figures / 'x-method.svg').write_bytes(b'<svg></svg>')
+        (figures / 'x-method.html').write_text('<script>1</script>')
+        (library / 'x.json').write_text(json.dumps({
+            'slug': 'x', 'title': 'Example',
+            'source': {'review_path': '01-Papers/reviews/other/nested/x.md'},
+        }))
+        with patch.object(reviews, 'LIBRARY', library):
+            self.assertEqual(self.request('GET', '/api/papers/x/figures/x-method.svg')[0], 200)
+        for name in ('x-method.svg', 'x-method.html'):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    self.request('GET', '/01-Papers/reviews/other/nested/figures/' + name)[0],
+                    404,
+                )
+        self.assertEqual(self.request('GET', '/01-Papers/reviews/other/nested/x.md')[0], 200)
+
     def test_csp_security_headers_and_routes(self):
         status, headers, _ = self.request('GET', '/100-views/webui/index.html')
         self.assertEqual(status, 200)

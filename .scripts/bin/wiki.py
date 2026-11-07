@@ -63,6 +63,8 @@ INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 LIST_MARKER = re.compile(r"^(?:[-*+]|\d+[.)])(?:\s|$)")
 HORIZONTAL_RULE = re.compile(r"^(?:-{3,}|\*{3,}|_{3,})$")
+# Callout opener (`> [!abstract] TL;DR`, `> [!note]- title`): the marker line is never the summary.
+CALLOUT_MARKER = re.compile(r"^>[ \t]*\[![A-Za-z]+\][+-]?")
 
 
 class UsageError(ValueError):
@@ -322,6 +324,7 @@ def page_info(path: Path) -> dict:
     fields, start = _split_frontmatter(lines)
     heading = None
     summary = None
+    callout: list[str] | None = None  # first paragraph of a callout that would be the summary
     in_comment = False
     for _, line in _body_lines(lines, start):
         stripped = line.strip()
@@ -331,13 +334,27 @@ def page_info(path: Path) -> dict:
         if stripped.startswith("<!--") and "-->" not in stripped:
             in_comment = True
             continue
+        if callout is not None:
+            quoted = stripped.startswith(">")
+            text = re.sub(r"^>+", "", stripped).strip() if quoted else ""
+            if quoted and (text or not callout):
+                if text:
+                    callout.append(text)
+                continue
+            summary = plain_text(" ".join(callout)) or None
+            callout = None
         if heading is None and re.match(r"^#\s+\S", stripped):
             heading = plain_text(re.sub(r"\s+#+\s*$", "", stripped[1:]).strip())
+        if summary is None and CALLOUT_MARKER.match(stripped):
+            callout = []
+            continue
         if summary is None and not (not stripped or stripped.startswith(("#", "|"))
                                     or LIST_MARKER.match(stripped) or HORIZONTAL_RULE.match(stripped)):
             summary = plain_text(stripped) or None
         if heading is not None and summary is not None:
             break
+    if callout:
+        summary = plain_text(" ".join(callout)) or None
     title = fields.get("title", "").strip() or heading or path.stem
     for key in ("summary", "description"):
         if fields.get(key, "").strip():

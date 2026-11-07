@@ -193,6 +193,15 @@ def verify() -> int:
     review_skill = (ROOT / ".agents/skills/paper-review/SKILL.md").read_text(encoding="utf-8")
     if "concept-candidates/" not in review_skill or "02-Concepts/" not in review_skill or "graphify_sync.py" not in review_skill:
         return fail("paper review must create Inbox-only concept candidates and sync canonical data to Graphify")
+    for required_text in ("diagram-design", "self_check.py"):
+        if required_text not in review_skill:
+            return fail(f"paper review must draw the method figure with the diagram-design skill (missing {required_text!r})")
+    review_template = (ROOT / "90-Templates/paper/review-template.md").read_text(encoding="utf-8")
+    if "```mermaid" in review_template:
+        return fail("review template must not contain a Mermaid block; the method figure is a diagram-design SVG")
+    template_body = re.sub(r"<!--.*?-->", "", review_template, flags=re.S)
+    if not re.search(r"^\*리뷰 작성: .*읽은 범위: .*\*$", template_body, flags=re.M):
+        return fail("review template is missing the 읽은 범위 footer")
     critical_skill = (ROOT / ".agents/skills/critical-validation/SKILL.md").read_text(encoding="utf-8")
     for required_text in ("최소 2개", "evidence-bundle-vN", "method-critic.md", "idea_analysis.py"):
         if required_text not in critical_skill:

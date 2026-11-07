@@ -45,7 +45,7 @@ Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotex
 
 기본 화면 주소는 `http://127.0.0.1:8765/100-views/webui/`(WebUI)다. 첫 화면 논문 라이브러리(`#/`)에서 PDF가 있고 리뷰가 필요한 논문의 **리뷰 시작**을 누르면 본인 계정의 에이전트가 해당 논문을 분석한다. 에이전트가 준비되지 않았으면 버튼이 이유와 함께 비활성화되고, 준비 상태는 `#/status`에서 확인한다. 정적 논문 라이브러리(`http://127.0.0.1:8765/100-views/paper-library.html`)에서 시작하는 방법도 계속 동작한다. 같은 저장소의 서버가 이미 켜져 있으면 그 서버에 연결한다. 다른 포트를 사용하려면 `--port 8766`처럼 지정한다.
 
-연결을 마친 뒤에는 `python3 .scripts/bin/research_webui.py serve`로 서버만 띄울 수 있다. `research_webui.py check`는 에이전트·`pdftotext`·프런트엔드 빌드 준비 상태를 JSON으로 출력한다. 주소·보안 모델·프런트엔드 개발 방법은 [Research WebUI 안내](docs/research-webui.md)를 본다.
+연결을 마친 뒤에는 `python3 .scripts/bin/research_webui.py serve`(또는 `.scripts/bin/research_webui.sh`)로 서버만 띄울 수 있다. 이미 떠 있는 서버를 새 코드로 다시 띄우려면 `.scripts/bin/research_webui.sh --restart`를 쓴다. `research_webui.py check`는 에이전트·`pdftotext`·프런트엔드 빌드 준비 상태를 JSON으로 출력한다. 주소·보안 모델·프런트엔드 개발 방법은 [Research WebUI 안내](docs/research-webui.md)를 본다.
 
 연결 파일 `.research-harness-agent.json`은 개인 파일이며 에이전트 이름과 선택적인 Orca 설정을 저장한다. 인증은 본인의 CLI가 관리하며 계정·토큰·API 키를 저장소에 복사하지 않는다. 개인 설정 예시와 복사 방법은 [AGENTS.md](AGENTS.md#개인-설정과-로컬-덮어쓰기)를 본다. HTML 파일을 직접 열면 검색·필터·리뷰 보기를 사용할 수 있고, 새 리뷰 실행은 위 명령으로 연 로컬 화면에서 진행한다.
 

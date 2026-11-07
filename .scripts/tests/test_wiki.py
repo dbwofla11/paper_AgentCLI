@@ -85,6 +85,28 @@ class WikiTests(unittest.TestCase):
         self.assertEqual(self.run_wiki("index")[0], 0)
         self.assertEqual((self.root / "wiki-index.md").read_text(encoding="utf-8"), index)
 
+    def test_review_callout_tldr_is_index_summary(self):
+        self.put("01-Papers/reviews/other/example.md",
+                 "# Example\n\n> [!abstract] TL;DR\n> 실제 요약입니다.\n\n본문입니다.\n")
+        code, out, err = self.run_wiki("index")
+        self.assertEqual(code, 0, out + err)
+        index = (self.root / "wiki-index.md").read_text(encoding="utf-8")
+        self.assertIn("- [Example](01-Papers/reviews/other/example.md): 실제 요약입니다.", index)
+        self.assertNotIn("[!abstract]", index)
+
+    def test_review_figure_relative_image_link_lint(self):
+        review = "01-Papers/reviews/other/example.md"
+        self.put(review, "# Example\n\n![방법](figures/x.svg)\n")
+        figure = self.put("01-Papers/reviews/other/figures/x.svg", "<svg/>\n")
+        self.assertEqual(self.run_wiki("index")[0], 0)
+        _, output, _ = self.run_wiki("lint", "--json")
+        self.assertFalse(any(f["code"] == "broken-link" and f["path"] == review
+                             for f in json.loads(output)))
+        figure.unlink()
+        _, output, _ = self.run_wiki("lint", "--json")
+        self.assertTrue(any(f["code"] == "broken-link" and f["path"] == review
+                            and "figures/x.svg" in f["detail"] for f in json.loads(output)))
+
     def test_index_links_only_existing_paper_lists(self):
         self.assertEqual(self.run_wiki("index")[0], 0)
         index = (self.root / "wiki-index.md").read_text(encoding="utf-8")

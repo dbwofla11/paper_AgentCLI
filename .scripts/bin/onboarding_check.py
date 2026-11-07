@@ -23,6 +23,32 @@ DIRECTORIES = ("00-Inbox", *(f"01-Papers/{kind}/{category}" for kind in ("pdfs",
                for category in ("wifi-csi", "game-ai", "agent-ai", "computer-vision", "other")),
                "01-Papers/triage", "01-Papers/library", "02-Concepts", "03-Trends/daily",
                "04-Projects", "05-Ideas/thought-experiments", "99-Attachments")
+# Review method figures use the user-level diagram-design skill and the repository marker.
+HOST_SKILL_DIRS = {"omp": ".omp/agent/skills", "claude": ".claude/skills", "codex": ".codex/skills"}
+DIAGRAM_MARKER = re.compile(r"[ \t]*profile:[ \t]*([a-z0-9][a-z0-9-]{0,63})[ \t]*\n?")
+
+
+def diagram_design_checks(root: Path, host: str | None) -> list[tuple[bool, str]]:
+    """Optional readiness of the method-figure toolchain: host skill, marker grammar, profile."""
+    home = Path.home()
+    hosts = [host] if host in HOST_SKILL_DIRS else list(HOST_SKILL_DIRS)
+    skill_paths = [home / HOST_SKILL_DIRS[name] / "diagram-design/SKILL.md" for name in hosts]
+    shown = ", ".join(f"~/{HOST_SKILL_DIRS[name]}/diagram-design" for name in hosts)
+    results = [(any(path.is_file() for path in skill_paths),
+                f"방법 구조도용 diagram-design 스킬: {shown}")]
+    marker = root / ".diagram-design"
+    try:
+        match = DIAGRAM_MARKER.fullmatch(marker.read_text(encoding="utf-8")) if marker.is_file() else None
+    except (OSError, UnicodeError):
+        match = None
+    results.append((match is not None, "diagram-design 마커 .diagram-design 문법(profile: <slug> 한 줄)"))
+    if match:
+        slug = match.group(1)
+        results.append(((home / ".diagram-design/profiles" / f"{slug}.md").is_file(),
+                        f"diagram-design 프로필: ~/.diagram-design/profiles/{slug}.md"))
+    else:
+        results.append((False, "diagram-design 프로필: 유효한 마커가 없어 확인하지 못함"))
+    return results
 
 
 def check(root: Path, host: str | None, with_mcp: bool = False,
@@ -101,6 +127,8 @@ def check(root: Path, host: str | None, with_mcp: bool = False,
                 report(False, "개인 omp 설정 Git 제외")
     report(shutil.which("uvx") is not None, "MCP 실행용 uvx", optional=not with_mcp)
     report(shutil.which("graphify") is not None, "관계 그래프용 graphify", optional=not with_graphify)
+    for ok, message in diagram_design_checks(root, host):
+        report(ok, message, optional=True)
     report(bool(os.environ.get("EXA_API_KEY", "").strip()), "선택 검색용 EXA_API_KEY 환경변수 설정 여부", optional=True)
     results.append(("INFO", "로그인·모델 응답·MCP 연결·PDF 페이지 읽기는 에이전트 안에서 별도 확인하세요."))
     return results

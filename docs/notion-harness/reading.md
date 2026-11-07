@@ -8,7 +8,7 @@
 
 1. paper-search: 업로드·채택 논문 메타데이터와 중복 확인
 2. triage-template: 1패스 판정과 읽을 범위 결정
-3. paper-review: 3패스 정독, 방법 구조도와 5축 분석
+3. paper-review: 3패스 정독, diagram-design 방법 구조도와 5축 분석
 4. review-index: 리뷰·JSON·인덱스 경로와 완료 상태 정리
 5. 필요할 때 related-work 또는 paper-relations로 원문 관계 검증
 6. 검증된 정본을 Graphify에 동기화

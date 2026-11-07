@@ -52,6 +52,40 @@ class OnboardingChecks(unittest.TestCase):
                 required = doctor.check(root, "codex", with_mcp=True, with_graphify=True)
                 self.assertTrue(any(status == "FAIL" for status, _ in required))
 
+    def test_diagram_prerequisites_warn_without_failing_for_each_host(self):
+        for host, skill_dir in (("omp", ".omp/agent/skills"), ("claude", ".claude/skills"),
+                                ("codex", ".codex/skills")):
+            with self.subTest(host=host), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "repo"
+                home = Path(temporary) / "home"
+                self.fixture(root)
+                skill = home / skill_dir / "diagram-design/SKILL.md"
+                profile = home / ".diagram-design/profiles/research-harness.md"
+                marker = root / ".diagram-design"
+                skill.parent.mkdir(parents=True)
+                profile.parent.mkdir(parents=True)
+                skill.write_text("skill", encoding="utf-8")
+                profile.write_text("profile", encoding="utf-8")
+                marker.write_text("profile: research-harness\n", encoding="utf-8")
+                with patch.dict(os.environ, {"HOME": str(home)}), \
+                     patch.object(doctor.shutil, "which", return_value="/bin/tool"), \
+                     patch.object(doctor.subprocess, "run", return_value=SimpleNamespace(returncode=0)):
+                    baseline = doctor.check(root, host)
+                    self.assertFalse(any(status == "FAIL" for status, _ in baseline), baseline)
+                    base_warn = sum(status == "WARN" for status, _ in baseline)
+                    for missing in (skill, marker, profile):
+                        with self.subTest(missing=missing.name):
+                            content = missing.read_text(encoding="utf-8")
+                            missing.unlink()
+                            result = doctor.check(root, host)
+                            self.assertFalse(any(status == "FAIL" for status, _ in result), result)
+                            self.assertGreater(sum(status == "WARN" for status, _ in result), base_warn, result)
+                            missing.write_text(content, encoding="utf-8")
+                    marker.write_text("profile: ../invalid\n", encoding="utf-8")
+                    result = doctor.check(root, host)
+                    self.assertFalse(any(status == "FAIL" for status, _ in result), result)
+                    self.assertGreater(sum(status == "WARN" for status, _ in result), base_warn, result)
+
     def test_relocated_clone_accepts_relative_links_and_rejects_broken_ones(self):
         with tempfile.TemporaryDirectory() as temporary:
             old = Path(temporary) / "old"

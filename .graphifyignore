@@ -9,3 +9,5 @@
 .omp/
 # Append-only wiki operation log: operational history, not knowledge.
 wiki-log.md
+# Review method figures (diagram-design HTML/SVG) are rendered views; the review text is canonical.
+01-Papers/reviews/**/figures/

@@ -39,12 +39,12 @@ import unicodedata
 from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import BinaryIO, Callable, Iterable
 
 import paper_catalog_html
 import research_agent
 from harness_common import sha256_file, write_json_atomic
-from webui import reviews, roles
+from webui import reviews, roles, security
 
 READER_TIMEOUT_S = 600
 PROMPT_MAX_BYTES = 98304
@@ -149,6 +149,70 @@ def _pdf(record: dict) -> Path:
 def paper_pdf(slug: str) -> Path:
     """Resolved PDF of a paper for streaming (400/404/409 as in the contract)."""
     return _pdf(paper_record(slug))
+
+
+_DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+# O_NONBLOCK: a FIFO named like a figure must not block the open; regular files ignore it.
+_FIGURE_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+
+
+def _figure_components(record: dict) -> tuple[str, ...] | None:
+    """Path components from the repository root to the review's ``figures`` directory.
+
+    ``reviews.review_target`` returns either a resolved path under the real ``01-Papers/reviews``
+    or the unresolved category default under ``reviews.ROOT``; None when it is neither.
+    """
+    target = reviews.review_target(record)
+    for base in ((reviews.ROOT / "01-Papers/reviews").resolve(), reviews.ROOT / "01-Papers/reviews"):
+        if target.is_relative_to(base):
+            categories = target.parent.relative_to(base).parts
+            if any(part in {"", ".", ".."} for part in categories):
+                return None
+            return ("01-Papers", "reviews", *categories, security.FIGURE_DIR)
+    return None
+
+
+def open_paper_figure(slug: str, name: str) -> BinaryIO:
+    """Open the method figure SVG beside the paper's review for
+    ``GET /api/papers/{slug}/figures/{name}``; the caller streams and closes the handle.
+
+    Validation and opening are one operation: from a descriptor of ``reviews.ROOT`` every
+    component (``01-Papers``, ``reviews``, the review's category folders, ``figures``) is opened
+    with ``dir_fd`` + ``O_DIRECTORY|O_NOFOLLOW`` and the file with ``O_NOFOLLOW``, then fstat'ed,
+    so a symlink at any component — even one swapped in during the request — is refused, never
+    followed. 400 ``bad_request`` for a malformed slug or a name other than
+    ``<slug>-<suffix>.svg``; 404 ``not_found`` when the record is absent, any component is missing,
+    a symlink or not a directory, or the file is not a regular file.
+    """
+    record = paper_record(slug)
+    if not isinstance(name, str) or not security.figure_name_ok(slug, name):
+        raise ReaderError(400, "bad_request", "그림 이름은 <slug>-<이름>.svg 형식이어야 합니다.")
+    missing = ReaderError(404, "not_found", "그림 파일을 찾을 수 없습니다.")
+    try:
+        components = _figure_components(record)
+    except (OSError, RuntimeError) as exc:  # a symlink loop while resolving review_path
+        raise missing from exc
+    if components is None:
+        raise missing
+    try:
+        descriptor = os.open(reviews.ROOT, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    except OSError as exc:
+        raise missing from exc
+    try:
+        for component in components:
+            descriptor, parent = os.open(component, _DIR_FLAGS, dir_fd=descriptor), descriptor
+            os.close(parent)
+        descriptor, parent = os.open(name, _FIGURE_FLAGS, dir_fd=descriptor), descriptor
+        os.close(parent)
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise missing
+        return os.fdopen(descriptor, "rb")
+    except OSError as exc:
+        os.close(descriptor)
+        raise missing from exc
+    except BaseException:
+        os.close(descriptor)
+        raise
 
 
 def pdf_tools() -> dict:

@@ -210,6 +210,8 @@ function make(tag,cls,text){const node=document.createElement(tag);if(cls)node.c
 function renderMarkdown(source){
   const escape=(s)=>s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
   const inline=(s)=>escape(s).replace(/\\\$/g,"$")
+    .replace(/!\[([^\]]*)\]\([^)\s]*\)/g,(_,alt)=>alt?`[그림: ${alt}]`:"[그림]")
+    .replace(/\[\^([A-Za-z0-9_-]+)\]/g,"<sup>$1</sup>")
     .replace(/`([^`]+)`/g,"<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g,"<em>$1</em>")
@@ -233,7 +235,10 @@ function renderMarkdown(source){
     const heading=line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*$/);
     if(heading){flushPara();closeList();const level=heading[1].length;out.push(`<h${level}>${inline(heading[2])}</h${level}>`);continue;}
     if(/^\s*(---+|\*\*\*+)\s*$/.test(line)){flushPara();closeList();out.push("<hr>");continue;}
-    const quote=line.match(/^\s*>\s?(.*)$/);if(quote){flushPara();closeList();out.push(`<blockquote>${inline(quote[1])}</blockquote>`);continue;}
+    const quote=line.match(/^\s*>\s?(.*)$/);if(quote){flushPara();closeList();
+      // Callout marker (`> [!type][-+]? title`) on a quote's first line: keep only its title (or type) in bold.
+      const callout=i>0&&/^\s*>/.test(lines[i-1])?null:quote[1].match(/^\[!([A-Za-z]+)\][+-]?[ \t]*(.*)$/);
+      out.push(`<blockquote>${callout?`<strong>${inline(callout[2].trim()||callout[1])}</strong>`:inline(quote[1])}</blockquote>`);continue;}
     const item=line.match(/^\s*(?:[-*+]\s+|(\d+)\.\s+)(.*)$/);
     if(item){flushPara();const type=item[1]?"ol":"ul";if(list!==type){closeList();list=type;out.push(`<${list}>`);}out.push(`<li>${inline(item[2])}</li>`);continue;}
     closeList();para.push(line.trim());

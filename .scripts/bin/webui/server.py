@@ -74,6 +74,7 @@ API_ROUTES = (
     (re.compile(r"/api/papers"), {"GET": "list_papers"}),
     (re.compile(r"/api/papers/([^/]+)"), {"GET": "paper"}),
     (re.compile(r"/api/papers/([^/]+)/pdf"), {"GET": "paper_pdf"}),
+    (re.compile(r"/api/papers/([^/]+)/figures/([^/]+)"), {"GET": "paper_figure", "HEAD": "paper_figure"}),
     (re.compile(r"/api/papers/([^/]+)/threads"), {"GET": "paper_threads"}),
     (re.compile(r"/api/papers/([^/]+)/threads/([^/]+)"), {"DELETE": "delete_thread"}),
     (re.compile(r"/api/papers/([^/]+)/ask"), {"POST": "ask_paper"}),
@@ -502,7 +503,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         self._send_file(handle, content_type(target))
 
-    def _send_file(self, handle, media_type: str) -> None:
+    def _send_file(self, handle, media_type: str, headers: tuple[tuple[str, str], ...] = ()) -> None:
         """Stream an open binary file (closed afterwards) with its length and modification time."""
         with handle:
             stat = os.fstat(handle.fileno())
@@ -510,6 +511,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", media_type)
             self.send_header("Content-Length", str(stat.st_size))
             self.send_header("Last-Modified", email.utils.formatdate(stat.st_mtime, usegmt=True))
+            for name, value in headers:
+                self.send_header(name, value)
             self.end_headers()
             if self.command != "HEAD":
                 shutil.copyfileobj(handle, self.wfile, 64 * 1024)
@@ -556,6 +559,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._error(409, "pdf_missing", "저장소 PDF를 열 수 없습니다.")
             return
         self._send_file(handle, "application/pdf")
+
+    def _api_paper_figure(self, args: tuple, query: str, payload: dict) -> None:
+        slug, name = args
+        try:
+            handle = reader.open_paper_figure(slug, name)
+        except reader.ReaderError as exc:
+            self._reader_error(exc)
+            return
+        self._send_file(handle, "image/svg+xml", (
+            ("Content-Security-Policy", security.FIGURE_CSP),
+            ("Content-Disposition", f'inline; filename="{name}"')))
 
     def _api_paper_threads(self, args: tuple, query: str, payload: dict) -> None:
         try:

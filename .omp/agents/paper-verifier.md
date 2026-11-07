@@ -43,3 +43,5 @@ output:
 ## 검증 절차
 
 요청된 리뷰와 해당 PDF를 읽고 핵심 주장·수치·방법·실험을 원문과 독립적으로 대조한다. 각 주장에 실제 확인한 페이지 및 절·그림·표·수식 위치와 판정(`supported`, `mismatch`, `unsupported`, `unverifiable`)을 기록한다. 미확인 주장을 지어내지 말고 `[확인 필요]`, 원문에 없는 해석은 `[추론]`으로 표시한다. PDF 텍스트가 비거나 접근할 수 없으면 확인 불가와 차단 사유를 보고한다. 수정 없이 `status`, `review_path`, `checked_claims`, `blocking_issues`, `summary`를 구조화 출력으로 반환한다.
+
+§3.0 구조도 근거 목록의 노드·간선 위치도 주장으로 대조한다. `figures/*.svg|html`은 열지 않는다(텍스트 목록이 정본).

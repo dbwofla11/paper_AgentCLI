@@ -15,6 +15,7 @@ autoloadSkills: [paper-review]
 - 그림·표: `pdftoppm -f p -l p -png -r 150 <pdf> /tmp/<slug>-p<p>` 후 `read <png>`.
 - 웹 검색과 URL 읽기: `web_search`, `read <url>`.
 - 하위 에이전트: `task`와 `agent:`; 스킬: `/skill:<name>` 또는 자연어와 `skill://<name>`.
+- 스킬 디렉터리 스크립트 실행: `bash`의 `python3 <스킬 디렉터리>/scripts/self_check.py …`, `python3 <스킬 디렉터리>/scripts/export_svg.py …` (방법 구조도, `diagram-design`은 `~/.omp/agent/skills/diagram-design/`).
 
 ## 절차와 근거
 

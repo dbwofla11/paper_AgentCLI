@@ -9,6 +9,7 @@ import fnmatch
 import hmac
 import json
 import os
+import re
 import urllib.parse
 from http import HTTPStatus
 from pathlib import Path
@@ -29,6 +30,27 @@ CONTENT_SECURITY_POLICY = (
 SENSITIVE_NAMES = (".git", ".env", ".env.*", ".mcp.json", ".secrets", "credentials.json",
                    ".claude", ".codex", ".research-harness-agent.json", ".research-harness-agent.tmp",
                    "reader-threads")
+# Review method figures: ``<review dir>/figures/<slug>-<suffix>.(svg|html)`` for any review folder
+# under ``01-Papers/reviews`` (``reviews.review_target``/``allowed_output`` accept nested folders).
+# Never served statically (agent-written HTML/SVG would run same-origin without a CSP); the SVG
+# alone is served by ``GET /api/papers/{slug}/figures/{name}`` with ``FIGURE_CSP``.
+FIGURE_DIR = "figures"
+FIGURE_SUFFIX = r"[a-z0-9][a-z0-9-]*"
+FIGURE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+
+
+def figure_name_ok(slug: str, name: str, extensions: Iterable[str] = ("svg",)) -> bool:
+    """True when ``name`` is ``<slug>-<suffix>.<ext>`` for one of ``extensions`` (lowercase only)."""
+    pattern = (re.escape(slug) + "-" + FIGURE_SUFFIX + r"\.(?:"
+               + "|".join(re.escape(extension) for extension in extensions) + ")")
+    return re.fullmatch(pattern, name) is not None
+
+
+def _review_figure(parts: list[str] | tuple[str, ...]) -> bool:
+    """True for a ``figures`` component at any depth under ``01-Papers/reviews`` and everything
+    below it. Case-folded: on a case-insensitive filesystem ``Figures`` is the same directory."""
+    return (list(parts[:2]) == ["01-Papers", "reviews"]
+            and any(part.casefold() == FIGURE_DIR for part in parts[2:]))
 
 
 class GuardError(Exception):
@@ -180,7 +202,7 @@ def resolve_static(root: Path, url_path: str, allowed_roots: tuple[str, ...],
         return None
     if not _allowed(relative, allowed_roots, allowed_files) and not _allowed(relative + "/", allowed_roots, allowed_files):
         return None
-    if _sensitive(parts):
+    if _sensitive(parts) or _review_figure(parts):
         return None
     if not _exact_case(root, parts):
         return None
@@ -194,6 +216,8 @@ def resolve_static(root: Path, url_path: str, allowed_roots: tuple[str, ...],
     resolved_relative = resolved.relative_to(base).as_posix()
     if resolved.is_dir():
         resolved_relative += "/"
-    if not _allowed(resolved_relative, allowed_roots, allowed_files) or _sensitive(resolved.relative_to(base).parts):
+    resolved_parts = resolved.relative_to(base).parts
+    if (not _allowed(resolved_relative, allowed_roots, allowed_files) or _sensitive(resolved_parts)
+            or _review_figure(resolved_parts)):
         return None
     return resolved

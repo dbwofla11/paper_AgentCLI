@@ -227,7 +227,7 @@ def plan(target: Path, hosts: list[str], link_mode: str, conflict: str, profile:
         resources = []
         for folder in (".scripts/bin", ".scripts/docs", "90-Templates/paper", "04-Projects/validation"):
             resources.extend(p for p in (ROOT / folder).rglob("*") if p.is_file() and p.suffix in {".py", ".json", ".md"} and "__pycache__" not in p.parts)
-        resources.extend(ROOT / name for name in ("docs/onboarding.md", "docs/paper-review-bridge.md", "docs/research-webui.md", "docs/Harness-Graph.md", "docs/Skill-Catalog.md", "docs/agent-research-todo.md", "docs/research-harness-installer.md", "100-views/assets/research-ui.css", "100-views/README.md", ".graphifyignore", "00-Inbox/concept-candidate-template.md", "03-Trends/daily/README.md"))
+        resources.extend(ROOT / name for name in ("docs/onboarding.md", "docs/paper-review-bridge.md", "docs/research-webui.md", "docs/Harness-Graph.md", "docs/Skill-Catalog.md", "docs/agent-research-todo.md", "docs/research-harness-installer.md", "100-views/assets/research-ui.css", "100-views/README.md", ".graphifyignore", ".diagram-design", "00-Inbox/concept-candidate-template.md", "03-Trends/daily/README.md"))
         # Committed WebUI frontend build: every file type, so onboarding serves the SPA.
         resources.extend(p for p in (ROOT / "100-views/webui").rglob("*") if p.is_file() and p.name != ".DS_Store")
         resources.extend((ROOT / ".omp/agents").glob("*.md"))

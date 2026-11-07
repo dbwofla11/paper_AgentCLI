@@ -25,6 +25,17 @@ const DEFAULT_PANEL_WIDTH = 520;
 const NARROW_QUERY = '(max-width: 900px)';
 const FLASH_MS = 2400;
 const EMPTY_ITEMS: readonly EvidenceItem[] = [];
+/** Review image paths the reader loads: `figures/<name>.svg`, optionally `./`, beside the review file. */
+const FIGURE_SRC = /^(?:\.\/)?figures\/([a-z0-9][a-z0-9-]*\.svg)$/;
+/** What must follow `{slug}-` in a figure name (the server's `^{slug}-[a-z0-9][a-z0-9-]*\.svg$`). */
+const FIGURE_SUFFIX = /^[a-z0-9][a-z0-9-]*\.svg$/;
+
+/** `GET /api/papers/{slug}/figures/{name}` for this paper's own figure, or null for any other image path. */
+function figureApiUrl(slug: string, src: string): string | null {
+  const name = FIGURE_SRC.exec(src)?.[1];
+  if (!name?.startsWith(`${slug}-`) || !FIGURE_SUFFIX.test(name.slice(slug.length + 1))) return null;
+  return `/api/papers/${encodeURIComponent(slug)}/figures/${name}`;
+}
 
 function storedPanelWidth(): number {
   try {
@@ -344,9 +355,11 @@ export default function ReaderScreen({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [captureMode, pageCount]);
 
+  const figureUrl = useCallback((src: string) => figureApiUrl(slug, src), [slug]);
+
   const actions = useMemo<ReaderActions>(
-    () => ({ pageCount, goToPage, focusClaim, showAnchor, askAbout }),
-    [pageCount, goToPage, focusClaim, showAnchor, askAbout],
+    () => ({ pageCount, goToPage, focusClaim, showAnchor, askAbout, figureUrl }),
+    [pageCount, goToPage, focusClaim, showAnchor, askAbout, figureUrl],
   );
 
   if (!bundle) {

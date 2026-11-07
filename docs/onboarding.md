@@ -14,6 +14,7 @@
 | 인터넷 | 로그인·모델 응답·논문 검색/다운로드 | 첫 요청과 검색으로 확인 |
 | uv / uvx | 논문 MCP 서버, Graphify 설치 | `uv --version`, `uvx --version` |
 | Graphify | 논문 관계 질의·정본 갱신 | `graphify --help` |
+| diagram-design 스킬 + 프로필 | 심층 리뷰의 방법 구조도(SVG) 생성 | `onboarding_check.py` WARN 여부 |
 | EXA_API_KEY | 선택 기능 Exa 의미 검색 | 환경 진단의 설정 여부 표시 |
 | Orca | 예약 실행·Orca worker 기능 | 해당 기능을 사용할 때 별도 구성 |
 
@@ -114,6 +115,14 @@ python3 -B .scripts/bin/verify_harness.py
 ```
 
 Claude 또는 omp를 선택했다면 첫 명령을 각각 `--host claude` 또는 `--host omp`로 바꾼다. 새 세션에서 필요한 폴더도 준비하려면 `python3 .scripts/bin/onboarding_check.py --create-dirs`를 사용한다(Windows: `py -3 .scripts/bin/onboarding_check.py --create-dirs`). 첫 검사는 환경과 선택 도구를 확인한다. `FAIL`은 필수 항목 누락, `WARN`은 선택 기능 미준비다. 비밀값은 출력하지 않는다. 두 번째 검사는 저장소 구조·라우팅·논문 JSON 계약을 검사한다. **검사 통과만으로 로그인·MCP 연결·논문 리뷰 품질이 검증되는 것은 아니다.**
+
+심층 리뷰는 방법 구조도를 `diagram-design` 스킬로 만든다. 아래 세 가지가 모두 있어야 하며, 하나라도 없으면 `onboarding_check.py`가 `WARN`으로 알리고 리뷰는 Mermaid 등으로 대체하지 않고 실패로 보고된다.
+
+| 구성 | 위치 |
+|---|---|
+| 사용자 수준 스킬 (사용하는 호스트) | omp `~/.omp/agent/skills/diagram-design/`, Claude `~/.claude/skills/diagram-design/`, Codex `~/.codex/skills/diagram-design/` (다른 호스트 설치본으로의 심볼릭 링크 가능) |
+| 저장소 마커 | 루트 `.diagram-design` 파일, 내용 `profile: research-harness` 한 줄 (저장소에 포함) |
+| 프로필 | `~/.diagram-design/profiles/research-harness.md` (`Font source: system`) |
 
 `research_harness_check.py`는 다른 저장소에 설치기가 만든 manifest를 검사한다. 이 저장소의 첫 실행 진단에는 위 명령을 사용한다. 여기에서 설치 manifest가 없다는 오류가 나는 것은 설치기를 자기 저장소에 실행하라는 뜻이 아니다.
 
@@ -226,6 +235,7 @@ python3 -B .scripts/bin/onboarding_check.py --host codex --with-mcp --with-graph
 | 논문 API 429 | 재시도·대체 소스 사용; 결과를 지어내지 않기 |
 | manifest 누락 | 이 저장소는 onboarding_check.py; 외부 설치 대상은 research_harness_check.py |
 | PDF를 읽지 못함 | 페이지 읽기 지원을 점검하고 읽기 실패를 명시; 리뷰 완료 보류 |
+| 리뷰가 "방법 구조도 생성 불가"로 실패 | `onboarding_check.py`의 diagram-design WARN 확인; 스킬·`.diagram-design` 마커·프로필 준비 |
 
 ## 9. 발표에서 보여줄 순서
 

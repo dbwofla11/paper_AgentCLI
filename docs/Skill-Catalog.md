@@ -9,7 +9,7 @@
 | 영역 | 실행 스킬 | 역할·다음 흐름 |
 |---|---|---|
 | 입력·수집 | `paper-search` | 사용자 업로드 또는 채택된 검색 후보를 확인해 PDF·Keep·논문 JSON으로 등록 |
-| 일일 후보 | `daily-digest-loop` | 09:00 KST 예약 실행에서 CV·멀티모달·관심 분야 논문 각 후보를 찾고 채팅으로만 제시 |
+| 일일 후보 | `daily-digest-loop` | 09:00 KST 예약 실행에서 CV·멀티모달·관심 분야 논문 각 후보를 찾아 채팅으로 보고하고 로컬 캐시(`00-Inbox/discovery/daily/`, Git 제외)에 기록. 정본 저장은 사용자 채택 뒤 `paper-search` |
 | 논문 정독 | `paper-review` | 3패스 정독 후 문제·기존 연구, 핵심 아이디어, 실험 근거, 한계, 관련 연구의 5축을 기록 |
 | 공부노트 | `concept-note` | 사용자가 요청·검토한 개념 후보를 `02-Concepts/` 학습 정본으로 생성·수정·통합 |
 | 인덱스·목록 | `review-index`, `keep-list`, `paper-favorites` | 읽기 상태·대기열·즐겨찾기 관리 |

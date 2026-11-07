@@ -41,7 +41,7 @@ REQUIRED = [
     ROOT / "04-Projects/validation/personas/repro-critic.md",
     ROOT / "04-Projects/validation/personas/novelty-critic.md",
     ROOT / "00-Inbox/concept-candidate-template.md",
-    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "paper-reader", "idea-critic", "graph-extractor")),
+    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "paper-reader", "idea-critic", "graph-extractor", "paper-searcher")),
     ROOT / ".omp/config.example.yml",
     ROOT / ".research-harness-agent.example.json",
     ROOT / "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.example.md",

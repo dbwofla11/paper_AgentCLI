@@ -238,6 +238,39 @@ class RoleResolutionTests(unittest.TestCase):
                 self.assertEqual(roles[name]['candidates'], [])
                 self.assertIsNone(roles[name]['selected'])
 
+
+    def test_searcher_unconfigured_uses_connected_agent_default(self):
+        role = roles.resolve(roles.SEARCHER, self.root)
+        self.assertEqual(roles.SEARCHER, 'paper-searcher')
+        self.assertFalse(role['configured'])
+        self.assertEqual(role['candidates'], [])
+        self.assertIsNone(role['selected'])
+        guidance = ' '.join(role['notes'])
+        self.assertIn('연결', guidance)
+        self.assertIn('기본 모델', guidance)
+
+    def test_status_includes_searcher_role(self):
+        conn = http.client.HTTPConnection('127.0.0.1', self.http.server_port, timeout=3)
+        try:
+            conn.request('GET', '/api/status')
+            response = conn.getresponse()
+            payload = json.loads(response.read())
+            self.assertEqual(response.status, 200)
+            self.assertFalse(payload['searcher_role']['configured'])
+        finally:
+            conn.close()
+
+    def test_searcher_agent_definition(self):
+        metadata, instructions = roles.agent_definition('paper-searcher', ROOT)
+        self.assertEqual(metadata['name'], 'paper-searcher')
+        self.assertTrue(metadata['description'])
+        self.assertEqual(set(metadata['tools']), {'read', 'grep', 'glob', 'bash', 'web_search'})
+        self.assertFalse(metadata['spawns'])
+        self.assertTrue(metadata['structured'])
+        self.assertNotIn('model', metadata)
+        self.assertNotIn('thinking-level', metadata)
+        self.assertTrue(instructions)
+
     def test_reader_resolution_and_readiness(self):
         from webui import reader
         role = roles.resolve('paper-reader', self.root)

@@ -2,7 +2,7 @@
 
 ## 역할
 
-Orca가 예약을 관리하고 daily-digest-loop가 후보를 채팅으로 제시한다. 실제 설정은 로컬 런타임에서 확인한다.
+Orca가 예약을 관리하고 daily-digest-loop가 후보를 채팅으로 보고하며 로컬 캐시(00-Inbox/discovery/daily, Git 제외)에 기록한다. 실제 설정은 로컬 런타임에서 확인한다.
 
 ## 근거 문서
 

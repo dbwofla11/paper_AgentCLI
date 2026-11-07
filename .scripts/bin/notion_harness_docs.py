@@ -99,7 +99,7 @@ def build_diagrams():
     diagram('04-operation-loops','루프와 HTML 실행은 어떻게 연결되는가','예약 탐색, 사용자 선택, 리뷰 실행, 지식 갱신은 서로 다른 동작이다.',[
         node(60,235,'예약 시각·주제','Orca 매일 09:00 KST · 날짜별 주제 계획','daily-orca-automation.md · paper-scheduler','amber'),
         node(440,235,'후보 3편 검색','CV 1 · 멀티모달 1 · 관심 분야 1','daily-digest-loop'),
-        node(820,235,'채팅으로 제시','공식 게재·원문 확인 · 채택 전 저장 없음','paper-summary 형식'),
+        node(820,235,'채팅 보고·캐시 기록','공식 게재·원문 확인 · 로컬 캐시만 기록','paper-summary 형식 · discovery_cache.py'),
         node(1200,235,'사용자가 채택','선택한 논문만 PDF·Keep·JSON 등록','paper-search','green'),
         node(60,535,'HTML 리뷰 요청','논문 하나를 선택하고 리뷰 시작','100-views/paper-library.html'),
         node(440,535,'본인 에이전트 연결','온보딩이 CLI·로그인·지원 옵션 확인','onboard_research.py · research_agent.py','amber'),
@@ -109,7 +109,7 @@ def build_diagrams():
         arrow([(390,315),(440,315)]),arrow([(770,315),(820,315)]),arrow([(1150,315),(1200,315)]),
         arrow([(390,615),(440,615)]),arrow([(770,615),(820,615)]),arrow([(1150,615),(1200,615)]),
         arrow([(1365,695),(1365,760),(225,760),(225,695)],'완료·실패·진행 상태를 HTML에서 다시 확인',480,747),
-    ],[(175,245,'일일 후보 루프: 현재 예약 enabled=true / Asia/Seoul / 새 세션 · 실행 결과는 Orca 회차 채팅'),
+    ],[(175,245,'일일 후보 루프: 현재 예약 enabled=true / Asia/Seoul / 새 세션 · 결과는 Orca 회차 채팅 + 00-Inbox/discovery/daily 캐시(Git 제외)'),
         (490,225,'리뷰 실행 경로: 초기 온보딩 후 localhost 서버를 사용 · HTML 파일을 열기만 해서는 에이전트가 실행되지 않음')],
         '정본 변경 → graphify_sync begin → Graphify 의미 추출 → complete. 실패는 pending으로 남기고 재시도한다.')
 
@@ -119,7 +119,7 @@ def build_pages():
     add('thought',None,'사고실험','아이디어를 질문과 반증 조건이 있는 기획으로 바꾼다. 비판적 사고, Grill-me, 독립 심사, 사용자 의견 반영을 이 페이지 아래에서 관리한다.\n\n## 각 하네스가 하는 일\n\n- thought-experiment-critique: 전제·누수·식별가능성·대체 설명을 처음 점검한다.\n- critical-validation: Grill-me로 사용자 답변을 brief에 반영하고, 문헌과 동일 근거 묶음을 준비한다.\n- method / repro / novelty critic: 같은 근거를 각 관점에서 독립적으로 비판한다.\n- idea_analysis.py: 근거 해시·역할 완결성·판정·사용자 결정 일관성을 검사한다.\n- thought-experiment-runner: 승인된 계획만 작은 실험과 실행 증거로 연결한다.\n\n## 사용자 의견 반영\n\n핵심 가설·성공/반증 조건은 사용자 승인 뒤 심사한다. 보완 요청은 다시 Grill-me로 돌아간다. 근거가 변경되면 동결 버전과 기존 심사를 갱신한다. 최종 진행·보류·폐기는 사용자가 결정한다. 매 실험마다 자동 질문하는 주기는 별도로 정의되어 있지 않다.\n\n## 현재 적용 범위\n\nmode는 required다. 세 페르소나는 분야 공통이며 분야별 전문 페르소나는 없다. 일반 논문 리뷰에 세 독립 심사가 자동 적용되는 상태도 아니다.', ['.agents/skills/critical-validation/SKILL.md','04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_SETTINGS.md'], '02-thought-experiment')
     add('experiment',None,'실험 설계','실험을 시작하기 전에 성공·반증 기준, 최소 대조군, 데이터·seed·정보 경계·컴퓨트를 고정한다. 결과를 본 뒤 기준을 임의로 바꾸지 않고 관측값과 해석을 구분한다.\n\n## 실행과 기록\n\n1. 승인된 brief와 심사 결과를 확인한다.\n2. 기본 범위는 단일 가설, 12개 이하 condition, 고정 seed의 작은 결정론적 실험이다.\n3. manifest.md에 조건 ID·입력·환경·버전·기준을 남긴다.\n4. results.md에 criterion별 측정·누락·실패·원자료 경로를 남긴다.\n5. 사람이 결과를 보고 가설 채택·변경과 다음 실험을 결정한다.\n\n## 실행 조건\n\n기존 실행 가능한 코드·데이터가 있어야 한다. 새 의존성·대규모 다운로드·장시간 학습·유료 API는 기본 소규모 실행 범위에 포함되지 않는다. Paper2Agent는 준비성을 점검하며 실제 agentification은 별도 생성 요청이 필요하다.', ['.agents/skills/thought-experiment-runner/SKILL.md'])
     add('data',None,'데이터 저장·관리','원문 PDF, 사람용 리뷰, 기계 판독 JSON, 가설, 실행 증거를 각각 정본 경로에 보관한다. 이 Notion 공간에는 운영 안내와 도식을 정리하며 개별 논문 PDF나 연구 데이터 전체를 복제하지 않는다.\n\n## 논문 저장\n\n- 원문: 01-Papers/pdfs/{category}/\n- 리뷰: 01-Papers/reviews/{category}/ · 한 논문 한 파일\n- 첫 판정: 01-Papers/triage/\n- 구조화 기록: 01-Papers/library/{slug}.json\n- 읽기 상태: index.md · 읽기/조사 대기열: keep.md · 선호: favorites.md\n\n분야는 wifi-csi / game-ai / agent-ai / computer-vision / other다. 파일명은 연도-제1저자성-짧은슬러그를 따른다. JSON은 수집 시 메타데이터를 기록하고 리뷰 후 근거가 있는 5축 분석을 보강한다.\n\n## 사고실험 저장\n\n- 가설·반증 조건: 05-Ideas/thought-experiments/\n- 기획·심사·실행 증거: 04-Projects/thought-experiment-runs/{slug}/\n- 문헌 조사 작업: 04-Projects/research-todo/queue.json\n- 자동 리뷰 작업: 04-Projects/review-queue/queue.json\n- 현재 진척 backend: notion · repository 선택 시 progress.md가 상태 정본\n\n## 재생성\n\nHTML은 정본에서 다시 만든다. Graphify는 검증된 정본에서 관계를 추출한다. 개념 후보는 사용자가 이해를 확인하고 승격 요청하기 전에는 학습 정본·지식 그래프로 들어가지 않는다.', ['AGENTS.md','.scripts/docs/paper-record.schema.json','.scripts/docs/idea-analysis.schema.json','04-Projects/thought-experiment-runs/PROGRESS_BACKEND.md'], '03-data-flow')
-    add('ops',None,'루프·운영 설정','예약 시각은 Orca Automation에서 관리한다. 날짜별 선정 기준·사용자 확인 단계·에이전트 연결·문헌 조사 대기열·지식 동기화 규칙을 설명한다. 실제 실행 상태와 계정 설정은 로컬 자동화 도구에서 확인한다.\n\n## 일일 후보 루프\n\nOrca Automation이 `$daily-digest-loop` 스킬을 예약 실행한다. 컴퓨터 비전·멀티모달·사용자 관심 분야별 후보를 검증해 채팅으로 제시한다. 채택 전에는 논문 파일을 저장하지 않는다.\n\n## 사용자 확인 지점\n\n후보 채택, 개념 승격, 사고실험 기획 승인, 독립 심사 후 진행 결정은 사용자에게 있다. 문헌 TODO dispatch는 명시적 실행 요청이 필요하다.', ['docs/daily-orca-automation.md','docs/onboarding.md','docs/agent-research-todo.md','04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md'], '04-operation-loops')
+    add('ops',None,'루프·운영 설정','예약 시각은 Orca Automation에서 관리한다. 날짜별 선정 기준·사용자 확인 단계·에이전트 연결·문헌 조사 대기열·지식 동기화 규칙을 설명한다. 실제 실행 상태와 계정 설정은 로컬 자동화 도구에서 확인한다.\n\n## 일일 후보 루프\n\nOrca Automation이 `$daily-digest-loop` 스킬을 예약 실행한다. 컴퓨터 비전·멀티모달·사용자 관심 분야별 후보를 검증해 채팅으로 보고하고, 같은 내용을 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/daily/YYYY-MM-DD.json`에 기록한다. 캐시는 WebUI 탐색 화면에서 보며 위키·라이브러리·Graphify 대상이 아니다. PDF·Keep·논문 JSON 같은 정본은 사용자가 채택한 뒤에만 저장한다.\n\n## 사용자 확인 지점\n\n후보 채택, 개념 승격, 사고실험 기획 승인, 독립 심사 후 진행 결정은 사용자에게 있다. 문헌 TODO dispatch는 명시적 실행 요청이 필요하다.', ['docs/daily-orca-automation.md','docs/onboarding.md','docs/agent-research-todo.md','04-Projects/thought-experiment-runs/CRITICAL_VALIDATION_REGISTRY.md'], '04-operation-loops')
     add('views',None,'HTML 화면','저장소의 기록을 찾고 읽는 세 화면이다. 개별 HTML은 정본 데이터를 대체하지 않으며 생성기로 갱신한다. 리뷰 시작은 본인 에이전트와 로컬 WebUI 서버(research_webui.py)가 연결되어 있어야 한다.', ['100-views/README.md'])
     add('skills',None,'스킬 목록','스킬은 특정 요청을 처리하는 작업 지침이다. 공통 정본은 .agents/skills/이며 Codex·Claude 호스트 진입점에서 참조한다. 아래 스킬은 모두 순서대로 실행하는 목록이 아니다. 현재 작업의 단계와 사용자 요청에 따라 선택한다.\n\n## 실행 순서를 정하는 곳\n\nAGENTS.md와 docs/Harness-Graph.md, research_workflow.py, research-workflow-map.json이 단계와 조건을 안내한다. Skill-Catalog.md는 찾기 위한 목록이다.', ['docs/Skill-Catalog.md','.scripts/docs/research-workflow-map.json'])
 
@@ -133,7 +133,7 @@ def build_pages():
       'keep-list':('읽기·조사 대기열','skills','킵 추가·조회·해제·검증 요청','01-Papers/keep.md에서 논문과 다시 조사할 주제를 관리','즐겨찾기와 독립 목록이다. 목록 해제가 PDF·리뷰 삭제를 뜻하지 않는다.'),
       'paper-favorites':('선호 논문 기록','skills','사용자가 명시한 즐겨찾기 요청','01-Papers/favorites.md에 이유와 자료 경로를 기록','사용자 선호만 반영하며 논문 내용·평점을 임의로 변경하지 않는다.'),
       'paper-summary':('논문 3편 요약','skills','정확히 세 논문과 실제 확인한 원문','초록·전체 주장·방법·한계를 채팅으로 요약','심층 리뷰와 별도 작업이다. PDF를 못 읽었으면 확인 범위를 명시한다. 저장소 PDF는 01-Papers/pdfs/에서 읽는다.'),
-      'daily-digest-loop':('일일 논문 후보','ops','오늘 날짜·선정 계획·사용자 관심 맥락','CV·멀티모달·관심 분야 각 후보 한 편을 채팅으로 제시','스킬 호출당 탐색만 수행한다. 반복 실행 시각은 Orca, 날짜별 주제는 paper-scheduler가 관리한다.'),
+      'daily-digest-loop':('일일 논문 후보','ops','오늘 날짜·선정 계획·사용자 관심 맥락','CV·멀티모달·관심 분야 각 후보 한 편을 채팅으로 보고하고 00-Inbox/discovery/daily 로컬 캐시에 기록','스킬 호출당 탐색과 캐시 기록만 수행한다. 정본 저장은 사용자 채택 뒤다. 반복 실행 시각은 Orca, 날짜별 주제는 paper-scheduler가 관리한다.'),
       'paper-scheduler':('날짜별 선정 계획','ops','날짜·주제·슬롯·선정 제약','03-Trends/daily/YYYY-MM-DD-plan.md 생성·조회·수정·취소','실제 예약 시각을 설정하지 않는다. 기본 3편과 학회 발표·게재 검증 조건을 유지한다.'),
       'thought-experiment-critique':('사고실험 전제 점검','thought','연구 질문·가설·제안 파이프라인','전제·식별가능성·누수·대조군·반증 조건을 분석','초기 단일 분석이다. 세 독립 페르소나 심사와는 다른 작업이다.'),
       'critical-validation':('Grill-me·독립 비판 검증','thought','연구 아이디어·backend/mode·원문 근거','Grill-me → brief 승인 → 문헌 검색 → 근거 동결 → 세 독립 심사 → 사용자 결정','동일 SHA-256의 근거 묶음을 사용한다. 보완 시 다시 질문·동결·심사하며 독립 실행 불가 시 대기한다.'),
@@ -151,7 +151,7 @@ def build_pages():
       ('onboarding','ops','본인 에이전트 연결 · 온보딩','docs/onboarding.md','onboard_research.py가 설치된 Codex·Claude 로그인과 비대화형 옵션을 확인하고 준비된 에이전트를 선택한다. 본인 브라우저 로그인은 사용자가 완료한다. 이름만 설정에 저장하고 로컬 서버와 화면을 연다. 실제 Claude 모델 응답·신규 OAuth는 기존 검증 범위 밖이다.'),
       ('installer','ops','다른 저장소에 설치','docs/research-harness-installer.md','skills / papers 프로필, dry-run, manifest, 충돌 보존·안전한 제거를 관리한다. 개인 PDF·리뷰·계정·MCP 비밀 설정을 복사하지 않는다.'),
       ('bridge','ops','HTML에서 리뷰 실행 · 로컬 WebUI 서버','docs/paper-review-bridge.md','로컬 WebUI 서버(research_webui.py)가 선택 논문 한 편을 queue에 넣고 연결된 에이전트로 임시 작업 폴더에서 리뷰한다. 산출물 검증·충돌 확인 후 저장하고 HTML을 재생성한다. 공유 그래프 충돌은 pending, 리뷰 정본 충돌은 저장 중단이다. 모든 요청은 Host 검사를, 리뷰 요청은 Origin·CSRF 토큰 검사를 거친다.'),
-      ('daily','ops','일일 예약 운영','docs/daily-orca-automation.md','Orca가 예약을 관리하고 daily-digest-loop가 후보를 채팅으로 제시한다. 실제 설정은 로컬 런타임에서 확인한다.'),
+      ('daily','ops','일일 예약 운영','docs/daily-orca-automation.md','Orca가 예약을 관리하고 daily-digest-loop가 후보를 채팅으로 보고하며 로컬 캐시(00-Inbox/discovery/daily, Git 제외)에 기록한다. 실제 설정은 로컬 런타임에서 확인한다.'),
       ('todo','ops','에이전트 문헌 조사 TODO','docs/agent-research-todo.md','queue.json에 질문·brief 해시·예산을 고정한다. 명시적 dispatch 요청 후 솔루션·레퍼런스·반대 근거 탐색을 병렬 수행하고 별도 verifier로 원문을 확인한다. publish 검증 뒤에만 completed다. 이 조사 역할은 비판 심사 페르소나와 다르다.'),
       ('handoff','ops','구현 요구사항·작업 인계','docs/handoff-paper-harness.md','대시보드, 리뷰 버튼, 온보딩, 사고실험 화면, 문헌 TODO의 구현 요구사항과 범위를 보관한다. 최초 요청 기록이므로 현재 구현 상태는 실제 코드·원장을 우선한다.'),
       ('search-protocol','reading','문헌 검색 프로토콜','.scripts/docs/search-protocol.md','질의 분해·소스 우선순위·스노우볼링·포화·검색 한계를 규정한다.'),

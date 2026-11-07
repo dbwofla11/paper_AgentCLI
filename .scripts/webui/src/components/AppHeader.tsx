@@ -3,6 +3,7 @@ import { Menu, Monitor, Moon, Sun } from 'lucide-react';
 import * as m from 'motion/react-m';
 import type { ConnectionSnapshot, ConnectionState } from '../api/client';
 import {
+  DISCOVER_HREF,
   HARNESS_HREF,
   IDEAS_HREF,
   JOBS_HREF,
@@ -13,10 +14,11 @@ import {
 import { DUR_INDICATOR, EASE_OUT } from '../motion/tokens';
 import { setThemePreference, useThemePreference, type ThemePreference } from '../theme';
 
-type ScreenName = 'papers' | 'ideas' | 'harness' | 'status' | 'jobs';
+type ScreenName = 'papers' | 'discover' | 'ideas' | 'harness' | 'status' | 'jobs';
 
 const SCREENS: ReadonlyArray<{ route: ScreenName; href: string; label: string }> = [
   { route: 'papers', href: PAPERS_HREF, label: '논문' },
+  { route: 'discover', href: DISCOVER_HREF, label: '탐색' },
   { route: 'ideas', href: IDEAS_HREF, label: '사고실험' },
   { route: 'harness', href: HARNESS_HREF, label: '하네스' },
   { route: 'status', href: STATUS_HREF, label: '상태' },

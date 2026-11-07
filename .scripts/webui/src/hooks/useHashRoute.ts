@@ -1,8 +1,12 @@
 import { useMemo, useSyncExternalStore } from 'react';
 
+/** `#/discover` tabs: external search (with its history) and the daily-candidate feed. */
+export type DiscoverView = 'search' | 'daily';
+
 export type Route =
   | { name: 'papers' }
   | { name: 'reader'; slug: string }
+  | { name: 'discover'; view: DiscoverView; id: string | null; prefill: string | null }
   | { name: 'ideas' }
   | { name: 'harness' }
   | { name: 'status' }
@@ -10,6 +14,7 @@ export type Route =
   | { name: 'not_found'; path: string };
 
 export const PAPERS_HREF = '#/';
+export const DISCOVER_HREF = '#/discover';
 export const IDEAS_HREF = '#/ideas';
 export const HARNESS_HREF = '#/harness';
 export const STATUS_HREF = '#/status';
@@ -23,6 +28,21 @@ export function paperHref(slug: string): string {
   return `#/papers/${encodeURIComponent(slug)}`;
 }
 
+/** A stored search session (`00-Inbox/discovery/searches/{id}.json`). */
+export function discoverSearchHref(id: string): string {
+  return `${DISCOVER_HREF}/searches/${encodeURIComponent(id)}`;
+}
+
+/** Search tab with the query prefilled (`?q=`), e.g. from an empty library search. */
+export function discoverPrefillHref(query: string): string {
+  return `${DISCOVER_HREF}?${new URLSearchParams({ q: query }).toString()}`;
+}
+
+/** Daily-candidate list, or one day (`YYYY-MM-DD`). */
+export function discoverDailyHref(date?: string): string {
+  return date ? `${DISCOVER_HREF}/daily/${encodeURIComponent(date)}` : `${DISCOVER_HREF}/daily`;
+}
+
 function decoded(value: string): string | null {
   try {
     return decodeURIComponent(value);
@@ -31,10 +51,25 @@ function decoded(value: string): string | null {
   }
 }
 
-/** `#/` → 논문 라이브러리, `#/papers/<slug>` → 리더, `#/ideas` → 사고실험, `#/harness` → 하네스, `#/status` → 상태, `#/jobs[/<id>]` → 작업. */
+/**
+ * `#/` → 논문 라이브러리, `#/papers/<slug>` → 리더, `#/discover[/searches/<id>|/daily[/<date>]]` → 탐색,
+ * `#/ideas` → 사고실험, `#/harness` → 하네스, `#/status` → 상태, `#/jobs[/<id>]` → 작업.
+ * A `?query` after the path is read only by 탐색 (`q` prefills the search form).
+ */
 export function parseHash(hash: string): Route {
-  const path = hash.replace(/^#/, '') || '/';
+  const fragment = hash.replace(/^#/, '');
+  const queryStart = fragment.indexOf('?');
+  const path = (queryStart === -1 ? fragment : fragment.slice(0, queryStart)) || '/';
+  const query = new URLSearchParams(queryStart === -1 ? '' : fragment.slice(queryStart + 1));
   if (path === '/') return { name: 'papers' };
+  const discover = /^\/discover(?:\/(searches|daily)(?:\/([^/]+))?)?\/?$/.exec(path);
+  if (discover) {
+    const view: DiscoverView = discover[1] === 'daily' ? 'daily' : 'search';
+    // `#/discover/searches` alone is the search tab itself.
+    const id = discover[2] === undefined ? null : decoded(discover[2]);
+    if (discover[2] !== undefined && !id) return { name: 'not_found', path };
+    return { name: 'discover', view, id, prefill: query.get('q')?.trim() || null };
+  }
   if (/^\/ideas\/?$/.test(path)) return { name: 'ideas' };
   if (/^\/harness\/?$/.test(path)) return { name: 'harness' };
   if (/^\/status\/?$/.test(path)) return { name: 'status' };

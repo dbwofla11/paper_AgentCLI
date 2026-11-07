@@ -39,12 +39,12 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 | GET | `/paper-library.html`, `/harness-dashboard.html`, `/thought-experiments.html` | 302 → `/100-views/<name>` (기존 주소 유지) |
 | GET | 정적 파일 | 아래 "정적 파일" 규칙. `/100-views/webui/`는 `index.html`을 준다. |
 | GET | `/api/session` | `{"csrf_token", "workspace_id", "port", "version": "webui-m0"}` |
-| GET | `/api/status` | 기존 브리지와 같은 키: `ok`, `workspace_id`, 에이전트 상태 필드(`agent`, `ready`, `reason`, `candidates` 등), `pdf_reader_ready`, `runner`, `pdf_reader`, `max_parallel`, `queue`. 추가 키 `review_roles`: `{"generation": <역할 해석>, "verification": <역할 해석>}`(아래 "리뷰 역할"), `reader_role`: `paper-reader`의 역할 해석(아래 "논문 리더"). `ready`·`reason`은 리뷰 준비 상태로, 역할이 설정되어 있으면 역할 기준이다. |
+| GET | `/api/status` | 기존 브리지와 같은 키: `ok`, `workspace_id`, 에이전트 상태 필드(`agent`, `ready`, `reason`, `candidates` 등), `pdf_reader_ready`, `runner`, `pdf_reader`, `max_parallel`, `queue`. 추가 키 `review_roles`: `{"generation": <역할 해석>, "verification": <역할 해석>}`(아래 "리뷰 역할"), `reader_role`: `paper-reader`의 역할 해석(아래 "논문 리더"), `searcher_role`: `paper-searcher`의 역할 해석(아래 "논문 탐색"). `ready`·`reason`은 리뷰 준비 상태로, 역할이 설정되어 있으면 역할 기준이다. |
 | GET | `/api/reviews/{slug}` | `{"jobs": [...]}` — 리뷰 큐에서 해당 slug의 작업. 검증 보고서가 있으면 `verification`(아래 "검증 보고서")도 준다. |
 | POST | `/api/reviews` | 본문 `{"slug"}`. 리뷰 한 편을 큐에 넣고 202 `{"job"}`. 이미 완료면 409 `review_complete`, 다른 리뷰 진행 중이면 409 `review_active`, 에이전트·리뷰 역할 미준비면 503 `agent_unavailable`, 잘못된 slug·PDF면 400 `bad_request` |
 | POST | `/api/reviews/{slug}/verify` | 본문 `{}`. 이미 리뷰된 논문에 검증 단계만 실행하고 202 `{"job"}`(큐 작업 `kind: "verify"`). 잘못된 slug·레코드는 400 `bad_request`, 리뷰 Markdown이 없으면 409 `review_missing`, PDF가 없으면 409 `pdf_missing`, 역할 설정을 읽지 못하면 503 `role_config_error`, `paper-verifier` 미설정이면 409 `verifier_unconfigured`, 설정됐지만 실행기 미준비면 503 `verifier_unavailable`, 다른 리뷰·검증 진행 중이면 409 `review_active` |
 | GET | `/api/jobs` | `{"jobs": [record…]}` (최신순) |
-| POST | `/api/jobs` | 본문 `{"kind": "agent.ping", "agent"?: "claude"\|"codex"\|"omp", "role"?: "paper-analyst"\|"paper-verifier"}` → 202 `{"job": record}`. `agent`와 `role`은 함께 쓸 수 없다. 모르는 kind(`paper.ask`·`harness.*` 포함)·agent·role, 문자열이 아닌 값(배열·객체·숫자 등), `agent`+`role` 동시 지정은 400 `bad_request` |
+| POST | `/api/jobs` | 본문 `{"kind": "agent.ping", "agent"?: "claude"\|"codex"\|"omp", "role"?: "paper-analyst"\|"paper-verifier"}` → 202 `{"job": record}`. `agent`와 `role`은 함께 쓸 수 없다. 모르는 kind(`paper.ask`·`harness.*`·`discovery.*` 포함 — 검색은 `POST /api/discovery/searches`, 등록은 `POST /api/discovery/register`로만 제출)·agent·role, 문자열이 아닌 값(배열·객체·숫자 등), `agent`+`role` 동시 지정은 400 `bad_request` |
 | GET | `/api/jobs/{id}` | `{"job": record}`, 없으면 404 |
 | GET | `/api/jobs/{id}/events` | SSE 스트림(아래). 없는 작업은 404, 동시 스트림이 상한이면 503 `too_many_streams` |
 | POST | `/api/jobs/{id}/cancel` | 202 `{"job": record}`. 이미 끝났으면 409 `already_finished`, 없으면 404 |
@@ -59,6 +59,16 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 | GET | `/api/harness` | `HarnessPayload`(아래 "하네스") |
 | POST | `/api/harness/checks` | 본문 `{"check": "verify"\|"tests"}` → 202 `{"job": record}`(`kind: "harness.verify"\|"harness.tests"`). 오류는 아래 "하네스" |
 | GET | `/api/ideas` | `IdeasPayload`(아래 "사고실험"). GET 외 메서드(HEAD 포함)는 405, `Allow: GET` |
+| GET | `/api/discovery/daily` | `{"days": [DailySummary], "errors": [{"file", "error"}]}`(아래 "논문 탐색") |
+| GET | `/api/discovery/daily/{date}` | `{"daily": Daily, "plan_href": str\|null}`. 날짜 형식 400 `bad_request`, 없음 404 `not_found` |
+| GET | `/api/discovery/searches` | `{"searches": [SearchSummary], "errors": [{"file", "error"}]}`. 재시작 정합 적용 |
+| POST | `/api/discovery/searches` | 검색 요청 → 202 `{"job": JobRecord, "search": SearchSession}`(아래 "논문 탐색"). 400 `bad_request`, 409 `search_active`, 503 `role_config_error`·`searcher_unavailable`·`shutting_down` |
+| GET | `/api/discovery/searches/{id}` | `{"search": SearchSession}`. 잘못된 id 400 `bad_request`, 없음 404 `not_found` |
+| DELETE | `/api/discovery/searches/{id}` | 본문 `{}` → 200 `{"deleted": id}`. 400, 404, 진행 중이면 409 `search_active` |
+| POST | `/api/discovery/keep` | "Keep에 담기" → 200 `{"candidate", "slug", "keep_path", "record_path"}`(아래 "논문 탐색"). 400, 404 `not_found`·`candidate_not_found`, 409 `already_in_library`·`already_in_keep`, 500 `write_failed` |
+| POST | `/api/discovery/register` | "등록" → 202 `{"job": JobRecord, "candidate", "slug"}`. 400, 404, 409 `already_in_library`·`review_active`·`register_active`, 503 `role_config_error`·`searcher_unavailable`·`shutting_down` |
+| POST | `/api/discovery/candidates/status` | 넘김·복원 `{"source", "candidate_id", "status": "skipped"\|"new"}` → 200 `{"candidate"}`. 400, 404, 409 `candidate_adopted` |
+| POST | `/api/discovery/related` | 인용·피인용 `{"kind": "refs"\|"cites", "paper": {"slug"}\|{"title", "ids"}, "limit"?}` → 201 `{"search": SearchSession}`(mode `related`, 동기). 400 `bad_request`·`no_identifier`, 404 `not_found`, 502 `upstream_unavailable`, 503 `upstream_rate_limited`, 504 `upstream_timeout`, 500 `write_failed`·`cache_unsafe`(아래 "논문 탐색") |
 
 `workspace_id`는 `sha256(str(ROOT.resolve()))`의 앞 16자다. 온보딩이 같은 포트의 기존 서버가 이 저장소의 것인지 확인할 때 쓴다.
 
@@ -389,6 +399,282 @@ WebUI `#/ideas` 화면의 데이터다. 아이디어 레코드는 정적 `100-vi
   - 그 밖의 예상하지 못한 예외: `ideas`(오류 문구는 `<예외 종류>: <메시지>`), `ideas: []`, `hrefs: {}`.
 - 오류 문구는 500자에서 자른다. 정적 생성기(`python3 .scripts/bin/thought_experiments_html.py`)는 `errors` 없이 `scan()`을 부르므로 같은 오류에서 예전처럼 실패한다.
 
+## 논문 탐색
+
+WebUI `#/discover` 화면의 데이터다. 외부 검색 결과와 일일 후보는 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/`에만 있다(위키·라이브러리·Graphify 대상 아님). 구현은 `.scripts/bin/discovery_cache.py`(스키마·검증·정규화·라이브러리 대조·학회 참고·CLI)와 `webui/discovery.py`(읽기 API·검색·등록 작업·Keep 작성기), 라우팅은 `webui/server.py`다. 이 화면의 GET 라우트는 정본 파일을 수정하지 않는다(아래 재시작 정합만 캐시 파일을 고친다). 검색(`POST /api/discovery/searches`)은 에이전트 작업으로 실행하고 결과는 캐시에만 쓴다. 정본 파일(PDF·Keep·논문 JSON·인덱스)은 사용자가 후보를 채택했을 때만 서버가 쓴다: "Keep에 담기"(`POST /api/discovery/keep`)와 "등록"(`POST /api/discovery/register`). 아래 "후보 채택" 절들을 본다.
+
+### 캐시 위치·안전
+
+```
+00-Inbox/discovery/
+  README.md                  # Git 추적(유일)
+  daily/{YYYY-MM-DD}.json    # Daily — daily-digest-loop가 discovery_cache.py daily-write로 기록
+  searches/{search_id}.json  # SearchSession — 검색 1회 = 파일 1개 (mode: search | related)
+```
+
+- 읽고 쓰기 전에 `00-Inbox`·`discovery`·`daily|searches`가 심볼릭 링크가 아닌 실제 디렉터리이고 실제 경로가 정확히 저장소의 그 경로인지 확인한다. 아니면 500 `cache_unsafe`다. 캐시 파일은 링크를 따라가지 않고(`O_NOFOLLOW|O_NONBLOCK`) 열며 일반 파일이 아니면 `cache_unsafe`다(목록에서는 그 파일만 `errors`). 폴더가 없으면 목록은 빈 값, 상세는 404다. 쓰기만 폴더를 만든다.
+- 쓰기는 임시 파일 + 교체(`harness_common.write_json_atomic`)로 원자적이다. `daily-write`(바꾸기 없음)는 임시 파일을 `os.link`로 게시해 이미 있는 날짜를 덮어쓰지 않는다. 서버 쪽 읽기-수정-쓰기는 모듈 잠금 `webui/discovery.LOCK` 하나 아래에서 한다.
+- 일일 파일은 다른 프로세스(`discovery_cache.py daily-write --replace`)도 읽고-합쳐-쓰므로 날짜별 프로세스 간 잠금 `discovery_cache.daily_lock`(`daily/.{YYYY-MM-DD}.lock`에 배타 `fcntl.flock`, 링크를 따라가지 않고 `0600`으로 만들며 지우지 않음, 심볼릭 링크·일반 파일 아님이면 `cache_unsafe`)을 쓴다. CLI `daily-write`는 이전 파일을 읽을 때부터 기록까지, 서버는 일일 후보의 상태 변경·Keep·등록 게시에서 `LOCK` 다음에 이 잠금을 쥔다. 그래서 `--replace`가 그사이 WebUI가 저장한 후보 상태를 지우지 않는다. 검색 기록은 이 서버만 쓰므로 `LOCK`만 쓴다.
+- 정적 파일로 제공하지 않는다(아래 "정적 파일"). 캐시는 이 API로만 읽는다.
+
+### 스키마
+
+문서용 JSON Schema는 [discovery-cache.schema.json](discovery-cache.schema.json)이고 정본은 `discovery_cache.py`의 검증 함수다. `schema_version`은 `"1.0"`이다.
+
+```jsonc
+// Candidate — 저장 형식(모든 키가 항상 있다)
+{"candidate_id": "c_<12hex>", "title": "…(≤500)", "authors": ["…"](≤50), "year": 2026 | null, "venue": "…" | null,
+ "publication": {"status": "published|accepted|preprint|unknown", "verified": false, "verification_sources": ["…"](≤10)},
+ "citations": 12 | null, "ids": {"arXiv": "2603.25158" | null, "DOI": "10.…" | null, "S2": "…" | null, "OpenAlex": "…" | null},
+ "url": "https://…" | null, "abstract": "…(≤5000)" | null, "relevance": "…(1–2문장, ≤600)",
+ "sources": ["s2|arxiv|openalex|web"], "suggested_category": "wifi-csi|game-ai|agent-ai|computer-vision|other" | null,
+ "topics": ["…"](≤10), "conference_ref": {"abbr": "EMNLP", "name": "…", "score": 0.95 | null} | null,
+ "status": "new|keep|registered|skipped", "status_updated_at": "…" | null, "slug": "…" | null,
+ "library": {"slug": "…", "match": "id|title"} | null}   // library는 읽기 응답에만 있다(저장 안 함)
+
+// Daily — daily/{date}.json
+{"schema_version": "1.0", "date": "2026-11-07", "created_at": "2026-11-07T00:00:00+00:00", "plan_path": "03-Trends/daily/2026-11-07-plan.md" | null,
+ "slots": [{"slot": "computer-vision|multimodal|interest", "topic": "…" | null, "candidate": Candidate | null, "unfilled_reason": "…" | null}],
+ "report": {"queries": ["…"], "sources": ["…"], "coverage_gaps": ["…"], "notes": "…"}}
+
+// SearchSession — searches/{search_id}.json (M1은 읽기만, 생성은 M2)
+{"schema_version": "1.0", "search_id": "s_<12hex>", "mode": "search|related", "created_at": "…",
+ "status": "queued|running|completed|failed|cancelled", "job_id": "…" | null,
+ "request": {"query", "year_from", "year_to", "limit", "category_hint", "anchors": [slug], "verified_only"}   // mode search
+          | {"kind": "refs|cites", "paper": {"slug": "…" | null, "title", "ids": {…}}, "limit"},            // mode related
+ "agent": {"agent", "model", "selector"} | null,
+ "report": {"queries", "sources", "anchors": [{"title", "ids"}], "coverage_gaps", "excluded_count", "notes"} | null,
+ "candidates": [Candidate], "error": {"message", "kind"} | null, "duration_ms": 1234 | null}
+```
+
+- **한도**: 제목 500·초록 5,000·관련 이유 600·저자 50명(각 200)·주제 10개(각 100)·검증 출처 10개(각 500)·venue 300·`ids` 각 200·`url` 2,000·슬롯 주제 200·미채움 이유 600·보고 목록 50개(각 500)·notes 5,000·`plan_path` 300(문자 수).
+- **검증**(`validate_candidate`·`validate_daily`·`validate_session`): 구조·타입·열거값·필수 키와 위 한도를 본다. 한도를 넘으면 오류다(저장된 파일·`validate` 명령·쓰기 직전 검사). 알 수 없는 키는 오류다. Daily의 `slots`는 정확히 3개이고 `computer-vision`·`multimodal`·`interest`가 하나씩이다(입력 순서 무관, 저장은 이 순서). 후보가 `null`인 슬롯은 `unfilled_reason`이 비어 있으면 안 된다. 같은 날 두 슬롯이 같은 `candidate_id`면 오류다. `year`는 1800–2100, `ids.arXiv`·`ids.DOI`는 형식이 맞아야 한다. `plan_path`는 `/`로 시작하지 않고 `..`·역슬래시가 없는 저장소 상대 경로다.
+- **정규화**(`normalize_candidate`·`prepare_daily`): 신뢰하지 않는 생산자 입력(에이전트 출력, `daily-write` 입력)은 한도 없이 구조만 검증(`limits=False`)한 뒤 제어문자(탭·줄바꿈 제외) 제거, 한 줄 필드 공백 축약, 한도 초과 **잘라냄**으로 정리한다. 결과는 위 검증을 통과한다. `url`은 `https://`가 아니면 `null`. DOI는 `10\.\d{4,9}/\S+`(대소문자 유지, 끝 문장부호 제거), arXiv는 `\d{4}\.\d{4,5}`(버전·`arXiv:`·URL 제거).
+- **candidate_id**: `"c_" + sha256(key)[:12]`, key는 `doi:<casefold DOI>` > `arxiv:<버전 제거 id>` > `s2:<id casefold>` > `title:<정규화 제목>`. 정규화 제목은 NFKC → casefold → 영숫자 외 문자를 공백으로 → 공백 축약이다. 한 세션 안 중복은 `merge_candidates`가 처음 항목으로 합치고 `sources`를 합집합으로 만든다(DOI 대소문자만 다른 두 후보는 같은 후보).
+- **파생 키**: 생산자는 `candidate_id`·`status`·`status_updated_at`·`slug`·`conference_ref`·`library`를 생략할 수 있다. 넣어도 무시하고 다시 계산한다(`status: "new"`).
+- **상태**: 저장 상태는 `new`·`keep`·`registered`·`skipped`다. 응답의 `library`가 있으면 화면은 저장값과 상관없이 "등록됨"으로 보인다(저장값은 유지). `skipped`는 기본 숨김이다.
+
+### 라이브러리 대조 (`library_index`·`library_match`)
+
+`01-Papers/library/*.json`마다 arXiv id(`paper_id`의 `arXiv:` 접두, `source.urls`의 `arxiv.org/abs|pdf/<id>`, arXiv DOI `10.48550/arXiv.<id>`), DOI(`paper_id`의 `doi:` 접두, `source.urls`의 `doi.org/…`, `publication.verification_sources` 문자열 안의 DOI), S2(`paper_id`가 40자리 16진수), 정규화 제목을 모은다. 후보의 DOI·arXiv·S2 중 하나가 맞으면 `{"slug", "match": "id"}`, 아니면 정규화 제목이 같으면 `{"slug", "match": "title"}`(`paper_record.py init`도 casefold 제목 중복을 거부하므로 보유로 본다), 없으면 `null`이다. 색인은 파일 이름·크기·mtime이 바뀔 때만 다시 만든다. 읽지 못한 레코드는 색인의 `errors`에 남고 대조에서 빠진다.
+
+### 학회 참고 (`conference_ref`, 표시 라벨 "참고")
+
+`01-Papers/reference/cs-conferences.csv`(`약자`·`학회명`·`평균 (정규화)`)에서 venue에 맞는 행을 찾는다. 품질 판정이 아니라 참고 목록이다. 상세 응답은 저장값 대신 현재 CSV로 다시 계산한다(파일은 고치지 않음). CSV가 없으면 `null`이다.
+
+- 약자는 단어 경계로 찾는다. 대문자가 2개 이상인 약자(`ACL`, `NeurIPS`)는 대소문자를 구분하고, 나머지 단어(`Findings`)는 구분하지 않는다. `/`는 대안(`NeurIPS/NIPS`, `FSE/ESEC`)이다.
+- 맞은 단어가 가장 많은 약자가 이긴다(`Findings of ACL 2025` → `ACL Findings`). 서로 다른 학회가 동점이면 `null`이다(예: `FSE`).
+- 약자가 없으면 15자 이상인 정규화 학회명(끝 괄호 약자 제외)이 venue에 들어 있어야 한다.
+- `(oral)`·`(poster)`·`(spotlight)` 행: venue에 그 단어가 있으면 그 행, 없으면 `{"abbr": "CVPR", "name": <형식 제외 학회명>, "score": <변형 중 최솟값>}`.
+- venue에 `workshop`이 있고 맞은 학회명에 없으면 `null`이다.
+
+### `GET /api/discovery/daily`
+
+```jsonc
+{"days": [{"date": "2026-11-07", "created_at": "…" | null, "filled": 2,
+           "slots": [{"slot": "computer-vision", "title": "…" | null, "status": "new" | null,
+                      "library": {"slug", "match"} | null}]}],   // slots는 SLOTS 순서 3개, 미채움이면 title·status·library null
+ "errors": [{"file": "00-Inbox/discovery/daily/2026-11-06.json", "error": "…"}]}
+```
+
+- 최신 날짜 먼저. `daily/*.json`만 읽는다. 파일 이름이 실제 날짜가 아니거나, JSON이 깨졌거나, 스키마가 틀렸거나, `date`가 파일 이름과 다르거나, 일반 파일이 아니면 그 파일만 `errors`(`error` 500자 이하)에 넣고 나머지는 그대로 준다.
+- `status`는 저장값이다. 표시 상태 규칙은 위 "상태"를 따른다.
+
+### `GET /api/discovery/daily/{date}`
+
+200 `{"daily": Daily, "plan_href": "/03-Trends/…" | null}`. 각 후보는 모든 키를 갖추고 `library`와 다시 계산한 `conference_ref`가 붙는다. `plan_href`는 `plan_path`를 "정적 파일" 규칙으로 이 서버가 제공할 때만 URL이다(`/api/harness`의 `hrefs`와 같은 정책).
+
+| 상태 | 코드 | 조건 |
+|---|---|---|
+| 400 | `bad_request` | `YYYY-MM-DD`가 아니거나 없는 날짜(`2026-02-30`) |
+| 404 | `not_found` | 그 날짜 파일이 없음(캐시 폴더 없음 포함) |
+| 500 | `cache_corrupt` | JSON 깨짐, 스키마 오류, `date`와 파일 이름 불일치 |
+| 500 | `cache_unsafe` | 위 "캐시 위치·안전" 위반 |
+
+### `GET /api/discovery/searches`, `GET /api/discovery/searches/{id}`
+
+```jsonc
+// 목록 — created_at 최신순
+{"searches": [{"search_id": "s_…", "mode": "search|related", "created_at": "…", "status": "…",
+               "query": "…" | null,          // mode search일 때만
+               "kind": "refs|cites" | null,  // mode related일 때만
+               "paper_title": "…" | null,    // mode related일 때만(기준 논문 제목)
+               "candidate_count": 7, "job_id": "…" | null}],
+ "errors": [{"file", "error"}]}
+// 상세
+{"search": SearchSession}   // 각 후보에 library·conference_ref(다시 계산)
+```
+
+- 재시작 정합: 목록·상세·삭제에서 읽을 때 `status`가 `queued`·`running`인데 `job_id`가 없거나 브로커가 모르는 작업이면 `status: "failed"`, `error: {"message": "서버가 재시작되어 검색이 중단되었습니다. 다시 실행하세요.", "kind": "interrupted"}`로 고쳐 저장한다. 대기 중에 취소되어 실행되지 않은 작업이면 `cancelled`로 고쳐 저장한다. 브로커에서 이미 끝난 작업(`completed`·`failed`·`cancelled`)이면 마지막 저장이 실패한 것이므로 `status: "failed"`, `error: {"message": "검색은 끝났지만 결과를 검색 기록에 저장하지 못했습니다. 다시 실행하세요.", "kind": "persist_failed"}`(`discovery_cache.PERSIST_FAILED_ERROR`)로 고쳐 저장한다(`webui/discovery.reconcile_session`). 그래서 저장 실패가 새 검색·삭제를 막지 않는다.
+- 상세 오류: `s_<12hex>`가 아니면 400 `bad_request`, 없으면 404 `not_found`, 깨진 파일 500 `cache_corrupt`, 경로 위반 500 `cache_unsafe`. 목록에서는 깨진 파일·잘못된 이름만 `errors`로 간다.
+- 삭제(`DELETE /api/discovery/searches/{id}`, 본문 `{}`): 200 `{"deleted": "s_…"}`. 잘못된 id 400 `bad_request`, 없음 404 `not_found`, `queued`·`running`이면 409 `search_active`(먼저 `POST /api/jobs/{job_id}/cancel`), 경로 위반 500 `cache_unsafe`. 스키마가 깨진 파일도 지울 수 있다. 자동 만료는 없다.
+
+### `POST /api/discovery/searches`
+
+표준 가드(CSRF, Origin, JSON, 64 KiB)를 거친다.
+
+```jsonc
+// 요청 — query만 필수. 생략하거나 null이면 기본값, 모르는 키는 400
+{"query": "WiFi CSI human pose estimation", "year_from": 2022 | null, "year_to": 2026 | null,
+ "limit": 10, "category_hint": "wifi-csi|game-ai|agent-ai|computer-vision|other" | null,
+ "anchors": ["2026-ni-…"], "verified_only": false}
+// 202
+{"job": JobRecord,          // kind "discovery.search", role "paper-searcher", agent = 선택 실행기
+ "search": SearchSession}   // status "queued", job_id, request(정규화), agent {agent, model, selector}, report null, candidates []
+```
+
+| 상태 | 코드 | 조건 |
+|---|---|---|
+| 400 | `bad_request` | 객체가 아님·모르는 키, `query`가 제어문자 제거·공백 축약 뒤 3–500자가 아님, `year_from`·`year_to`가 1900–(올해+1) 정수·null이 아니거나 from > to, `limit`이 1–30 정수가 아님(기본 10), `category_hint`가 5종·null이 아님, `anchors`가 문자열 목록이 아니거나 3개 초과·중복·slug 형식(`[a-z0-9-]+`) 위반·`01-Papers/library/{slug}.json` 없음, `verified_only`가 불리언이 아님 |
+| 409 | `search_active` | 브로커에 `discovery.search` 작업이 `queued`·`running`으로 있음(동시에 하나, 리뷰·질문 작업과는 병행). 검사와 제출은 `server.discovery_lock` 하나 아래에서 한다 |
+| 503 | `role_config_error` | 역할 설정(omp config)을 읽지 못함 |
+| 503 | `searcher_unavailable` | `paper-searcher`가 설정됐지만 준비된 후보가 없음, 또는 미설정인데 연결 에이전트가 준비되지 않음 |
+| 503 | `shutting_down` | 서버 종료 중 |
+| 500 | `cache_unsafe` · `write_failed` | 캐시 경로 위반, 세션 파일 쓰기 실패(제출한 작업은 취소) |
+
+제출 순서: 요청 검증 → 역할 해석 → (`discovery_lock`) 종료·단일 실행 검사 → (`discovery.LOCK`) `searches/` 폴더 확인 → `broker.submit` → `status: "queued"` 세션 기록. 기록이 실패하면 작업을 취소한다.
+
+### 역할 `paper-searcher`
+
+`.omp/agents/paper-searcher.md`(본문은 실행기의 시스템 프롬프트에 덧붙인다). 해석 규칙은 `paper-reader`와 같다: 설정을 읽지 못하면 503 `role_config_error`, 설정됐지만 준비된 후보가 없으면 503 `searcher_unavailable`(다른 모델로 대체하지 않음), **미설정이면 연결 에이전트(`.research-harness-agent.json`, 서버 고정 에이전트 우선)의 기본 모델**로 실행한다(omp의 `@paper-analysis`를 물려받지 않는다). 설정되면 후보 순서·사용 한도 시 다음 후보 이동은 "리뷰 역할"과 같다. `/api/status`의 `searcher_role`이 이 해석이다.
+
+### 작업 `discovery.search`
+
+- 레코드: `kind: "discovery.search"`, `role: "paper-searcher"`, `agent`는 선택 실행기. 제한 시간 900초(CLI `--max-time` 등은 900 + 30초 여유). 취소는 `POST /api/jobs/{id}/cancel`.
+- 작업 공간: 임시 폴더 `webui-discovery-*`(저장소 복사본이 아니다). 넣는 파일은 `paper.py`(`.scripts/bin/paper.py`), `search-protocol.md`, `SKILL.md`(`paper-search`), `cs-conferences.csv`(있을 때), `library.json`(라이브러리 레코드의 `slug`·`title`·`ids`), `request.json`, `anchors.json`(기준 논문의 `title`·`year`·`venue`·`ids`·`abstract` 1500자 이하), `schema.json`([discovery-search.schema.json](discovery-search.schema.json)). 작업이 끝나면 폴더를 지운다.
+- 답변: 스키마 JSON 객체 하나 `{"report": {queries, sources, anchors[{title, ids}], coverage_gaps, excluded_count, notes}, "candidates": [Candidate에서 파생 키를 뺀 형식]}`. claude는 `structured_output`을 먼저 쓰고, 없으면 결과 텍스트(코드 펜스 제거)를 파싱한다.
+- 처리(`discovery_cache.prepare_search_result`): 검증(`validate_search_output`) → 후보 정규화(제어문자 제거·길이 자르기·https 아닌 `url` 제거·`candidate_id`·`status: "new"`·`conference_ref`) → `candidate_id`로 합치기(답변 순서 = 관련도 순서, `sources` 합집합) → 앞 `limit`편. `library`는 저장하지 않고 읽을 때 계산한다.
+- 세션 상태: 작업이 시작되면 `running`, 종료 이벤트를 내보내기 **전에** 결과를 세션에 쓴다(클라이언트는 종료 이벤트를 받고 상세를 다시 읽으면 된다). 성공 → `completed`(`report`·`candidates`·`duration_ms`·관측된 `agent`). 실행기 오류 → `failed`, `error.kind`는 이벤트의 `kind`(`timeout`·`usage_limit`·`auth`·`process`·`other`). 답변이 JSON이 아니거나 스키마 검증에 실패하면 `failed`, `error.kind: "invalid_output"`, `report.notes`에 원문 앞 2000자를 남기고, 작업도 `result` 대신 `error`(`kind: "invalid_output"`)로 끝난다. 취소 → `cancelled`. 이 마지막 저장이 실패하면 작업은 성공 이벤트 대신 `error`(`kind: "persist_failed"`, "검색 결과를 검색 기록에 저장하지 못했습니다: …")로 끝나고(취소는 `cancelled` 그대로), 세션은 위 재시작 정합이 읽을 때 `persist_failed`로 고친다.
+- 서버 종료(`server_close`): `discovery_lock` 아래에서 `closing`을 세운 뒤 탐색 작업(`discovery.search`·`discovery.register`)을 취소하고, `reader.shutdown` 다음에 `discovery.shutdown`이 최대 5초 기다린다(SIGINT 2.5초 뒤 프로세스 그룹 SIGKILL). 시간 안에 끝나지 않은 검색은 다음 실행 때 재시작 정합으로 `interrupted`가 된다. 등록 작업은 저장 상태가 없으므로 후보는 원래 상태로 남는다.
+
+실행기별 명령(`research_agent.discovery_command`). 네트워크 허용 목록 `research_agent.DISCOVERY_DOMAINS`는 `search-protocol.md` §2의 18개 도메인이다.
+
+| 실행기 | 명령 핵심 | 네트워크 |
+|---|---|---|
+| claude | `--print --output-format stream-json --verbose --include-partial-messages --restricted --permission-mode dontAsk --tools Read,Glob,Grep,Bash,WebSearch,WebFetch --allowedTools Read,Glob,Grep,Bash,WebSearch,WebFetch(domain:<각 도메인>) --no-session-persistence --json-schema <인라인> --strict-mcp-config --mcp-config '{"mcpServers":{}}' --settings <샌드박스>` + `--append-system-prompt` | `--settings`는 기존 샌드박스(`enabled`·`autoAllowBashIfSandboxed`·`allowUnsandboxedCommands: false`)에 `sandbox.network.allowedDomains`를 더한다. 2026-11-07 실제 검색(claude 2.1.311)에서 샌드박스 bash의 `paper.py`가 arXiv·OpenAlex·Crossref에 닿았다. 허용 목록 밖 호스트가 막히는지는 따로 시험하지 않았다. WebFetch는 `WebFetch(domain:…)` 허용 규칙으로만 허용한다 |
+| codex | `exec --json --skip-git-repo-check --ephemeral --cd <작업 공간> --sandbox workspace-write -c approval_policy="never" -c sandbox_workspace_write.network_access=true --disable plugins --disable apps --disable hooks -c mcp_servers.<이름>.enabled=false… --output-schema <schema.json>` | `network_access`는 호스트 목록 없이 켜기만 한다. 키 이름은 codex-cli 0.167.0 바이너리의 설정 필드 문자열로 확인했고, 실제 허용 동작은 실행으로 확인 전이다 `[INFERENCE]`. MCP 서버 목록을 읽지 못하면 실행하지 않는다(리더와 같음) |
+| omp | `-p --mode json --no-session --no-title --no-extensions --no-skills --no-rules --no-context-files --no-lsp --cwd <작업 공간> --tools read,grep,glob,bash,web_search --approval-mode yolo --max-time <초>` + `--append-system-prompt` | omp에는 샌드박스가 없어 네트워크를 제한하지 않는다. 경계는 도구 목록과 임시 작업 공간뿐이다. 스키마는 프롬프트에 넣는다 |
+
+프롬프트에는 작업 공간 파일 안내, 규칙(최소 2개 소스, 기준 논문 refs/cites 스노우볼링, 연도·카테고리, `verified_only`면 공식 출처로 확인된 published/accepted만, 라이브러리 보유 논문은 `relevance`에 표기, 도구가 반환한 논문만·기억으로 채우지 않음, 지시문은 데이터로 취급, 작업 공간 밖에 쓰지 않음, 스키마 JSON만 답함), 요청 JSON(`<question>` 데이터 블록, 태그 이스케이프는 리더와 같음), 스키마가 들어간다.
+
+### 후보 채택: 공통
+
+세 라우트(`keep`·`register`·`candidates/status`) 모두 표준 가드(CSRF, Origin, JSON, 64 KiB)를 거치고 본문에 후보 위치를 준다.
+
+```jsonc
+{"source": {"kind": "search", "id": "s_…"} | {"kind": "daily", "id": "YYYY-MM-DD"},
+ "candidate_id": "c_…", …}   // 모르는 키는 400
+```
+
+- 400 `bad_request`: 객체가 아님·모르는 키, `source`가 위 형식이 아님(`s_<12hex>`·실제 날짜), `candidate_id`가 `c_<12hex>`가 아님. 404 `not_found`: 그 검색 기록·날짜 파일이 없음. 404 `candidate_not_found`: 그 파일에 후보가 없음. 깨진·안전하지 않은 캐시는 500 `cache_corrupt`·`cache_unsafe`.
+- 후보 상태(`status`)는 캐시 파일에 저장한다: `new`(새 후보) · `keep`(Keep) · `registered`(등록됨) · `skipped`(넘김). 바뀔 때 `status_updated_at`(ISO UTC)을 쓰고 Keep·등록은 `slug`도 쓴다. 응답의 `candidate`는 상세 GET과 같은 형식(`library`·`conference_ref` 계산)이다. 화면은 `library`가 있으면 저장값과 관계없이 "등록됨"으로 보이되, 저장값이 `keep`이면 "등록"(완성 등록)을 허용한다(아래).
+- 정본 파일 쓰기(`01-Papers/library/*.json`, `keep.md`, `index.md`, `pdfs/`)와 캐시 갱신은 `discovery.LOCK` 한 임계구역에서 하고, 등록 게시는 그 앞에 `reviews.LOCK`도 잡는다. keep.md·index.md는 임시 파일 + `os.replace`(기존 권한 유지)로 바꾼다. 중간 단계가 실패하면 그때까지 쓴 파일을 이전 내용으로 되돌린다(만든 파일은 지운다).
+- slug: `{year 또는 0000}-{paper.surname(제1저자)}-{paper.slugify(제목)}`. 레코드는 이 저장소의 `.scripts/bin/paper_record.py init`(`--reading-status keep`, `metadata_status: partial`, paper_id `arXiv:<id>` > `DOI:<doi>` > `local:<slug>`, `source.urls`는 후보 https URL·arXiv·doi.org·S2 페이지)으로 만든다. `init`이 종료 코드 3(같은 paper_id 또는 casefold 제목)이면 409 `already_in_library`다.
+
+### `POST /api/discovery/keep` — Keep에 담기
+
+본문에 선택 `reason`(문자열|null). 제어문자 제거·공백 축약 뒤 500자까지 자르고, 비면 "사용자 지정 이유 없음". 화면은 후보의 `relevance`로 미리 채운다.
+
+```jsonc
+// 200
+{"candidate": Candidate,   // status "keep", slug
+ "slug": "2026-ni-trace2skill-…", "keep_path": "01-Papers/keep.md", "record_path": "01-Papers/library/{slug}.json"}
+```
+
+순서: 라이브러리 대조(§"라이브러리 대조")에 걸리거나 `library/{slug}.json`이 있으면 409 `already_in_library` → keep.md에 같은 논문 항목(`### ` 제목 정규화 일치, 또는 항목 본문에 같은 arXiv id·DOI)이 있으면 409 `already_in_keep` → `paper_record.py init`(카테고리는 후보 `suggested_category`, 없으면 `other`; PDF 없음) → keep.md 항목 삽입 → 후보 `status: "keep"`. 레코드를 만든 뒤 실패하면 레코드를 지우고 keep.md를 되돌린 뒤 500 `write_failed`. **`01-Papers/index.md`는 고치지 않으며 리뷰 큐 검사도 하지 않는다**(사용자 결정).
+
+keep.md 항목 형식은 `webui/discovery.py`의 `KEEP_ENTRY`가 정본이다. `## 읽을 논문` 바로 아래(최신이 위)에 넣고, 그 절이 없으면 파일 끝에 절을 만들고, 파일이 없으면 기존 머리말(`# 킵 리스트` + 설명)로 만든다.
+
+```markdown
+### {제목}
+
+- 추가일: {KST YYYY-MM-DD}
+- 출처: {venue 또는 "출처 미확인"} · [arXiv:{id}](https://arxiv.org/abs/{id}) · [DOI](https://doi.org/{doi}) · [S2](https://www.semanticscholar.org/paper/{s2})
+- PDF: 없음
+- 리뷰: 없음
+- 상태: 킵
+- 이유: {reason}
+```
+
+`출처`의 링크는 있는 것만 ` · `로 잇는다. 등록이 쓰는 항목은 `PDF: [원문](pdfs/{category}/{slug}.pdf)`(PDF가 있을 때)이고 `이유`는 후보의 `relevance`다.
+
+### `POST /api/discovery/register` — 등록
+
+본문 `category`: `wifi-csi`·`game-ai`·`agent-ai`·`computer-vision`·`other`(화면은 `suggested_category`를 미리 고른다).
+
+```jsonc
+// 202
+{"job": JobRecord,   // kind "discovery.register", role "paper-searcher", slug
+ "candidate": Candidate, "slug": "…"}
+```
+
+| 상태 | 코드 | 조건 |
+|---|---|---|
+| 400 | `bad_request` | 공통 + `category`가 5종이 아님 |
+| 409 | `already_in_library` | 라이브러리 대조에 걸렸는데 그 레코드가 "완성 등록" 대상이 아님, 또는 `library/{slug}.json`이 이미 있음 |
+| 409 | `review_active` | 리뷰 큐(`04-Projects/review-queue/queue.json`)에 `queued`·`running` 작업이 있음. 리뷰 게시는 라이브 `index.md`가 바뀌면 실패하므로 등록하지 않는다 |
+| 409 | `register_active` | 같은 slug의 `discovery.register` 작업이 `queued`·`running`(검사와 제출은 `discovery_lock` 아래) |
+| 503 | `role_config_error` · `searcher_unavailable` · `shutting_down` | 검색과 같은 역할 해석·종료 규칙 |
+
+**완성 등록(Keep 뒤 등록)**: 대조된 레코드가 `reading_status: "keep"`이고 `source.pdf_path`가 비어 있으며 리뷰가 완료되지 않았으면 409 대신 그 레코드의 slug로 등록한다. 레코드는 새로 만들지 않고 카테고리(선택값)·PDF 경로·게재 정보·빈 `topics`/`one_line_summary`·`source.urls`를 보강하고, keep.md의 기존 항목은 `- PDF: 없음` 줄만 PDF 링크로 바꾸며(새 항목 없음), index.md에는 같은 제목 행이 없을 때만 행을 더한다.
+
+### 작업 `discovery.register`
+
+- 레코드: `kind: "discovery.register"`, `role: "paper-searcher"`, `slug`, `agent`는 선택 실행기. 제한 시간 600초(CLI 여유 +30초). 실행기 명령·네트워크는 `discovery.search`와 같다(`research_agent.discovery_command`; codex `workspace-write`, claude 샌드박스는 작업 폴더 쓰기 허용). 취소는 `POST /api/jobs/{id}/cancel`.
+- 작업 공간: 임시 폴더 `webui-discovery-*`에 `paper.py`, `search-protocol.md`, `schema.json`([discovery-register.schema.json](discovery-register.schema.json)), `candidate.json`(후보의 제목·저자·연도·venue·publication·ids·url·초록·topics와 고른 `category`), 빈 `out/`. 저장소는 건드리지 않는다.
+- 지시(`.omp/agents/paper-searcher.md` "등록 모드"): arXiv id면 `python3 paper.py pdf <id> --out out`, 아니면 허용 도메인의 공식·오픈액세스 PDF만 `out/`에 저장, 페이월 우회·비공식 사본 금지(없으면 `pdf_file: null`과 이유), venue·게재 상태를 공식 출처로 재확인, `topics` 3–8개, `one_line_summary`(초록 근거 한국어 한 문장 200자 이하, 판단 금지).
+- 답변 `{"pdf_file": "out/…"|null, "pdf_source_url": str|null, "publication": {"venue": str|null, "status", "verified", "verification_sources"}, "topics": [str], "one_line_summary": str, "notes": str}`. 형식이 틀리면 작업은 `error`(`kind: "invalid_output"`)로 끝나고 아무것도 쓰지 않는다.
+- 게시(`publish_registration`, `reviews.LOCK` → `discovery.LOCK` → 일일 후보면 `daily_lock`): 리뷰 큐가 활성이면 `error`(`kind: "review_active"`) → 후보가 아직 같은 slug로 등록 가능한지 다시 확인(아니면 `kind: "already_in_library"`) → PDF 검사 후 `01-Papers/pdfs/{category}/{slug}.pdf`로 배타적 생성(이미 있으면 덮어쓰지 않고 그 파일을 쓴다) → 레코드 `init`(완성 등록이면 기존 레코드) + `publication.verified`·`verification_sources`·`one_line_summary` 보강 → `paper_record.validate_record` → keep.md 항목(또는 PDF 줄) → `index.md` 표 마지막 행 뒤에 `| 읽을 예정 | {연도\|–} | {제목} | {제1저자 성} | {venue\|–} | – | – | {topics} |`(`\|` 이스케이프, 같은 제목 행이 있으면 생략, 표·파일이 없으면 만든다) → 후보 `status: "registered"`, `slug`. 한 단계라도 실패하면 쓴 파일을 모두 되돌리고 `error`(`kind: "publish_failed"`). 그 뒤 `wiki.py index`와 `wiki.py log --op ingest --title <제목> --path 01-Papers/library/{slug}.json`을 실행한다(실패는 `warnings`, 되돌리지 않음).
+- PDF 검사(`checked_pdf`): `pdf_file`은 작업 공간 기준 `out/…` 상대 경로(절대 경로는 글자 그대로 작업 공간 아래일 때만, `..` 불가)다. 링크를 따라가지 않고 디렉터리 디스크립터로 연다: 작업 공간(`resolve()`)을 연 뒤 `out`과 그 아래 각 폴더를 `dir_fd` + `O_DIRECTORY|O_NOFOLLOW`로, 파일을 `O_NOFOLLOW|O_NONBLOCK`으로 열고 `fstat`으로 일반 파일인지 본다. 그래서 `out`이 정확히 작업 공간의 실제 폴더여야 하고, 에이전트가 `out`이나 하위 폴더를 바깥을 가리키는 심볼릭 링크로 바꾸면 읽지 않는다. 그다음 비어 있지 않음·50 MiB 이하·`%PDF` 시그니처를 확인한다. 하나라도 어기면 아래처럼 메타데이터만 등록한다.
+- **PDF 없는 등록(Q18)**: `pdf_file`이 null이거나 PDF 검사에 실패하면 실패로 끝내지 않고 메타데이터만 등록한다(`source.pdf_path: null`, keep.md `PDF: 없음`). 라이브러리 카드는 "PDF 필요"를 표시한다. 이유는 `warnings`에 남는다("PDF를 쓰지 않았습니다: …").
+- 후보 상태는 종료 이벤트를 내보내기 **전에** 저장한다. 성공 종료 이벤트는 `result`에 `registration`을 더한다: `{"slug", "record_path", "pdf_path": "01-Papers/pdfs/{category}/{slug}.pdf"|null, "keep_path", "index_path": "01-Papers/index.md", "upgraded": bool, "warnings": [str], "notes": str}`. 게시가 시작된 뒤 도착한 취소는 게시를 멈추지 않는다(작업은 `cancelled`로 기록되지만 후보는 `registered`).
+- 정적 카탈로그 `100-views/paper-library.html`은 다시 만들지 않는다(WebUI는 JSON을 직접 읽고, 다음 리뷰 게시 때 재생성된다).
+
+### `POST /api/discovery/candidates/status` — 넘김·복원
+
+본문 `status`는 `"skipped"`(넘김, 기본 목록에서 숨김) 또는 `"new"`(복원)만 받는다. 그 밖의 값(`keep`·`registered` 포함)은 400 `bad_request`. 저장값이 `keep`·`registered`이거나 라이브러리 대조에 걸린 후보는 409 `candidate_adopted`. 성공하면 200 `{"candidate"}`(같은 값이면 파일을 고치지 않는다).
+
+### `POST /api/discovery/related` — 인용·피인용 (M4)
+
+서버가 Semantic Scholar(S2) references·citations를 **직접, 동기로** 조회해 `related` 세션 하나를 만든다(Q11; 에이전트 작업·작업 레코드 없음). 표준 가드(CSRF, Origin, JSON, 64 KiB)를 거친다. 구현은 `webui/discovery.create_related`와 `paper.related_rows`(CLI `paper.py refs|cites`와 같은 함수).
+
+```jsonc
+// 요청 — 모르는 키는 400
+{"kind": "refs" | "cites",            // refs: 기준 논문이 인용한 문헌, cites: 기준 논문을 인용한 문헌
+ "paper": {"slug": "2026-ni-…"}        // 라이브러리 논문: 레코드의 제목·식별자(§라이브러리 대조와 같은 출처)를 쓴다
+        | {"title": "…", "ids": {"arXiv": "…"|null, "DOI": "…"|null, "S2": "…"|null, "OpenAlex": "…"|null}},  // 탐색 후보
+ "limit": 1–50}                        // 생략·null이면 25
+// 201
+{"search": SearchSession}  // 아래 형식, 각 후보에 library·conference_ref
+```
+
+- S2 조회 id: `ids.S2`(영숫자) > `arXiv:<id>` > `DOI:<doi>`. 셋 다 없으면 400 `no_identifier`(OpenAlex id만으로는 조회하지 않는다).
+- 세션: `mode: "related"`, `status: "completed"`, `job_id: null`, `agent: null`, `request: {"kind", "paper": {"slug": str|null, "title", "ids"}, "limit"}`, `report: {"queries": ["S2 references|citations <조회 id>"], "sources": ["s2"], "anchors": [{"title", "ids"}], "coverage_gaps": [응답이 limit만큼 차면 "앞 N건만 조회" 안내], "excluded_count": 제목 없는 행·중복 수, "notes"}`, `error: null`, `duration_ms`. 실패하면 세션을 만들지 않는다.
+- 후보: S2 응답만으로 만든다(판단을 지어내지 않음). `publication`은 `{"status": "unknown", "verified": false, "verification_sources": []}`, `sources: ["s2"]`, `suggested_category: null`, `topics: []`, `relevance`는 관계와 S2 인용 수만 적은 고정 문장 — `"S2 참고문헌 — 기준 논문이 인용한 문헌. S2 인용 수 1,234회."` / `"S2 피인용 — 기준 논문을 인용한 문헌. S2 인용 수 정보 없음."`. 순서는 S2 인용 수 내림차순. 이후 Keep·등록·넘김은 일반 검색 후보와 같다(`source: {"kind": "search", "id": search_id}`).
+- 호출 예산: 요청 1회 timeout 12초, 429만 2초 대기 뒤 1회 재시도(최악 ≈26초), 전체 데드라인 30초(서버 전체 세마포어 대기 포함) 초과 시 504. 서버 전체에서 S2 호출은 한 번에 하나, 앞 호출이 끝나고 1초 이상 지난 뒤 다음 호출. 성공한 응답은 `(조회 id, kind, limit)` 키로 서버 메모리에 10분·최대 200건 캐시(적중하면 S2를 부르지 않고 `notes`에 캐시 결과임을 적는다; 세션 파일은 매번 새로 만든다). 클라이언트 timeout은 60초.
+
+| 상태 | 코드 | 조건 |
+|---|---|---|
+| 400 | `bad_request` | 본문 형식(kind, limit 1–50, paper 키, 잘못된 slug, 빈 title, ids 형식) |
+| 400 | `no_identifier` | 기준 논문에 arXiv·DOI·S2 식별자가 없음 |
+| 404 | `not_found` | slug의 라이브러리 레코드가 없거나 읽을 수 없음, 또는 S2가 404·400(그 id의 논문 없음) |
+| 503 | `upstream_rate_limited` | S2 HTTP 429(재시도 뒤). 메시지는 잠시 뒤 재시도와, 서버 실행 환경에 `S2_API_KEY` 설정 후 서버 재시작을 안내한다(키가 이미 있으면 재시도만) |
+| 502 | `upstream_unavailable` | 네트워크 실패, S2 5xx 등 그 밖의 HTTP 오류, JSON·응답 형식 오류 |
+| 504 | `upstream_timeout` | 소켓 시간 초과 또는 30초 데드라인 초과 |
+| 500 | `cache_unsafe`·`write_failed` | 캐시 경로 위반(조회 전에 검사), 세션 저장 실패 |
+
+**서버의 외부 통신 범위**: WebUI 서버 프로세스가 직접 하는 외부 호출은 이 라우트의 `https://api.semanticscholar.org/graph/v1/paper/{id}/references|citations` GET **한 가지**뿐이다. 서버 실행 환경에 `S2_API_KEY`가 있으면 `paper.py`가 그 요청에만 `x-api-key` 헤더로 붙인다. WebUI는 키를 저장·로그·응답·브라우저 전송하지 않는다(429 안내 문구도 키 유무만 반영). 그 밖의 외부 접근(검색·등록)은 자식 CLI(`discovery.search`·`discovery.register` 작업)에서만 일어나며 허용 도메인은 [search-protocol.md](search-protocol.md)를 따른다.
+
+### CLI `discovery_cache.py`
+
+표준 라이브러리만 쓴다. 전역 옵션 `--root PATH`(기본: 이 저장소)는 하위 명령 앞에 둔다.
+
+| 명령 | 동작 | 종료 코드 |
+|---|---|---|
+| `validate <path>…` | 파일마다 `search_id`가 있으면 SearchSession, 아니면 Daily로 검증 | 0 모두 유효, 2 하나라도 무효·읽기 실패 |
+| `daily-write <input.json> [--replace]` | 검증·정규화·`candidate_id`·`status: "new"`·`conference_ref`·`created_at`(없으면 지금) 부여 후 `daily/{date}.json`에 원자적으로 기록, 경로 출력. `--replace`면 기존 파일의 같은 `candidate_id` 후보의 `status`·`status_updated_at`·`slug`를 유지. 이전 파일 읽기부터 기록까지 그 날짜의 `daily_lock`을 쥔다(WebUI 상태 변경과 직렬화) | 0 기록, 2 JSON·스키마 오류, 3 그 날짜 파일이 이미 있음(`--replace` 없음), 1 캐시 경로 위반·입출력 오류 |
+| `library-match <path>` | 후보·Daily·SearchSession 파일의 후보를 라이브러리와 대조해 `{"matches": [{"candidate_id", "title", "key", "library"}], "errors"}` 출력(디버그) | 0, 읽기 실패 1·2 |
+
 ## 정적 파일
 
 - `webui/reviews.py`의 `ALLOWED_ROOTS`(예: `01-Papers/`, `docs/`, `100-views/`, `.scripts/`)와 `ALLOWED_ROOT_FILES`(`AGENTS.md`, `CLAUDE.md`, `README.md`) 아래만 제공한다.
@@ -397,17 +683,18 @@ WebUI `#/ideas` 화면의 데이터다. 아이디어 레코드는 정적 `100-vi
 - 심볼릭 링크를 따라 resolve한 경로가 저장소 밖이거나 허용 목록 밖이면 404다.
 - `.git`, `.env*`, `.mcp.json`, `.secrets`, `credentials.json`, `.claude`, `.codex`, `.research-harness-agent.json`, `reader-threads`(논문 리더 스레드)는 허용 경로 안에 있어도 404다.
 - `01-Papers/reviews/` 아래 어느 깊이든 `figures` 조각(대소문자 무시)이 있는 경로와 그 아래 모든 경로(리뷰 그림 `*.html`·`*.svg`, 하위 폴더 리뷰의 `…/nested/figures/` 포함)는 404다. 심볼릭 링크의 실제 대상이 그 아래여도 404다. 에이전트가 만든 HTML·SVG가 CSP 없이 같은 출처에서 실행되지 않도록, SVG만 위 "리뷰 그림" API로 제공한다.
+- `00-Inbox/discovery/` 아래 모든 경로(일일 후보·검색 기록 캐시, `README.md` 포함)는 404다(대소문자 무시, 심볼릭 링크의 실제 대상이 그 아래여도 404). 캐시는 위 "논문 탐색" API로만 읽는다.
 - 디렉터리 목록은 보여주지 않는다. 슬래시 없는 디렉터리 요청은 301로 슬래시를 붙이고, `index.html`이 없으면 404다.
 
 ## 작업 레코드
 
 ```json
-{"job_id": "…", "kind": "agent.ping|paper.ask|harness.verify|harness.tests", "status": "queued|running|completed|failed|cancelled",
+{"job_id": "…", "kind": "agent.ping|paper.ask|discovery.search|discovery.register|harness.verify|harness.tests", "status": "queued|running|completed|failed|cancelled",
  "created_at": "2026-11-03T07:00:00+00:00", "started_at": null, "ended_at": null,
  "agent": "claude", "cost_usd": null, "error": null, "last_seq": 0, "role": "paper-analyst"}
 ```
 
-`role`은 역할 작업(`agent.ping`의 `role`, `paper.ask`의 `paper-reader`)에만, `slug`는 `paper.ask`에만 있다. `harness.*` 작업은 `agent: null`이고 `role`·`slug`가 없다.
+`role`은 역할 작업(`agent.ping`의 `role`, `paper.ask`의 `paper-reader`, `discovery.*`의 `paper-searcher`)에만, `slug`는 `paper.ask`와 `discovery.register`에만 있다. `harness.*` 작업은 `agent: null`이고 `role`·`slug`가 없다.
 
 - 시각은 ISO-8601 UTC 초 단위다. 작업은 메모리에만 있으며 서버를 끄면 사라진다.
 - 동시에 최대 2개를 실행하고 나머지는 FIFO로 기다린다. 작업당 이벤트는 최근 10,000개까지 보관한다.

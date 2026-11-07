@@ -55,7 +55,7 @@
     {
       "id": "daily",
       "title": "일일 후보 → 사용자 채택",
-      "description": "후보는 채팅에만 제시합니다. 날짜별 주제 계획과 실제 반복 실행 시각은 서로 다른 관리 대상입니다.",
+      "description": "후보는 채팅으로 보고하고 Git에서 제외된 로컬 캐시에 기록합니다. 정본 저장은 사용자 채택 뒤에만 합니다. 날짜별 주제 계획과 실제 반복 실행 시각은 서로 다른 관리 대상입니다.",
       "steps": [
         {
           "skill": "paper-scheduler",
@@ -69,8 +69,8 @@
           "skill": "daily-digest-loop",
           "label": "후보 3편 탐색",
           "input": "날짜별 계획 · 관심 분야",
-          "output": "CV·멀티모달·관심 분야 후보를 채팅으로 보고",
-          "condition": "학회 발표·게재를 확인합니다. paper-search 탐색 절차와 paper-summary 형식을 내부에서 재사용하지만 채택 전 파일은 저장하지 않습니다."
+          "output": "CV·멀티모달·관심 분야 후보를 채팅으로 보고 · 00-Inbox/discovery/daily/{날짜}.json 캐시",
+          "condition": "학회 발표·게재를 확인합니다. paper-search 탐색 절차와 paper-summary 형식을 내부에서 재사용합니다. 캐시는 discovery_cache.py daily-write로만 쓰며 위키·라이브러리·Graphify 대상이 아닙니다. 채택 전에는 PDF·Keep·논문 JSON을 저장하지 않습니다."
         },
         {
           "kind": "gate",

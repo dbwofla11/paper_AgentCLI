@@ -680,6 +680,7 @@ class InstallerTests(unittest.TestCase):
                 ignore = (target / ".gitignore").read_text(encoding="utf-8")
                 managed = ignore.split(installer.IGNORE_START, 1)[1].split(installer.IGNORE_END, 1)[0]
                 self.assertIn("04-Projects/reader-threads/", managed.splitlines())
+                self.assertIn("00-Inbox/discovery/", managed.splitlines())
                 verifier = load("reader_harness_verifier", ".scripts/bin/verify_harness.py")
                 self.assertIn(ROOT / ".omp/agents/paper-reader.md", verifier.REQUIRED)
                 index = target / "wiki-index.md"

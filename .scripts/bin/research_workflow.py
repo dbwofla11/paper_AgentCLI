@@ -23,7 +23,7 @@ WORKFLOW = {
     "idea": {"next": "critical-validation", "reason": "아이디어의 방법·재현성·새로움을 독립 심사한다."},
     "experiment": {"next": "thought-experiment-runner", "reason": "승인된 가설을 작은 manifest 기반 실행으로 전환한다."},
     "draft": {"next": "paper-draft-logic-review", "reason": "논문 초안의 주장·근거·한계 연결을 검토한다."},
-    "daily": {"next": "daily-digest-loop", "reason": "CV·멀티모달·관심 분야에서 학회 게재 논문 후보 3편을 채팅으로 제시한다."},
+    "daily": {"next": "daily-digest-loop", "reason": "CV·멀티모달·관심 분야에서 학회 게재 논문 후보 3편을 채팅으로 제시하고 로컬 캐시에 기록한다."},
     "trend": {"next": "daily-digest-loop", "reason": "daily와 같은 일일 논문 후보 검색을 실행한다."},
 }
 

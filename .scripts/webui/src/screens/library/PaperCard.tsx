@@ -3,8 +3,10 @@ import { ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
 import * as m from 'motion/react-m';
 import type { ApiError } from '../../api/client';
 import type { PaperLabels, PaperSummary, ReviewQueueJob, VerificationStatus } from '../../api/types';
+import { RelatedMenu, RelatedNotice } from '../../components/RelatedMenu';
 import { formatCount, formatDateTime, type Tone } from '../../format';
 import { STATUS_HREF, paperHref } from '../../hooks/useHashRoute';
+import { useRelatedLookup } from '../../hooks/useRelatedLookup';
 import { DUR_ENTER, DUR_FILTER, EASE_OUT, staggerDelay } from '../../motion/tokens';
 import { categoryLabel, readingStatusLabel } from './stats';
 
@@ -28,7 +30,8 @@ const START_ERRORS: Record<string, string> = {
   bad_request: '논문 기록이나 PDF를 확인할 수 없습니다.',
 };
 
-function authorLine(authors: string[]): string {
+/** First three authors, then `외 N명` (also used by 탐색 candidate cards). */
+export function authorLine(authors: string[]): string {
   if (authors.length <= AUTHOR_LIMIT) return authors.join(', ');
   return `${authors.slice(0, AUTHOR_LIMIT).join(', ')} 외 ${formatCount(authors.length - AUTHOR_LIMIT)}명`;
 }
@@ -87,6 +90,7 @@ export function PaperCard({ paper, labels, queued, index, entrance, review }: Pa
   const failed = job !== null && job.status === 'failed';
   const canStart = paper.has_pdf && paper.review_needed && !reviewing;
   const stagger = entrance === 'stagger';
+  const related = useRelatedLookup({ slug: paper.slug });
 
   return (
     <m.li
@@ -131,8 +135,9 @@ export function PaperCard({ paper, labels, queued, index, entrance, review }: Pa
             </p>
           ) : null}
           <p className="paper-card-badges">
-            <span className="badge" data-tone={paper.has_pdf ? 'success' : 'neutral'}>
-              {paper.has_pdf ? 'PDF' : 'PDF 없음'}
+            {/* Metadata-only records (Keep, 등록 without an obtainable PDF) need a PDF before reading or review. */}
+            <span className="badge" data-tone={paper.has_pdf ? 'success' : 'warning'}>
+              {paper.has_pdf ? 'PDF' : 'PDF 필요'}
             </span>
             <span className="badge" data-tone={paper.has_review ? 'active' : 'neutral'}>
               {paper.has_review ? '리뷰' : '리뷰 없음'}
@@ -182,6 +187,7 @@ export function PaperCard({ paper, labels, queued, index, entrance, review }: Pa
             {START_ERRORS[review.error.code] ?? `리뷰를 시작하지 못했습니다. ${review.error.message}`}
           </p>
         ) : null}
+        <RelatedNotice lookup={related} className="paper-card-note" />
       </div>
 
       <div className="paper-card-actions">
@@ -202,6 +208,7 @@ export function PaperCard({ paper, labels, queued, index, entrance, review }: Pa
             <span className="visually-hidden"> (새 탭)</span>
           </a>
         ) : null}
+        <RelatedMenu lookup={related} describedBy={titleId} className="btn btn-tonal btn-small" />
         {canStart ? (
           <button
             type="button"

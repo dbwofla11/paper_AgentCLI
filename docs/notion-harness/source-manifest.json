@@ -9,7 +9,7 @@
   },
   {
     "path": ".agents/skills/daily-digest-loop/SKILL.md",
-    "sha256": "b7a25716ccb1ebef0f894b2b32a7e51003e0ae85d64b0acd5cb55f25c3aad7ef"
+    "sha256": "c9992949f591b1d3fffee9473bc42d7aeadd23df91e238d74581e7280e3c8d52"
   },
   {
     "path": ".agents/skills/graphify/SKILL.md",
@@ -17,7 +17,7 @@
   },
   {
     "path": ".agents/skills/keep-list/SKILL.md",
-    "sha256": "28b41d4fcb3c84be0ef9959a83bfc13e5e00e51e92648dd2a793f3cf68f2a949"
+    "sha256": "6102538d16523b1ecc4dee730a41a34116c41b004c271de2d4ecf945ff7e00bc"
   },
   {
     "path": ".agents/skills/paper-favorites/SKILL.md",
@@ -37,7 +37,7 @@
   },
   {
     "path": ".agents/skills/paper-search/SKILL.md",
-    "sha256": "b1675fdb18058bbbcfa3ae3ceee9ac74959a186f5d3053086e51bf6d23140447"
+    "sha256": "0a4b58b6f55df1fe57037cfeb6828f71427d3ba4155cc4017b61ed37822e6261"
   },
   {
     "path": ".agents/skills/paper-summary/SKILL.md",
@@ -77,7 +77,7 @@
   },
   {
     "path": ".scripts/docs/research-workflow-map.json",
-    "sha256": "b2b19314e30305c362164f8ea45e93da6e8a1bd8b889b2b117fec682309e8f19"
+    "sha256": "3b2eb06a9bfee74d8e62fdb221ffba3afdef8cb17e4a1988a42b9ffa789abd27"
   },
   {
     "path": ".scripts/docs/search-protocol.md",
@@ -133,11 +133,11 @@
   },
   {
     "path": "AGENTS.md",
-    "sha256": "1513424d10a520a06242865cda411fdf04de669f3b091c52476d8b0cf50a141f"
+    "sha256": "9d0a5d4edd0e4b647e9fa770bd56f542e7ab014f4780a731c97009b39c2c56a3"
   },
   {
     "path": "docs/Harness-Graph.md",
-    "sha256": "74103474a531d7a1d8f2dc4cf1d27f1cca79a72eda6dbb8cd8bddec17b8dde62"
+    "sha256": "e3bea2fe07aa842875242bb020a929633b823faf4cf71eee3d2fcf8bc4195d04"
   },
   {
     "path": "docs/Home.md",
@@ -145,7 +145,7 @@
   },
   {
     "path": "docs/Skill-Catalog.md",
-    "sha256": "87a603ae0e0b0daa02f283a5f3b306668386f6caf5b88473312faa8dadcff3eb"
+    "sha256": "bc9b6efca881bfedf87a932f448a520b2e81f34f218ba542ab8809f8bc13f7a9"
   },
   {
     "path": "docs/agent-research-todo.md",
@@ -153,7 +153,7 @@
   },
   {
     "path": "docs/daily-orca-automation.md",
-    "sha256": "955ea754dd5816c3ccc74fba1f2a33c8cce42b932d7382a34209a83026a27889"
+    "sha256": "431bed8f45a6f6d4703e35ff192463ddb305c61a141f190805fccf0868e2d833"
   },
   {
     "path": "docs/design/DESIGN-discord.md",
@@ -185,6 +185,6 @@
   },
   {
     "path": "docs/research-webui.md",
-    "sha256": "ddb259b7270f1ce3d53b8829e51068405a49f10c8f566494e5827e3572ffe5a9"
+    "sha256": "46e3cf652c0dbdaa81e3b5794daf8d34801108b07e2436a1dbc6395ff939e602"
   }
 ]

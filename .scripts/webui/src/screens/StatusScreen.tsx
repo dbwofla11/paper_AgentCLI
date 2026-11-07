@@ -9,7 +9,14 @@ import { QueueMessage, VerificationLine } from '../components/ReviewQueueParts';
 import { Skeleton } from '../components/Skeleton';
 import { formatCount, formatDateTime, formatTime, statusLabel } from '../format';
 import { PAPERS_HREF } from '../hooks/useHashRoute';
-import { READER_ROLE_SLOT, REVIEW_ROLE_SLOTS, roleState, selectedCandidate, type RoleCardSlot } from '../roles';
+import {
+  READER_ROLE_SLOT,
+  REVIEW_ROLE_SLOTS,
+  SEARCHER_ROLE_SLOT,
+  roleState,
+  selectedCandidate,
+  type RoleCardSlot,
+} from '../roles';
 import { useStatus } from '../status';
 
 const QUEUE_STATUSES = ['queued', 'running', 'completed', 'failed'] as const;
@@ -188,7 +195,15 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
   const cards: { slot: RoleCardSlot; resolution: RoleResolution }[] = roles
     ? REVIEW_ROLE_SLOTS.map((slot) => ({ slot, resolution: roles[slot.key] }))
     : [];
-  if (roles && data.reader_role) cards.push({ slot: READER_ROLE_SLOT, resolution: data.reader_role });
+  // Harness agents outside the review pipeline; a server that predates one omits its resolution.
+  const extraSlots = [
+    { slot: READER_ROLE_SLOT, resolution: data.reader_role },
+    { slot: SEARCHER_ROLE_SLOT, resolution: data.searcher_role },
+  ];
+  if (roles) {
+    for (const { slot, resolution } of extraSlots) if (resolution) cards.push({ slot, resolution });
+  }
+  const missingSlots = extraSlots.filter(({ resolution }) => resolution === null).map(({ slot }) => slot);
   // The roles share one config read, so they usually carry the same error; show each text once.
   const configErrors = [...new Set(cards.map(({ resolution }) => resolution.error).filter((error) => error !== null))];
   return (
@@ -211,7 +226,8 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
       {roles ? (
         <>
           <p className="field-hint role-intro">
-            하네스의 리뷰·리더 에이전트 설정을 omp에서 읽어 그대로 따릅니다. 설정된 역할이 연결된 에이전트보다 우선합니다.
+            하네스의 리뷰·리더·탐색 에이전트 설정을 omp에서 읽어 그대로 따릅니다. 설정된 역할이 연결된 에이전트보다
+            우선합니다.
           </p>
           {configErrors.length > 0 ? (
             <div className="notice role-config-error" data-tone="danger">
@@ -223,8 +239,9 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
               ))}
               <p>
                 설정을 읽지 못한 역할은 미설정으로 간주하지 않습니다. 설정을 다시 읽을 때까지 논문 리뷰, 리뷰 검증, 리더
-                질문을 시작하지 않습니다. 터미널에서 <code translate="no">omp config get task.agentModelOverrides --json</code>이
-                동작하는지 확인한 뒤 ‘새로 고침’을 누르세요.
+                질문, 논문 탐색 검색을 시작하지 않습니다. 터미널에서{' '}
+                <code translate="no">omp config get task.agentModelOverrides --json</code>이 동작하는지 확인한 뒤 ‘새로
+                고침’을 누르세요.
               </p>
             </div>
           ) : null}
@@ -232,17 +249,16 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
             {cards.map(({ slot, resolution }) => (
               <RoleSection key={slot.key} slot={slot} resolution={resolution} data={data} />
             ))}
-            {data.reader_role ? null : (
-              <section className="role-section" aria-labelledby="role-reader-title">
+            {missingSlots.map((slot) => (
+              <section className="role-section" aria-labelledby={`role-${slot.key}-title`} key={slot.key}>
                 <div className="role-head">
-                  <h3 id="role-reader-title">{READER_ROLE_SLOT.title}</h3>
+                  <h3 id={`role-${slot.key}-title`}>{slot.title}</h3>
                 </div>
                 <p className="role-hint">
-                  서버가 <code translate="no">{READER_ROLE_SLOT.agent}</code> 구성을 보내지 않았습니다. WebUI 서버를 다시
-                  시작하세요.
+                  서버가 <code translate="no">{slot.agent}</code> 구성을 보내지 않았습니다. WebUI 서버를 다시 시작하세요.
                 </p>
               </section>
-            )}
+            ))}
           </div>
         </>
       ) : (

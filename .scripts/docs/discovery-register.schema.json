@@ -1,0 +1,41 @@
+{
+  "title": "WebUI 논문 등록 작업 출력 (paper-searcher 등록 모드)",
+  "description": "discovery.register 작업에서 에이전트가 마지막에 내는 JSON. codex --output-schema, claude --json-schema, omp 프롬프트에 그대로 쓰인다. 에이전트는 임시 작업 공간의 out/ 폴더에만 PDF를 저장하고 저장소에는 쓰지 않는다. 서버(webui/discovery.py publish_registration)가 PDF를 검사(out/ 아래 일반 파일, %PDF 시그니처, 50 MiB 이하)해 01-Papers/pdfs/{category}/{slug}.pdf로 옮기고, 논문 레코드·keep.md·index.md를 쓴다. PDF가 없거나 검사에 실패하면 메타데이터만 등록한다(pdf_path null). 길이 한도를 넘는 값은 잘린다: one_line_summary 200자, topics 10개, verification_sources 10개.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pdf_file", "pdf_source_url", "publication", "topics", "one_line_summary", "notes"],
+  "properties": {
+    "pdf_file": {
+      "type": ["string", "null"],
+      "description": "작업 공간 기준 상대 경로(out/ 아래, 예: out/paper.pdf 또는 paper.py pdf가 만든 out/{year}-{surname}-{slug}.pdf). 공식·오픈액세스 PDF를 구하지 못했으면 null"
+    },
+    "pdf_source_url": {
+      "type": ["string", "null"],
+      "description": "PDF를 받은 https URL(예: https://arxiv.org/pdf/2603.25158). pdf_file이 null이면 null"
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["venue", "status", "verified", "verification_sources"],
+      "properties": {
+        "venue": {"type": ["string", "null"], "description": "공식 출처로 다시 확인한 학회·저널 이름(Findings·워크숍 등 유형을 원문대로). 확인하지 못했으면 null"},
+        "status": {"type": "string", "enum": ["published", "accepted", "preprint", "unknown"]},
+        "verified": {"type": "boolean", "description": "학회 프로그램·proceedings·출판사·DOI 페이지·OpenReview 결정 같은 공식 출처에서 게재(채택)를 직접 확인했으면 true"},
+        "verification_sources": {"type": "array", "description": "게재 확인에 쓴 공식 https URL", "items": {"type": "string"}}
+      }
+    },
+    "topics": {
+      "type": "array",
+      "description": "이 논문의 주제 키워드 3–8개(영문 소문자)",
+      "items": {"type": "string"}
+    },
+    "one_line_summary": {
+      "type": "string",
+      "description": "초록에 근거한 한국어 한 문장 요약(200자 이하). 평가·추천 같은 판단을 넣지 않는다"
+    },
+    "notes": {
+      "type": "string",
+      "description": "작업 메모(한국어, 짧게): PDF를 구하지 못한 이유, 확인하지 못한 항목 등. 없으면 빈 문자열"
+    }
+  }
+}

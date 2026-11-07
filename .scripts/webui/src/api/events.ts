@@ -1,4 +1,4 @@
-import type { JobErrorKind, JobEvent, TerminalEvent } from './types';
+import type { DiscoveryRegistration, JobErrorKind, JobEvent, TerminalEvent } from './types';
 
 type Fields = Record<string, unknown>;
 
@@ -12,6 +12,29 @@ function text(value: unknown): string {
 
 function nullableNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function nullableText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+/** `registration` of a completed `discovery.register` result; undefined when absent or without a slug. */
+function registration(value: unknown): DiscoveryRegistration | undefined {
+  if (!isFields(value)) return undefined;
+  const slug = nullableText(value.slug);
+  if (!slug) return undefined;
+  return {
+    slug,
+    record_path: nullableText(value.record_path),
+    pdf_path: nullableText(value.pdf_path),
+    keep_path: nullableText(value.keep_path),
+    index_path: nullableText(value.index_path),
+    warnings: Array.isArray(value.warnings)
+      ? value.warnings.filter((warning): warning is string => typeof warning === 'string' && warning.trim() !== '')
+      : [],
+    upgraded: value.upgraded === true,
+    notes: text(value.notes).trim(),
+  };
 }
 
 const ERROR_KINDS: readonly JobErrorKind[] = ['usage_limit', 'auth', 'timeout', 'process', 'other'];
@@ -58,14 +81,17 @@ export function parseJobEvent(eventName: string, data: string): JobEvent | null 
         missed_from: nullableNumber(value.missed_from) ?? 0,
         missed_to: nullableNumber(value.missed_to) ?? 0,
       };
-    case 'result':
+    case 'result': {
+      const published = registration(value.registration);
       return {
         type: 'result',
         text: text(value.text),
         cost_usd: nullableNumber(value.cost_usd),
         duration_ms: nullableNumber(value.duration_ms),
         usage: isFields(value.usage) ? value.usage : null,
+        ...(published ? { registration: published } : {}),
       };
+    }
     case 'error':
       return {
         type: 'error',

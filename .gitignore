@@ -22,6 +22,8 @@ node_modules/
 
 # Personal research records stay local; shared templates and venue references remain versioned.
 /00-Inbox/concept-candidates/
+/00-Inbox/discovery/*
+!/00-Inbox/discovery/README.md
 /01-Papers/index.md
 /01-Papers/keep.md
 /01-Papers/favorites.md

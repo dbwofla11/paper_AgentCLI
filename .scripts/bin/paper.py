@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -50,46 +51,78 @@ def die(msg: str, code: int = 1) -> "NoReturn":  # type: ignore[name-defined]
 
 
 class FetchError(Exception):
-    pass
+    """한 번의 조회 실패. ``str()`` 은 정규 실패문이다:
+    ``HTTP <code>`` / ``시간 초과: <reason>`` / ``네트워크 실패: <reason>`` / ``JSON 파싱 실패``.
+    ``status`` 는 마지막 HTTP 상태(네트워크·파싱 실패는 None), ``timed_out`` 은 소켓 시간 초과."""
+
+    def __init__(self, message: str, status: int | None = None, timed_out: bool = False):
+        super().__init__(message)
+        self.status = status
+        self.timed_out = timed_out
 
 
-def fetch(url: str, accept: str | None = None, soft: bool = False,
-          retries: int = 2) -> bytes | None:
-    """soft=True 면 실패 시 None 을 반환한다 (폴백 경로용)."""
+def fetch_error(exc: OSError) -> FetchError:
+    """urllib/소켓 예외를 정규 ``FetchError`` 로 분류한다."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return FetchError(f"HTTP {exc.code}", status=exc.code)
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    if isinstance(reason, (TimeoutError, socket.timeout)):  # socket.timeout ≡ TimeoutError (3.10+)
+        return FetchError(f"시간 초과: {str(reason) or 'timed out'}", timed_out=True)
+    return FetchError(f"네트워크 실패: {reason}")
+
+
+def _get(url: str, accept: str | None, retries: int, timeout: float) -> bytes:
+    """``url`` 의 본문. 429 는 2s·4s… 대기 후 ``retries`` 번 재시도하고, 실패는 ``FetchError``."""
     headers = {"User-Agent": UA}
     if accept:
         headers["Accept"] = accept
     if S2_KEY and "semanticscholar.org" in url:
         headers["x-api-key"] = S2_KEY
-    last = ""
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.read()
-        except urllib.error.HTTPError as e:
-            last = f"HTTP {e.code}"
-            if e.code == 429 and attempt < retries:
+        except OSError as e:  # HTTPError ⊂ URLError ⊂ OSError; 읽기 중 TimeoutError 포함
+            error = fetch_error(e)
+            if error.status == 429 and attempt < retries:
                 time.sleep(2 * (attempt + 1))  # 무키 S2 는 429 가 잦다 — 짧게 재시도
                 continue
-            if e.code == 429:
-                last = "rate limit (429) — 몇 초 뒤 재시도하거나 --source arxiv / --source openalex 사용"
-            break
-        except urllib.error.URLError as e:
-            last = f"네트워크 실패: {e.reason}"
-            break
-    if soft:
-        return None
-    die(f"{last} — {url}")
+            raise error from e
+    raise AssertionError("unreachable")
 
 
-def fetch_json(url: str, soft: bool = False) -> dict | None:
-    raw = fetch(url, soft=soft)
-    if raw is None:
-        return None
+def fetch(url: str, accept: str | None = None, soft: bool = False,
+          retries: int = 2, timeout: float = TIMEOUT) -> bytes | None:
+    """soft=True 면 실패 시 None 을 반환한다 (폴백 경로용)."""
+    try:
+        return _get(url, accept, retries, timeout)
+    except FetchError as e:
+        if soft:
+            return None
+        if e.status == 429:
+            last = "rate limit (429) — 몇 초 뒤 재시도하거나 --source arxiv / --source openalex 사용"
+        elif e.timed_out:
+            last = f"네트워크 실패: {str(e).removeprefix('시간 초과: ')}"
+        else:
+            last = str(e)
+        die(f"{last} — {url}")
+
+
+def fetch_json(url: str, soft: bool = False, *, timeout: float = TIMEOUT, retries: int = 2,
+               strict: bool = False) -> dict | None:
+    """strict=True 면 실패를 ``FetchError`` 로 올린다(soft 보다 우선). 아니면 soft 는 None, 그 외 die."""
+    if strict:
+        raw = _get(url, None, retries, timeout)
+    else:
+        raw = fetch(url, soft=soft, retries=retries, timeout=timeout)
+        if raw is None:
+            return None
     try:
         return json.loads(raw.decode("utf-8"))
-    except json.JSONDecodeError:
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        if strict:
+            raise FetchError("JSON 파싱 실패") from None
         if soft:
             return None
         die(f"JSON 파싱 실패 — {url}")
@@ -307,18 +340,37 @@ def get_bibtex(paper_id: str, meta: dict) -> str | None:
     return None
 
 
-def get_related(paper_id: str, kind: str, limit: int) -> list[dict]:
+def related_rows(paper_id: str, kind: str, limit: int, *, timeout: float = TIMEOUT,
+                 retries: int = 2) -> tuple[list[dict] | None, str | None]:
+    """S2 references(kind=refs)·citations(kind=cites) 행을 인용 수 내림차순으로 반환한다.
+
+    죽지 않는다(soft): 성공은 ``(rows, None)``, 실패는 ``(None, failure)`` — ``failure`` 는
+    ``FetchError`` 정규 실패문(``HTTP 429``, ``HTTP 404``, ``시간 초과: …``, ``네트워크 실패: …``,
+    ``JSON 파싱 실패``) 또는 ``응답 형식 오류``."""
     pid = normalize_id(paper_id)
     endpoint = "references" if kind == "refs" else "citations"
     key = "citedPaper" if kind == "refs" else "citingPaper"
     params = urllib.parse.urlencode({"limit": limit, "fields": S2_FIELDS})
     url = f"{S2_API}/paper/{urllib.parse.quote(pid, safe=':/')}/{endpoint}?{params}"
-    data = fetch_json(url, soft=True)
-    if data is None:
+    try:
+        data = fetch_json(url, strict=True, timeout=timeout, retries=retries)
+    except FetchError as e:
+        return None, str(e)
+    except OSError as e:  # fetch_json 를 대체한 호출자(테스트)가 urllib 예외를 그대로 올린 경우
+        return None, str(fetch_error(e))
+    items = (data.get("data") or []) if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return None, "응답 형식 오류"
+    rows = [_s2_row(item[key]) for item in items if isinstance(item, dict) and isinstance(item.get(key), dict)]
+    rows.sort(key=lambda r: (r.get("citations") or 0), reverse=True)
+    return rows, None
+
+
+def get_related(paper_id: str, kind: str, limit: int) -> list[dict]:
+    rows, _failure = related_rows(paper_id, kind, limit)
+    if rows is None:
         die("Semantic Scholar 인용망 조회 실패 (대개 rate limit). 몇 초 뒤 재시도하거나, "
             "S2_API_KEY 환경변수를 설정하거나, OpenAlex/논문 참고문헌 절을 직접 확인할 것.")
-    rows = [_s2_row(item[key]) for item in data.get("data", []) if item.get(key)]
-    rows.sort(key=lambda r: (r.get("citations") or 0), reverse=True)
     return rows
 
 

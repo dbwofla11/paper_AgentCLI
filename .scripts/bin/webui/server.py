@@ -26,10 +26,11 @@ import urllib.parse
 from pathlib import Path
 from typing import Callable
 
+import discovery_cache
 import harness_dashboard
 import research_agent
 import thought_experiments_html
-from webui import jobs, reader, reviews, roles, security
+from webui import discovery, jobs, reader, reviews, roles, security
 
 VERSION = "webui-m0"
 WEBUI_HOME = "/100-views/webui/"
@@ -82,6 +83,14 @@ API_ROUTES = (
     (re.compile(r"/api/harness"), {"GET": "harness"}),
     (re.compile(r"/api/harness/checks"), {"POST": "harness_check"}),
     (re.compile(r"/api/ideas"), {"GET": "ideas"}),
+    (re.compile(r"/api/discovery/daily"), {"GET": "discovery_daily"}),
+    (re.compile(r"/api/discovery/daily/([^/]+)"), {"GET": "discovery_day"}),
+    (re.compile(r"/api/discovery/searches"), {"GET": "discovery_searches", "POST": "create_discovery_search"}),
+    (re.compile(r"/api/discovery/searches/([^/]+)"), {"GET": "discovery_search", "DELETE": "delete_discovery_search"}),
+    (re.compile(r"/api/discovery/keep"), {"POST": "discovery_keep"}),
+    (re.compile(r"/api/discovery/register"), {"POST": "discovery_register"}),
+    (re.compile(r"/api/discovery/candidates/status"), {"POST": "discovery_candidate_status"}),
+    (re.compile(r"/api/discovery/related"), {"POST": "create_discovery_related"}),
 )
 
 
@@ -532,7 +541,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self._json(200, {"ok": True, "workspace_id": workspace_id(), **status,
                          "runner": research_agent.RUNNERS.get(status.get("agent")), "pdf_reader": "pdftotext",
                          "max_parallel": reviews.MAX_JOBS, "queue": reviews.load_queue(),
-                         "reader_role": roles.resolve(roles.READER, reviews.ROOT)})
+                         "reader_role": roles.resolve(roles.READER, reviews.ROOT),
+                         "searcher_role": roles.resolve(roles.SEARCHER, reviews.ROOT)})
 
     # -- API: paper reader -----------------------------------------------------
     def _reader_error(self, exc: reader.ReaderError) -> None:
@@ -602,6 +612,54 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _api_reader_status(self, args: tuple, query: str, payload: dict) -> None:
         self._json(200, reader.reader_status(self._pinned_agent()))
+
+    # -- API: paper discovery (논문 탐색) ----------------------------------------
+    def _discovery(self, compute: Callable[[], dict], status: int = 200) -> None:
+        try:
+            body = compute()
+        except discovery_cache.CacheError as exc:
+            self._error(exc.status, exc.code, exc.message)
+            return
+        self._json(status, body)
+
+    def _api_discovery_daily(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(discovery.list_daily)
+
+    def _api_discovery_day(self, args: tuple, query: str, payload: dict) -> None:
+        def compute() -> dict:
+            body = discovery.daily_detail(args[0])
+            plan_path = body["daily"].get("plan_path")
+            body["plan_href"] = static_href(reviews.ROOT, plan_path) if plan_path else None
+            return body
+        self._discovery(compute)
+
+    def _api_discovery_searches(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.list_searches(self.server.broker))
+
+    def _api_discovery_search(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.search_detail(args[0], self.server.broker))
+
+    def _api_create_discovery_search(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.submit_search(payload, self.server.broker, self._pinned_agent(),
+                                                        self.server.discovery_lock), 202)
+
+    def _api_delete_discovery_search(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.delete_search(args[0], self.server.broker))
+
+    def _api_discovery_keep(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.keep_candidate(payload))
+
+    def _api_discovery_register(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.submit_register(payload, self.server.broker, self._pinned_agent(),
+                                                          self.server.discovery_lock), 202)
+
+    def _api_discovery_candidate_status(self, args: tuple, query: str, payload: dict) -> None:
+        self._discovery(lambda: discovery.set_candidate_status(payload))
+
+    def _api_create_discovery_related(self, args: tuple, query: str, payload: dict) -> None:
+        # Synchronous S2 references/citations lookup (≤ discovery.RELATED_DEADLINE_S), the server's
+        # only external call.
+        self._discovery(lambda: discovery.create_related(payload), 201)
 
     # -- API: harness ----------------------------------------------------------
     def _api_harness(self, args: tuple, query: str, payload: dict) -> None:
@@ -833,6 +891,7 @@ class WebUIServer(http.server.ThreadingHTTPServer):
         self._streams = 0
         self._streams_lock = threading.Lock()
         self.harness_lock = threading.Lock()  # serializes the harness check single-flight test and closing
+        self.discovery_lock = threading.Lock()  # serializes discovery single-flight tests, submits, and closing
         super().__init__(("127.0.0.1", port), Handler)
         # Every entry point (research_webui serve, onboarding, tests) starts here; workspaces whose
         # owner process is gone (a killed server) are removed once the port is ours.
@@ -853,21 +912,30 @@ class WebUIServer(http.server.ThreadingHTTPServer):
             self._streams -= 1
 
     def server_close(self) -> None:
-        """Stop listening after cancelling reader jobs and harness checks and waiting briefly for
-        their cleanup (``reader.shutdown``: turn recorded, CLI group ended, temp workspace removed;
-        harness checks: process group ended), at most HARNESS_SHUTDOWN_WAIT_S in total for checks."""
+        """Stop listening after cancelling reader jobs, discovery jobs (searches, registrations),
+        and harness checks and waiting briefly for their cleanup (``reader.shutdown``: turn
+        recorded, CLI group ended, temp workspace removed; ``discovery.shutdown``: session saved,
+        CLI group ended, workspace removed; harness checks: process group ended), at most
+        HARNESS_SHUTDOWN_WAIT_S in total for checks."""
         try:
             deadline = time.monotonic() + HARNESS_SHUTDOWN_WAIT_S
-            with self.harness_lock:  # no harness check is submitted after this
+            # No harness check or discovery job is submitted after this.
+            with self.harness_lock, self.discovery_lock:
                 self.broker.closing.set()
             checks = [job for job in self.broker.list() if is_harness_job(job)]
-            for job in checks:
+            # Discovery jobs are cancelled now too, so their CLIs stop while the reader shuts down.
+            for job in [*checks, *(job for job in self.broker.list() if job.get("kind") in discovery.DISCOVERY_JOB_KINDS)]:
                 if job.get("status") in {"queued", "running"}:
                     self.broker.cancel(job["job_id"])
             try:
-                if not reader.shutdown(self.broker):
-                    sys.stderr.write(f"논문 리더 작업 일부가 {reader.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
-                                     "남은 작업 폴더는 다음 실행 때 지웁니다.\n")
+                try:
+                    if not reader.shutdown(self.broker):
+                        sys.stderr.write(f"논문 리더 작업 일부가 {reader.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
+                                         "남은 작업 폴더는 다음 실행 때 지웁니다.\n")
+                finally:
+                    if not discovery.shutdown(self.broker):
+                        sys.stderr.write(f"논문 탐색 작업이 {discovery.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
+                                         "검색은 다음 실행 때 '중단됨'으로 표시되고, 등록은 후보 상태가 그대로 남습니다.\n")
             finally:
                 if not self.broker.wait_finished([job["job_id"] for job in checks],
                                                  max(0.0, deadline - time.monotonic())):

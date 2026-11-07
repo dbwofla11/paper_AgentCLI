@@ -9,6 +9,7 @@ flowchart LR
     upload["사용자 PDF·논문 링크"] --> intake["paper-search<br>메타데이터·중복 확인"]
     intake --> keep["01-Papers/keep.md<br>읽기 대기열"]
     daily["매일 09:00 KST<br>CV 1 + 멀티모달 1 + 관심 분야 1"] --> candidates["후보 3편을 채팅으로 제시"]
+    candidates --> discovery_cache["00-Inbox/discovery/daily<br>로컬 캐시 · Git 제외<br>WebUI 탐색에서 보기"]
     candidates -->|사용자 채택| intake
     intake --> record["01-Papers/library/{slug}.json<br>수집 시 생성"]
     record --> review["paper-review<br>3패스 정독 + 5축 분석"]
@@ -36,7 +37,7 @@ flowchart LR
 ## 실행 원칙
 
 - 사용자가 올린 논문은 메타데이터를 확인해 Keep 목록과 논문별 JSON에 등록한다. PDF를 올렸으면 기존 `01-Papers/pdfs/{category}/`에 보관한다. 중복이면 기존 항목을 갱신하고 같은 논문을 추가하지 않는다.
-- 일일 후보는 매일 정확히 3편이다. 컴퓨터 비전 1편, 멀티모달 1편, 그리고 사용자의 활성 아이디어·Keep·Concepts·최근 리뷰에서 관심 분야를 골라 1편을 제시한다. 공식 학회 발표·게재가 확인된 논문만 후보로 제시한다. 후보는 채팅에만 표시하며, 사용자가 채택한 뒤에 수집한다.
+- 일일 후보는 매일 정확히 3편이다. 컴퓨터 비전 1편, 멀티모달 1편, 그리고 사용자의 활성 아이디어·Keep·Concepts·최근 리뷰에서 관심 분야를 골라 1편을 제시한다. 공식 학회 발표·게재가 확인된 논문만 후보로 제시한다. 후보는 채팅으로 보고하고 같은 내용을 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/daily/YYYY-MM-DD.json`에 기록한다(WebUI 탐색 화면에서 확인). 캐시는 위키·라이브러리·Graphify 대상이 아니며, PDF·Keep·논문 JSON 같은 정본은 사용자가 채택한 뒤에 수집한다.
 - 논문 JSON은 수집 때 확인된 메타데이터만 담고, 심층 리뷰가 끝나면 5개 분석 축과 위치가 명시된 근거를 보강한다. 근거가 없으면 빈 값 또는 `[확인 필요]`로 남긴다. 스키마는 [paper-record.schema.json](../.scripts/docs/paper-record.schema.json)을 따른다.
 - 아이디어 심사 전 지원·대안·반대 문헌을 최소 2개 소스에서 검색한다. 결과·제외 이유·위치가 고정되지 않거나 관련 근거가 부족하면 심사를 중단한다. analysis JSON은 `.scripts/docs/idea-analysis.schema.json`과 `.scripts/bin/idea_analysis.py`로 관리하며, 동결 SHA-256이 동일한 입력만 세 심사자에게 준다.
 - 논문 리뷰에서 재사용 가능한 개념 후보는 `00-Inbox/concept-candidates/`에 자동 초안으로 만들 수 있다. 이것은 사용자의 이해나 학습 노트가 아니다. `02-Concepts/` 정본은 사용자가 내용을 확인·수정하고 승격을 명시적으로 요청한 경우에만 만든다.
@@ -44,7 +45,7 @@ flowchart LR
 - 기존 PDF는 `python3 .scripts/bin/paper_record.py import-pdfs`로 레코드를 보충할 수 있다. 리뷰 메타데이터가 없으면 제목을 추정하지 않고 `metadata_status: needs_review`로 둔다.
 - 아이디어 심사자는 동일한 brief와 근거 묶음을 읽기 전용으로 받는다. 역할별 초안은 서로 공유하지 않는다. 종합자는 다수결로 승인하지 않으며, 최종 진행 결정은 사용자에게 있다.
 - 승인된 아이디어만 작은 실험으로 보낸다. 결과와 해석을 구분하고, 관련 JSON·개념·검색 맥락을 갱신해 다음 탐색에 연결한다.
-- 예약 실행은 Orca Automation이 담당한다. `daily-digest-loop` 스킬은 호출당 후보 검색·보고만 수행하며 파일 저장, 뉴스 수집, Git commit/push를 하지 않는다.
+- 예약 실행은 Orca Automation이 담당한다. `daily-digest-loop` 스킬은 호출당 후보 검색·채팅 보고와 `discovery_cache.py daily-write`를 통한 로컬 캐시 기록만 수행하며 정본 저장, 뉴스 수집, Git commit/push를 하지 않는다.
 
 ## 라우터
 

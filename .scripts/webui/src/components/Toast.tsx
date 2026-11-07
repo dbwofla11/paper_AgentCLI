@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { CircleAlert, CircleCheck, Info, X } from 'lucide-react';
+import { ArrowRight, CircleAlert, CircleCheck, Info, X } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import * as m from 'motion/react-m';
 import { DUR_BASE, EASE_OUT } from '../motion/tokens';
@@ -10,6 +10,8 @@ export interface ToastInput {
   title: string;
   text?: string;
   tone?: ToastTone;
+  /** A follow-up link (e.g. the record a request just wrote). */
+  action?: { label: string; href: string };
 }
 
 interface ToastEntry extends ToastInput {
@@ -18,6 +20,8 @@ interface ToastEntry extends ToastInput {
 
 /** Auto-dismiss delay; paused while the pointer or focus is on the toast. */
 const DISMISS_MS = 4_000;
+/** A toast with a link stays longer so it can be reached by keyboard (the link is also on the page). */
+const ACTION_DISMISS_MS = 8_000;
 /** Older toasts drop off beyond this many. */
 const MAX_TOASTS = 3;
 
@@ -30,11 +34,12 @@ function ToastItem({ toast, onDismiss }: { toast: ToastEntry; onDismiss: (id: nu
   const tone = toast.tone ?? 'info';
   const Icon = TONE_ICONS[tone];
 
+  const hasAction = toast.action !== undefined;
   useEffect(() => {
     if (paused) return;
-    const timer = window.setTimeout(() => onDismiss(toast.id), DISMISS_MS);
+    const timer = window.setTimeout(() => onDismiss(toast.id), hasAction ? ACTION_DISMISS_MS : DISMISS_MS);
     return () => window.clearTimeout(timer);
-  }, [paused, onDismiss, toast.id]);
+  }, [paused, onDismiss, toast.id, hasAction]);
 
   return (
     <m.div
@@ -56,6 +61,12 @@ function ToastItem({ toast, onDismiss }: { toast: ToastEntry; onDismiss: (id: nu
       <div>
         <p className="toast-title">{toast.title}</p>
         {toast.text ? <p className="toast-text">{toast.text}</p> : null}
+        {toast.action ? (
+          <a className="toast-action" href={toast.action.href} onClick={() => onDismiss(toast.id)}>
+            {toast.action.label}
+            <ArrowRight />
+          </a>
+        ) : null}
       </div>
       <button type="button" className="icon-btn" aria-label="알림 닫기" onClick={() => onDismiss(toast.id)}>
         <X />

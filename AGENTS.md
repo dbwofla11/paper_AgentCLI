@@ -6,6 +6,7 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 
 | 경로 | 용도 |
 |---|---|
+| `00-Inbox/discovery/` | WebUI 논문 탐색 캐시(검색 기록·일일 후보, Git 제외) |
 | `01-Papers/pdfs/{category}/` | 카테고리별 원문 PDF |
 | `01-Papers/reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
 | `01-Papers/reviews/{category}/figures/` | 리뷰의 방법 구조도. `{slug}-method.html`(diagram-design 원본)과 임베드용 `{slug}-method.svg` |
@@ -77,7 +78,7 @@ Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사�
 | 이름 | 목적 | 정본 경로 |
 |---|---|---|
 | `paper-search` | 논문 검색·수집과 등록 | `.agents/skills/paper-search/` |
-| `daily-digest-loop` | 일일 논문 후보를 채팅으로 제시 | `.agents/skills/daily-digest-loop/` |
+| `daily-digest-loop` | 일일 논문 후보를 채팅으로 제시하고 로컬 캐시에 기록 | `.agents/skills/daily-digest-loop/` |
 | `paper-scheduler` | 날짜별 논문 선정 계획 관리 | `.agents/skills/paper-scheduler/` |
 | `paper-summary` | 논문 세 편 요약 | `.agents/skills/paper-summary/` |
 | `paper-review` | 원문 3패스 심층 리뷰 | `.agents/skills/paper-review/` |
@@ -142,10 +143,10 @@ omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 �
 - 논문 JSON 또는 승인된 개념/아이디어 정본을 갱신한 뒤 `.scripts/bin/graphify_sync.py begin` → Graphify 스킬 `--update` → `complete` 순서로 동기화한다. CLI AST 갱신만으로 문서 의미 추출이 끝났다고 표시하지 않는다. 실패는 원문 작업 실패가 아니라 재시도 가능한 pending으로 기록한다.
 - 아이디어 심사 전 지원·대안·반대 문헌 검색은 필수다. 검색이 부족하면 독립 심사를 시작하지 않는다. 같은 SHA-256 근거 묶음을 세 비판 페르소나에 제공하고 `.scripts/bin/idea_analysis.py validate`로 심사 완결성과 상태 일관성을 검사한다.
 - 아이디어는 `critical-validation`의 승인 전 `thought-experiment-runner`로 실행하지 않는다. 초안은 [Argument Auditor](04-Projects/validation/paper-draft-logic-review.md)로 주장–근거 연결을 점검한다.
-- 사용자가 대화에 올린 논문은 Keep 목록에 등록한다. 일일 후보는 채팅에만 제시하며 사용자가 채택하기 전에는 PDF·Keep·JSON을 저장하지 않는다.
+- 사용자가 대화에 올린 논문은 Keep 목록에 등록한다. 일일 후보는 사용자가 채택하기 전에는 정본(PDF·Keep·논문 JSON)으로 저장하지 않는다. 채팅 보고와 로컬 캐시 기록은 아래 일일 후보 규칙을 따른다.
 - 논문 검색과 추천에는 사용자가 제공한 `01-Papers/reference/cs-conferences.csv`를 학술대회 참고 목록으로 활용한다. ARIS를 포함한 모든 검색에서 관련 분야의 학회를 탐색하고 결과의 학회명·유형을 확인할 때 참고한다. 이 목록은 엄격한 허용 목록이 아니며 등급이나 포함 여부만으로 품질·게재 사실을 단정하지 않는다. 사용자가 특정 논문이나 범위를 지정하면 그 요청을 우선한다.
 - 매일 논문 후보는 컴퓨터 비전 1편, 멀티모달 1편, 사용자 관심 분야 1편이며 학회 발표·게재가 확인되어야 한다. 반복 실행 시각은 Orca Automation에서 관리한다.
-- 일일 후보 검색은 뉴스, 자동 Git commit/push, 후보 보고서 파일 생성을 수행하지 않는다. 후보는 채팅으로만 보고하고, 날짜별 사용자 선정 계획만 `03-Trends/daily/{날짜}-plan.md`에 둔다. 과거 다이제스트의 정본도 `03-Trends/daily/`다.
+- 일일 후보는 채팅으로 보고하고, 같은 내용을 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/daily/YYYY-MM-DD.json`에 기록한다. 캐시는 위키·라이브러리·Graphify 대상이 아니다. PDF·Keep·논문 JSON 같은 정본 저장은 사용자가 채택("Keep에 담기" 또는 "등록")한 뒤에만 한다. 자동 Git commit/push는 하지 않는다. 날짜별 사용자 선정 계획은 `03-Trends/daily/{날짜}-plan.md`에 둔다. 일일 후보 검색은 뉴스를 수집하지 않으며, 과거 다이제스트의 정본도 `03-Trends/daily/`다.
 
 ## 원문 읽기
 

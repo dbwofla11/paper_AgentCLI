@@ -17,10 +17,12 @@ import { useStatus } from './status';
 const ReaderScreen = lazy(() => import('./screens/ReaderScreen'));
 const HarnessScreen = lazy(() => import('./screens/HarnessScreen'));
 const IdeasScreen = lazy(() => import('./screens/IdeasScreen'));
+const DiscoverScreen = lazy(() => import('./screens/DiscoverScreen'));
 
 const ROUTE_TITLES: Record<Route['name'], string> = {
   papers: '논문 라이브러리',
   reader: '논문 리더',
+  discover: '논문 탐색',
   ideas: '사고실험',
   harness: '하네스',
   status: '상태',
@@ -138,6 +140,17 @@ export function App() {
           {route.name === 'reader' ? (
             <Suspense fallback={<ReaderLoading />}>
               <ReaderScreen key={route.slug} slug={route.slug} headingRef={headingRef} reloadToken={reloadToken} />
+            </Suspense>
+          ) : null}
+          {route.name === 'discover' ? (
+            <Suspense fallback={<ScreenLoading label="탐색 화면을 불러오는 중…" />}>
+              <DiscoverScreen
+                headingRef={headingRef}
+                reloadToken={reloadToken}
+                view={route.view}
+                id={route.id}
+                prefill={route.prefill}
+              />
             </Suspense>
           ) : null}
           {route.name === 'ideas' ? (

@@ -126,7 +126,7 @@ export function SidePanel({
   tab: PanelTab;
   onTabChange: (tab: PanelTab) => void;
   questionCount: number;
-  /** Content above the tab panels on the 질문 tab (role strip). */
+  /** Content above the tab panels: the 인용·피인용 strip, plus the role strip on the 질문 tab. */
   header?: ReactNode;
   children: ReactNode;
 }) {

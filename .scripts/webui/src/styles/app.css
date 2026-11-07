@@ -115,6 +115,18 @@
   background: var(--color-primary);
 }
 
+/* Six items: tighter links until the header has room, so they never run into the brand or tools. */
+@media (max-width: 899px) {
+  .app-nav .nav-link {
+    padding: 0 0.625rem;
+  }
+
+  .nav-indicator {
+    right: 0.625rem;
+    left: 0.625rem;
+  }
+}
+
 .app-header-tools {
   display: flex;
   align-items: center;
@@ -887,6 +899,155 @@
   gap: var(--space-2);
 }
 
+/* No library match for the search text: the same words as an external search (#/discover?q=). */
+.library-external {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.library-external a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  font-weight: 500;
+}
+
+.library-external svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* ── 인용·피인용 menu (library cards, the reader panel, discovery candidates) ── */
+
+/* Placed by RelatedMenu.tsx (fixed coordinates from its button) in the top layer. */
+.related-menu {
+  inset: auto;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    display var(--dur-fast) allow-discrete,
+    overlay var(--dur-fast) allow-discrete;
+}
+
+.related-menu:popover-open {
+  display: grid;
+  gap: 2px;
+  opacity: 1;
+}
+
+@starting-style {
+  .related-menu:popover-open {
+    opacity: 0;
+  }
+}
+
+.related-menu:focus-visible {
+  outline: none;
+}
+
+.related-menu-item {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.related-menu-item:hover,
+.related-menu-item:focus-visible {
+  background: var(--surface-muted);
+}
+
+.related-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.related-menu-label {
+  color: var(--text-strong);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.related-menu-description {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+
+.related-menu-caret {
+  transition: rotate var(--dur-fast) var(--ease-standard);
+}
+
+.related-menu-button[aria-expanded='true'] .related-menu-caret {
+  rotate: 180deg;
+}
+
+.related-spinner {
+  animation: related-spin 0.9s linear infinite;
+}
+
+@keyframes related-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+/* Why a lookup failed; a 429 adds the S2_API_KEY guidance. */
+.related-error {
+  display: grid;
+  gap: var(--space-1);
+  max-width: var(--measure);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--danger-container);
+}
+
+.related-error-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.related-error-title svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.0625rem;
+  color: var(--danger-text);
+}
+
+.related-error-text {
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+
 /* ── Status ── */
 
 .stack {
@@ -1504,5 +1665,13 @@
   .connection[data-state='connecting'] .dot,
   .stream-phase .dot {
     animation: none;
+  }
+
+  .related-spinner {
+    animation: none;
+  }
+
+  .related-menu-caret {
+    transition: none;
   }
 }

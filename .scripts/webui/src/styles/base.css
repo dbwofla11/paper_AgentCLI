@@ -941,6 +941,185 @@ body:has(.sheet[open]) {
   }
 }
 
+/* ── Dialog (native modal <dialog>, centered) ── */
+
+.dialog {
+  width: min(560px, calc(100vw - 2 * var(--space-3)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog::backdrop {
+  background: var(--scrim);
+  animation: fade-in var(--dur-fast) var(--ease-standard);
+}
+
+.dialog-body {
+  min-height: 0;
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dialog-head {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.dialog-head h2 {
+  font-size: var(--text-h3);
+}
+
+/* The paper the dialog acts on, read-only. */
+.dialog-subject {
+  color: var(--text-strong);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.dialog-field-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dialog-count {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+
+.dialog kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 11px/1.6 var(--font-mono);
+  text-align: center;
+}
+
+/* Radio list: one bordered row per choice, the checked row tinted. */
+.dialog-choices {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dialog-choices legend {
+  margin-bottom: 0.375rem;
+  padding: 0;
+}
+
+.dialog-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.dialog-choice:hover {
+  background: var(--surface-muted);
+}
+
+.dialog-choice[data-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.dialog-choice input {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--color-primary-strong);
+  cursor: inherit;
+}
+
+.dialog-choice-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+.dialog-choice-label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  font-weight: 500;
+}
+
+.dialog-choice-path {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+
+.dialog-choice[data-checked='true'] :is(.dialog-choice-label, .dialog-choice-path) {
+  color: inherit;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+body:has(.dialog[open]) {
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .dialog-body {
+    padding: var(--space-3);
+  }
+
+  .dialog-actions .btn {
+    flex: 1;
+  }
+}
+
 /* ── Toasts ── */
 
 .toast-region {
@@ -1001,6 +1180,28 @@ body:has(.sheet[open]) {
   overflow-wrap: anywhere;
 }
 
+/* Follow-up link (e.g. 라이브러리에서 보기); a 32px row so it is easy to hit. */
+.toast-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  color: var(--color-primary-strong);
+  font-size: var(--text-small);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.toast-action:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.toast-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 /* Reduced motion: stop shimmer, AI travel and flash loops; motion's reducedMotion="user" drops transforms. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after,
@@ -1016,7 +1217,8 @@ body:has(.sheet[open]) {
     transform: none;
   }
 
-  .sheet::backdrop {
+  .sheet::backdrop,
+  .dialog::backdrop {
     animation: none;
   }
 }

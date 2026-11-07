@@ -18,6 +18,14 @@ READER_TOOLS = {'claude': 'Read,Grep,Glob', 'omp': 'read,grep,glob'}
 # Reader codex runs: plugins and apps bring their own MCP servers/tools, hooks run user commands
 # outside the sandbox. All are off; configured MCP servers are disabled by name (codex_mcp_servers).
 CODEX_READER_DISABLED_FEATURES = ('plugins', 'apps', 'hooks')
+# WebUI paper-discovery runs (paper-searcher): network hosts the agent may reach, the allow-list of
+# `.scripts/docs/search-protocol.md` §2 ("웹 검색 결과의 논문·공식 출처를 읽을 때 허용된 도메인").
+DISCOVERY_DOMAINS = (
+    'arxiv.org', 'export.arxiv.org', 'api.semanticscholar.org', 'www.semanticscholar.org',
+    'api.openalex.org', 'api.crossref.org', 'doi.org', 'openreview.net', 'api2.openreview.net',
+    'aclanthology.org', 'proceedings.mlr.press', 'proceedings.neurips.cc', 'openaccess.thecvf.com',
+    'dblp.org', 'paperswithcode.com', 'huggingface.co', 'github.com', 'raw.githubusercontent.com')
+DISCOVERY_TOOLS = {'claude': 'Read,Glob,Grep,Bash,WebSearch,WebFetch', 'omp': 'read,grep,glob,bash,web_search'}
 
 
 def _claude_model(model: str | None, effort: str | None) -> list[str]:
@@ -172,6 +180,61 @@ def reader_command(agent: str, prompt: str, *, cwd: Path, system: str | None = N
                 '--approval-mode', 'yolo', *(['--append-system-prompt', system] if system else []),
                 *(['--max-time', str(timeout_seconds)] if timeout_seconds else []),
                 *(f'@{Path(image).resolve()}' for image in images), '--', prompt]
+    raise ValueError('지원하는 에이전트는 codex, claude, omp입니다.')
+
+
+def discovery_settings() -> dict:
+    """claude `--settings` of a discovery run: the sandbox of every other run plus a network
+    allow-list, so sandboxed Bash (`python3 paper.py …`) reaches only DISCOVERY_DOMAINS.
+    The key `sandbox.network.allowedDomains` exists in claude 2.1.311 (settings validator string);
+    that the sandbox proxy then admits exactly these hosts is [INFERENCE] until a real smoke run."""
+    sandbox = {**SANDBOX_SETTINGS['sandbox'], 'network': {'allowedDomains': list(DISCOVERY_DOMAINS)}}
+    return {'sandbox': sandbox}
+
+
+def discovery_command(agent: str, cwd: Path, prompt: str, *, schema_path: Path, system: str | None = None,
+                      model: str | None = None, effort: str | None = None,
+                      timeout_seconds: int | None = None) -> list[str]:
+    """JSONL-streaming, session-less command of a WebUI paper-discovery run (`paper-searcher`).
+
+    Runs in a throwaway workspace (`cwd`) and answers with schema-shaped JSON. Unlike the reader it
+    needs the network: claude gets Bash, WebSearch and WebFetch with WebFetch limited by
+    `WebFetch(domain:…)` rules and sandboxed Bash by `sandbox.network.allowedDomains` (both
+    DISCOVERY_DOMAINS); codex runs `workspace-write` with
+    `sandbox_workspace_write.network_access=true` (no per-host list exists) and the reader's
+    plugin/app/hook/MCP lockdown; omp has no sandbox, so its tools are the only bound. Schema:
+    codex `--output-schema <file>`, claude `--json-schema` inline, omp only via the prompt.
+    `model=None` keeps the CLI's own default model. `--` comes right before the prompt."""
+    executable = shutil.which(agent)
+    if not executable:
+        raise ValueError(f'{agent} CLI를 PATH에서 찾을 수 없습니다.')
+    if agent == 'claude':
+        schema = json.dumps(json.loads(Path(schema_path).read_text(encoding='utf-8')), separators=(',', ':'))
+        allowed = ','.join(['Read', 'Glob', 'Grep', 'Bash', 'WebSearch',
+                            *(f'WebFetch(domain:{domain})' for domain in DISCOVERY_DOMAINS)])
+        return [executable, '--print', '--output-format', 'stream-json', '--verbose',
+                '--include-partial-messages', '--restricted', '--permission-mode', 'dontAsk',
+                '--tools', DISCOVERY_TOOLS['claude'], '--allowedTools', allowed, '--no-session-persistence',
+                '--json-schema', schema, '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
+                '--settings', json.dumps(discovery_settings()),
+                *(['--append-system-prompt', system] if system else []),
+                *_claude_model(model, effort), '--', prompt]
+    if agent == 'codex':
+        # codex exec has no system-prompt flag: the system text is prepended to the prompt.
+        text = f'{system}\n\n---\n\n{prompt}' if system else prompt
+        disabled = [part for feature in CODEX_READER_DISABLED_FEATURES for part in ('--disable', feature)]
+        servers = [part for name in codex_mcp_servers(executable, cwd)
+                   for part in ('-c', f'mcp_servers.{name}.enabled=false')]
+        return [executable, 'exec', '--json', '--skip-git-repo-check', '--ephemeral', '--cd', str(cwd),
+                '--sandbox', 'workspace-write', '-c', 'approval_policy="never"',
+                '-c', 'sandbox_workspace_write.network_access=true', *disabled, *servers,
+                '--output-schema', str(schema_path), *_codex_model(model, effort), '--', text]
+    if agent == 'omp':
+        return [executable, '-p', '--mode', 'json', '--no-session', '--no-title', '--no-extensions',
+                '--no-skills', '--no-rules', '--no-context-files', '--no-lsp', '--cwd', str(cwd),
+                *(['--model', model] if model else []), '--tools', DISCOVERY_TOOLS['omp'],
+                '--approval-mode', 'yolo', *(['--append-system-prompt', system] if system else []),
+                *(['--max-time', str(timeout_seconds)] if timeout_seconds else []), '--', prompt]
     raise ValueError('지원하는 에이전트는 codex, claude, omp입니다.')
 
 

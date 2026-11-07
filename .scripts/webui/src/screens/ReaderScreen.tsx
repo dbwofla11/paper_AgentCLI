@@ -10,6 +10,7 @@ import { targetKey, targetsByPage } from '../reader/evidence';
 import { PdfPane, type FlashState, type PdfPaneHandle } from '../reader/PdfPane';
 import { QuestionsPanel, ReaderRoleBadge, regionBlockedReason, type DraftAnchor } from '../reader/QuestionsPanel';
 import { ReaderToolbar } from '../reader/ReaderToolbar';
+import { RelatedStrip } from '../reader/RelatedStrip';
 import { ReviewPanel, type ReviewView, type VerifyControl } from '../reader/ReviewPanel';
 import { clampPanelWidth, SidePanel, type PanelTab } from '../reader/SidePanel';
 import { usePdfDocument } from '../reader/usePdfDocument';
@@ -497,14 +498,17 @@ export default function ReaderScreen({
             onTabChange={setTab}
             questionCount={threadCount}
             header={
-              tab === 'questions' ? (
-                <ReaderRoleBadge
-                  status={statusState.status}
-                  error={statusState.error}
-                  loading={statusState.loading}
-                  onRefresh={() => setStatusToken((token) => token + 1)}
-                />
-              ) : null
+              <>
+                <RelatedStrip slug={slug} />
+                {tab === 'questions' ? (
+                  <ReaderRoleBadge
+                    status={statusState.status}
+                    error={statusState.error}
+                    loading={statusState.loading}
+                    onRefresh={() => setStatusToken((token) => token + 1)}
+                  />
+                ) : null}
+              </>
             }
           >
             {tab === 'review' ? (

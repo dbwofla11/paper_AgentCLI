@@ -6,7 +6,7 @@
 
 ## 일일 후보 루프
 
-Orca Automation이 `$daily-digest-loop` 스킬을 예약 실행한다. 컴퓨터 비전·멀티모달·사용자 관심 분야별 후보를 검증해 채팅으로 제시한다. 채택 전에는 논문 파일을 저장하지 않는다.
+Orca Automation이 `$daily-digest-loop` 스킬을 예약 실행한다. 컴퓨터 비전·멀티모달·사용자 관심 분야별 후보를 검증해 채팅으로 보고하고, 같은 내용을 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/daily/YYYY-MM-DD.json`에 기록한다. 캐시는 WebUI 탐색 화면에서 보며 위키·라이브러리·Graphify 대상이 아니다. PDF·Keep·논문 JSON 같은 정본은 사용자가 채택한 뒤에만 저장한다.
 
 ## 사용자 확인 지점
 

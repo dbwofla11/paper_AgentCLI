@@ -1154,6 +1154,40 @@
   margin-left: auto;
 }
 
+/* 인용·피인용 for the open paper, above both tabs; the list opens on the 탐색 screen. */
+.related-strip {
+  display: grid;
+  flex: none;
+  gap: 8px;
+  padding: 8px 14px 8px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.related-strip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.related-strip-text {
+  min-width: 0;
+  font-size: 0.8125rem;
+}
+
+.related-strip-label {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.related-strip-hint {
+  color: var(--text-muted);
+}
+
+.related-strip .related-menu-button {
+  margin-left: auto;
+}
+
 /* ── Review tab ── */
 
 .segmented {

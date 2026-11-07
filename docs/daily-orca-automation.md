@@ -6,8 +6,9 @@
 
 - 컴퓨터 비전 1편, 멀티모달 1편, 사용자 관심 분야 1편을 후보로 찾는다.
 - 최소 두 학술 출처에서 확인하고 공식 학회 발표·게재와 원문을 검증한다.
-- 후보는 채팅으로만 제시한다. 사용자가 채택하기 전에는 PDF·Keep·JSON·인덱스를 수정하지 않는다.
-- 뉴스 수집, 연구 파일 생성, Git commit/push를 수행하지 않는다.
+- 후보는 채팅으로 보고하고, 같은 내용을 Git에서 제외된 로컬 캐시 `00-Inbox/discovery/daily/YYYY-MM-DD.json`에 `python3 .scripts/bin/discovery_cache.py daily-write <file>`로 기록한다. 캐시는 위키·라이브러리·Graphify 대상이 아니며 WebUI 탐색 화면의 일일 후보 탭이 읽는다.
+- PDF·Keep·논문 JSON·인덱스 같은 정본 저장은 사용자가 후보를 채택한 뒤에만 한다. 뉴스 수집, 캐시 외 연구 파일 생성, Git commit/push를 수행하지 않는다.
+- 같은 날짜 캐시가 이미 있으면 덮어쓰지 않는다(`daily-write` 종료 코드 3). 자동화 프롬프트에는 `--replace`를 넣지 않는다.
 - 날짜별 사용자 선정 계획은 `03-Trends/daily/YYYY-MM-DD-plan.md`에 기록한다.
 
 ## 일반 예약 예시
@@ -20,13 +21,15 @@ orca automations create --name "research-daily-candidates" \
   --trigger daily --time 09:00 --timezone Asia/Seoul \
   --provider <codex|claude|omp> --workspace path:<이 저장소 절대경로> \
   --fresh-session --disabled \
-  --prompt "daily-digest-loop 스킬을 읽고 그 절차대로 오늘(KST) 후보 3편을 채팅으로만 제시하라. 파일을 만들거나 수정하지 않는다." \
+  --prompt "daily-digest-loop 스킬을 읽고 그 절차대로 오늘(KST)의 Daily Paper Candidates 3편을 검색해 채팅으로 보고하고 discovery_cache.py daily-write로 캐시만 기록하며 다른 파일을 수정하지 말 것. 캐시 입력 JSON은 저장소 밖 임시 파일로 만들고 기록 뒤 지운다." \
   --json
 orca automations run <id> --json
 orca automations edit <id> --enabled --json
 ```
 
 `<codex|claude|omp>`, `<이 저장소 절대경로>`, `<id>`는 실제 값으로 바꾸며 꺾쇠는 입력하지 않는다. 기존 체크아웃을 지정하고 비활성 상태로 만들어 한 번 실행한 결과를 확인한 뒤 활성화한다. 모델 지정이 필요하면 `--extra-agent-args="--model <selector>"`를 create에 추가한다. omp에는 `--effort`를 전달하지 않는다. 자동화 프롬프트는 슬래시 명령 대신 자연어로 스킬을 지정한다.
+
+프롬프트 문자열 안에 백틱(`` ` ``)을 넣지 않는다. 셸의 큰따옴표 안에서는 명령 치환으로 실행된다. 기존 예약의 프롬프트를 이 문구로 바꾸는 것도 예약 변경이므로 명시적인 사용자 요청이 있을 때만 `orca automations edit <id> --prompt "…"`로 반영한다.
 
 ## 운영 확인
 

@@ -22,7 +22,7 @@ const TERMINAL_STATUS: Record<TerminalEvent['type'], JobRecord['status']> = {
   cancelled: 'cancelled',
 };
 
-const PHASE_LABELS: Record<StreamPhase, string> = {
+export const PHASE_LABELS: Record<StreamPhase, string> = {
   idle: '스트림 대기',
   connecting: '스트림에 연결하는 중…',
   open: '실시간 수신 중',
@@ -52,7 +52,7 @@ function gapRange(from: number, to: number): string | null {
   return from === to ? String(from) : `${from}–${to}`;
 }
 
-function Transcript({ items, busy, placeholder }: { items: TranscriptItem[]; busy: boolean; placeholder: string | null }) {
+export function Transcript({ items, busy, placeholder }: { items: TranscriptItem[]; busy: boolean; placeholder: string | null }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
 
@@ -210,7 +210,7 @@ interface StreamNoticeProps {
 }
 
 /** Shown while a refused stream waits for its automatic reconnect, and after the hook gives up. */
-function StreamNotice({ phase, interruption, onReconnect }: StreamNoticeProps) {
+export function StreamNotice({ phase, interruption, onReconnect }: StreamNoticeProps) {
   if (phase !== 'waiting' && phase !== 'failed') return null;
   const retryInMs = phase === 'waiting' ? (interruption?.retryInMs ?? null) : null;
   let detail: string | null = null;

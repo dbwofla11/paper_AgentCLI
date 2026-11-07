@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { BookOpen, RefreshCw, SearchX } from 'lucide-react';
+import { ArrowRight, BookOpen, RefreshCw, SearchX, Telescope } from 'lucide-react';
 import * as m from 'motion/react-m';
 import { fetchPapers, toApiError, type ApiError } from '../api/client';
 import type { PapersPayload, ReviewQueueJob } from '../api/types';
@@ -9,6 +9,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { formatCount } from '../format';
+import { discoverPrefillHref } from '../hooks/useHashRoute';
 import { DUR_FAST, EASE_STANDARD } from '../motion/tokens';
 import { useStatus } from '../status';
 import { BarChart } from './library/BarChart';
@@ -122,6 +123,10 @@ export function LibraryScreen({ headingRef, reloadToken }: { headingRef: Ref<HTM
 
   const blocked =
     status.data && !status.data.ready ? (status.data.reason || '리뷰 에이전트가 준비되지 않았습니다.') : null;
+  // Few or no library matches for the search text: offer the same words as an external search (Q22).
+  // The deferred query is the one `shown` was filtered by.
+  const query = deferredFilter.query.trim();
+  const externalHref = query ? discoverPrefillHref(query) : null;
 
   return (
     <div className="screen library">
@@ -193,17 +198,39 @@ export function LibraryScreen({ headingRef, reloadToken }: { headingRef: Ref<HTM
                 total={data.papers.length}
                 onReset={() => setFilter(EMPTY_FILTER)}
               />
+              {externalHref && shown.length > 0 && shown.length <= 2 ? (
+                <p className="meta library-external">
+                  찾는 논문이 목록에 없나요?
+                  <a href={externalHref}>
+                    <Telescope aria-hidden="true" />‘{query}’ 외부에서 찾기
+                    <ArrowRight aria-hidden="true" />
+                  </a>
+                </p>
+              ) : null}
               {shown.length === 0 ? (
                 <EmptyState
                   icon={SearchX}
                   title="조건에 맞는 논문이 없습니다"
                   action={
-                    <button type="button" className="btn btn-secondary" onClick={() => setFilter(EMPTY_FILTER)}>
-                      필터 초기화
-                    </button>
+                    <div className="empty-state-actions">
+                      {externalHref ? (
+                        <a className="btn btn-secondary" href={externalHref}>
+                          <Telescope aria-hidden="true" />
+                          외부에서 찾기
+                        </a>
+                      ) : null}
+                      <button type="button" className="btn btn-secondary" onClick={() => setFilter(EMPTY_FILTER)}>
+                        필터 초기화
+                      </button>
+                    </div>
                   }
                 >
                   <p>검색어를 줄이거나 분야·읽기 상태·연도 조건을 바꿔 보세요.</p>
+                  {externalHref ? (
+                    <p>
+                      ‘외부에서 찾기’는 같은 검색어 ‘{query}’로 탐색 화면의 외부 학술 DB 검색 양식을 엽니다.
+                    </p>
+                  ) : null}
                 </EmptyState>
               ) : (
                 <ul className="paper-list">

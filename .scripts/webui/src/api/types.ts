@@ -187,6 +187,8 @@ export interface StatusPayload {
   review_roles: ReviewRoles | null;
   /** `paper-reader` resolution (논문 리더 질문 답변); null when the server omits it (normalized in fetchStatus). */
   reader_role: RoleResolution | null;
+  /** `paper-searcher` resolution (논문 탐색 검색); null when the server omits it (normalized in fetchStatus). */
+  searcher_role: RoleResolution | null;
 }
 
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -200,9 +202,12 @@ export interface JobRecord {
   started_at: string | null;
   ended_at: string | null;
   agent: string | null;
-  /** Role the job ran as: a review role for role pings, `paper-reader` for `paper.ask`; absent for agent pings. */
-  role?: ReviewRoleAgent | typeof READER_ROLE_AGENT | null;
-  /** Paper slug; only `paper.ask` records have it. */
+  /**
+   * Role the job ran as: a review role for role pings, `paper-reader` for `paper.ask`, `paper-searcher`
+   * for `discovery.search` and `discovery.register`; absent for agent pings.
+   */
+  role?: ReviewRoleAgent | typeof READER_ROLE_AGENT | typeof SEARCHER_ROLE_AGENT | null;
+  /** Paper slug: the paper a `paper.ask` answers about, or the library slug a `discovery.register` writes. */
   slug?: string;
   cost_usd: number | null;
   error: string | null;
@@ -256,6 +261,8 @@ export interface ResultEvent {
   cost_usd: number | null;
   duration_ms: number | null;
   usage: Record<string, unknown> | null;
+  /** Only a completed `discovery.register` job: what the server published. */
+  registration?: DiscoveryRegistration;
 }
 
 export type JobErrorKind = 'usage_limit' | 'auth' | 'timeout' | 'process' | 'other';
@@ -707,4 +714,312 @@ export interface IdeasPayload {
   /** Repo-relative path → static URL, or null when the server does not serve that file. */
   hrefs: Record<string, string | null>;
   errors: { section: string; error: string }[];
+}
+
+// ── Paper discovery (GET /api/discovery/*; .scripts/docs/webui-api.md "논문 탐색") ──
+
+export type PublicationStatus = 'published' | 'accepted' | 'preprint' | 'unknown';
+
+/** Stored candidate status. A candidate matched to the library always displays as `registered`. */
+export type CandidateStatus = 'new' | 'keep' | 'registered' | 'skipped';
+
+export const CANDIDATE_STATUSES: readonly CandidateStatus[] = ['new', 'keep', 'registered', 'skipped'];
+
+export interface CandidateLibraryMatch {
+  slug: string;
+  /** `id` = arXiv/DOI/S2 match; `title` = normalized-title match (paper_record init refuses it too). */
+  match: 'id' | 'title';
+}
+
+/** cs-conferences.csv row matched to the venue. A reference list, never a quality verdict. */
+export interface ConferenceRef {
+  abbr: string;
+  name: string;
+  /** 평균 (정규화) column; null when the row has none. */
+  score: number | null;
+}
+
+/** One paper found by a search or the daily digest (discovery_cache.py Candidate). */
+export interface DiscoveryCandidate {
+  candidate_id: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  venue: string | null;
+  publication: { status: PublicationStatus; verified: boolean; verification_sources: string[] };
+  citations: number | null;
+  ids: { arXiv: string | null; DOI: string | null; S2: string | null; OpenAlex: string | null };
+  /** Original paper page, https only. */
+  url: string | null;
+  abstract: string | null;
+  /** 1–2 sentences from the searching agent. */
+  relevance: string;
+  sources: string[];
+  suggested_category: string | null;
+  topics: string[];
+  conference_ref: ConferenceRef | null;
+  status: CandidateStatus;
+  status_updated_at: string | null;
+  /** Library record slug once kept or registered. */
+  slug: string | null;
+  /** Computed when read; null when the library has no matching record. */
+  library: CandidateLibraryMatch | null;
+}
+
+/** `computer-vision`, `multimodal`, `interest` (always this order). */
+export type DailySlotName = 'computer-vision' | 'multimodal' | 'interest';
+
+export interface DailySlot {
+  slot: DailySlotName | string;
+  topic: string | null;
+  candidate: DiscoveryCandidate | null;
+  /** Why the slot stayed empty; null when it has a candidate. */
+  unfilled_reason: string | null;
+}
+
+export interface DailyReport {
+  queries: string[];
+  sources: string[];
+  coverage_gaps: string[];
+  notes: string;
+}
+
+/** `00-Inbox/discovery/daily/{date}.json`, written by daily-digest-loop through discovery_cache.py. */
+export interface DailyDigest {
+  schema_version: string;
+  /** `YYYY-MM-DD` (KST). */
+  date: string;
+  created_at: string;
+  /** Repo-relative plan file (`03-Trends/daily/{date}-plan.md`); null when none. */
+  plan_path: string | null;
+  slots: DailySlot[];
+  report: DailyReport;
+}
+
+/** GET /api/discovery/daily/{date}. `plan_href` is the static URL of `plan_path` when the server serves it. */
+export interface DailyDigestPayload {
+  daily: DailyDigest;
+  plan_href: string | null;
+}
+
+export interface DailySlotSummary {
+  slot: DailySlotName | string;
+  title: string | null;
+  /** Stored status; null for an unfilled slot. */
+  status: CandidateStatus | null;
+  library: CandidateLibraryMatch | null;
+}
+
+export interface DailyDigestSummary {
+  date: string;
+  created_at: string;
+  /** Slots with a candidate (of 3). */
+  filled: number;
+  slots: DailySlotSummary[];
+}
+
+/** GET /api/discovery/daily, newest first. Unreadable files are listed in `errors`. */
+export interface DailyDigestList {
+  days: DailyDigestSummary[];
+  errors: { file: string; error: string }[];
+}
+
+/** Harness agent that runs paper-discovery searches (`.omp/agents/paper-searcher.md`). */
+export const SEARCHER_ROLE_AGENT = 'paper-searcher';
+
+/** `discovery_cache.CATEGORIES`, in this order (category hint, register dialog). */
+export type DiscoveryCategory = 'wifi-csi' | 'game-ai' | 'agent-ai' | 'computer-vision' | 'other';
+
+export const DISCOVERY_CATEGORIES: readonly DiscoveryCategory[] = [
+  'wifi-csi',
+  'game-ai',
+  'agent-ai',
+  'computer-vision',
+  'other',
+];
+
+/** Stored session status; `queued`/`running` while its `discovery.search` job is active. */
+export type DiscoverySessionStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export const DISCOVERY_SESSION_STATUSES: readonly DiscoverySessionStatus[] = [
+  'queued',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+];
+
+export type RelatedKind = 'refs' | 'cites';
+
+/**
+ * POST /api/discovery/searches body, also the stored `request` of a search session. Server bounds
+ * (webui/discovery.py): `query` 3–500 characters after whitespace collapse; years 1900–(this year + 1)
+ * with `year_from` ≤ `year_to`; `limit` 1–30 (default 10); `anchors` ≤ 3 library slugs.
+ */
+export interface DiscoverySearchRequest {
+  query: string;
+  year_from: number | null;
+  year_to: number | null;
+  limit: number;
+  category_hint: DiscoveryCategory | null;
+  anchors: string[];
+  verified_only: boolean;
+}
+
+/** Stored `request` of a related (references/citations) session. */
+export interface DiscoveryRelatedRequest {
+  kind: RelatedKind;
+  paper: { slug: string | null; title: string; ids: Partial<DiscoveryCandidate['ids']> };
+  limit: number;
+}
+
+/**
+ * Paper whose Semantic Scholar list is asked for: a library record (`slug`; library card, reader) or a
+ * discovered candidate (`title` and its IDs). The server needs an arXiv, DOI or S2 ID (400 `no_identifier`).
+ */
+export type RelatedPaperRef = { slug: string } | { title: string; ids: DiscoveryCandidate['ids'] };
+
+/**
+ * POST /api/discovery/related body. The server answers synchronously (201 `{"search": Session}`, mode
+ * `related`) after at most ~30 s; `limit` 1–50, 25 when omitted.
+ */
+export interface RelatedRequest {
+  kind: RelatedKind;
+  paper: RelatedPaperRef;
+  limit?: number;
+}
+
+/** The searching agent's report: queries run, sources used, anchors read, what it could not cover. */
+export interface DiscoverySessionReport {
+  queries: string[];
+  sources: string[];
+  anchors: { title: string; ids: Partial<DiscoveryCandidate['ids']> }[];
+  coverage_gaps: string[];
+  /** Results dropped by the request's filters; null when the agent did not count them. */
+  excluded_count: number | null;
+  notes: string;
+}
+
+/**
+ * Why a session failed. `kind`: `interrupted` (server restart), `invalid_output` (the answer did not
+ * match the schema; its first 2000 characters are kept in `report.notes`), or a job error kind
+ * (`timeout`, `usage_limit`, `auth`, `process`, `other`).
+ */
+export interface DiscoverySessionError {
+  message: string;
+  kind: string;
+}
+
+interface DiscoverySessionBase {
+  schema_version: string;
+  search_id: string;
+  created_at: string;
+  status: DiscoverySessionStatus;
+  /** `discovery.search` job id; null for related sessions (answered synchronously). */
+  job_id: string | null;
+  /** Runner and model that ran the search; null before the job started or when unrecorded. */
+  agent: { agent: string | null; model: string | null; selector: string | null } | null;
+  report: DiscoverySessionReport | null;
+  /** Agent order (관련도); library matches are computed when read. */
+  candidates: DiscoveryCandidate[];
+  error: DiscoverySessionError | null;
+  duration_ms: number | null;
+}
+
+/** `00-Inbox/discovery/searches/{search_id}.json`: one search (or related list) with its candidates. */
+export type DiscoverySession =
+  | (DiscoverySessionBase & { mode: 'search'; request: DiscoverySearchRequest })
+  | (DiscoverySessionBase & { mode: 'related'; request: DiscoveryRelatedRequest });
+
+/** GET /api/discovery/searches entry. */
+export interface DiscoverySessionSummary {
+  search_id: string;
+  mode: 'search' | 'related';
+  created_at: string;
+  status: DiscoverySessionStatus;
+  /** Search query; null for related sessions. */
+  query: string | null;
+  /** Related kind; null for searches. */
+  kind: RelatedKind | null;
+  /** Title of the paper a related list belongs to; null for searches. */
+  paper_title: string | null;
+  candidate_count: number;
+  job_id: string | null;
+}
+
+/** GET /api/discovery/searches, newest first (restart-reconciled). Unreadable files are listed in `errors`. */
+export interface DiscoverySessionList {
+  searches: DiscoverySessionSummary[];
+  errors: { file: string; error: string }[];
+}
+
+/** POST /api/discovery/searches → 202: the queued job and the session file written for it. */
+export interface CreateSearchResponse {
+  job: JobRecord;
+  search: DiscoverySession;
+}
+
+/** Cache file holding a candidate: a search session (`search_id`) or a daily digest (`YYYY-MM-DD`). */
+export interface DiscoverySource {
+  kind: 'search' | 'daily';
+  id: string;
+}
+
+/**
+ * POST /api/discovery/keep body. The server collapses whitespace in `reason` and cuts it to 500
+ * characters; an empty reason is written as "사용자 지정 이유 없음".
+ */
+export interface KeepRequest {
+  source: DiscoverySource;
+  candidate_id: string;
+  reason: string | null;
+}
+
+/** POST /api/discovery/keep → 200: the annotated candidate (status `keep`) and the files written. */
+export interface KeepResponse {
+  candidate: DiscoveryCandidate;
+  slug: string;
+  /** `01-Papers/keep.md`. */
+  keep_path: string;
+  /** `01-Papers/library/{slug}.json`. */
+  record_path: string;
+}
+
+/** POST /api/discovery/register body. */
+export interface RegisterRequest {
+  source: DiscoverySource;
+  candidate_id: string;
+  category: DiscoveryCategory;
+}
+
+/** POST /api/discovery/register → 202: the queued `discovery.register` job and the candidate as stored. */
+export interface RegisterResponse {
+  job: JobRecord;
+  candidate: DiscoveryCandidate;
+  /** Library slug the registration writes; null when the server omitted it. */
+  slug: string | null;
+}
+
+/** POST /api/discovery/candidates/status body: 넘김 (`skipped`) or 복원 (`new`). */
+export interface CandidateStatusRequest {
+  source: DiscoverySource;
+  candidate_id: string;
+  status: 'skipped' | 'new';
+}
+
+/** `registration` of a completed `discovery.register` job's `result` event. */
+export interface DiscoveryRegistration {
+  slug: string;
+  /** `01-Papers/library/{slug}.json`. */
+  record_path: string | null;
+  /** `01-Papers/pdfs/{category}/{slug}.pdf`; null = metadata only, the library card shows "PDF 필요". */
+  pdf_path: string | null;
+  keep_path: string | null;
+  index_path: string | null;
+  /** PDF checks that failed, wiki refresh failures and other non-fatal problems. */
+  warnings: string[];
+  /** True when a kept candidate's record was upgraded (same slug and JSON) instead of created. */
+  upgraded: boolean;
+  /** The registering agent's short note (PDF source, why there is none); empty when it left none. */
+  notes: string;
 }

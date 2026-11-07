@@ -37,6 +37,9 @@ SENSITIVE_NAMES = (".git", ".env", ".env.*", ".mcp.json", ".secrets", "credentia
 FIGURE_DIR = "figures"
 FIGURE_SUFFIX = r"[a-z0-9][a-z0-9-]*"
 FIGURE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+# Paper-discovery cache ``00-Inbox/discovery/<anything>`` (daily digests, search sessions): read
+# only through ``/api/discovery/*``, never served statically. The folder itself has no index.
+DISCOVERY_CACHE = ("00-inbox", "discovery")
 
 
 def figure_name_ok(slug: str, name: str, extensions: Iterable[str] = ("svg",)) -> bool:
@@ -51,6 +54,12 @@ def _review_figure(parts: list[str] | tuple[str, ...]) -> bool:
     below it. Case-folded: on a case-insensitive filesystem ``Figures`` is the same directory."""
     return (list(parts[:2]) == ["01-Papers", "reviews"]
             and any(part.casefold() == FIGURE_DIR for part in parts[2:]))
+
+
+def _discovery_cache(parts: list[str] | tuple[str, ...]) -> bool:
+    """True for anything below ``00-Inbox/discovery`` (README included). Case-folded like
+    ``_review_figure``."""
+    return len(parts) > 2 and tuple(part.casefold() for part in parts[:2]) == DISCOVERY_CACHE
 
 
 class GuardError(Exception):
@@ -202,7 +211,7 @@ def resolve_static(root: Path, url_path: str, allowed_roots: tuple[str, ...],
         return None
     if not _allowed(relative, allowed_roots, allowed_files) and not _allowed(relative + "/", allowed_roots, allowed_files):
         return None
-    if _sensitive(parts) or _review_figure(parts):
+    if _sensitive(parts) or _review_figure(parts) or _discovery_cache(parts):
         return None
     if not _exact_case(root, parts):
         return None
@@ -218,6 +227,6 @@ def resolve_static(root: Path, url_path: str, allowed_roots: tuple[str, ...],
         resolved_relative += "/"
     resolved_parts = resolved.relative_to(base).parts
     if (not _allowed(resolved_relative, allowed_roots, allowed_files) or _sensitive(resolved_parts)
-            or _review_figure(resolved_parts)):
+            or _review_figure(resolved_parts) or _discovery_cache(resolved_parts)):
         return None
     return resolved

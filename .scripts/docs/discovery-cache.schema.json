@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "discovery-cache.schema.json",
+  "title": "WebUI 논문 탐색 캐시 (00-Inbox/discovery)",
+  "description": "문서용 스키마. 정본은 .scripts/bin/discovery_cache.py(validate_daily·validate_session·validate_candidate·normalize_candidate)다. 저장 형식을 기술한다. 생산자 입력(daily-write)은 Candidate의 파생 키(candidate_id·status·status_updated_at·slug·conference_ref·library)와 Daily의 schema_version·created_at·plan_path·report, slot의 topic·unfilled_reason(후보가 있을 때)을 생략할 수 있고 파생 키는 넣어도 다시 계산한다. 알 수 없는 키는 오류다. 길이 한도를 넘는 문자열·목록은 오류가 아니라 잘라서 저장하고, 제어문자는 지우며, https가 아닌 url은 null로 저장한다. daily/{date}.json은 Daily, searches/{search_id}.json은 SearchSession이다.",
+  "oneOf": [{"$ref": "#/$defs/Daily"}, {"$ref": "#/$defs/SearchSession"}],
+  "$defs": {
+    "NullableString": {"type": ["string", "null"]},
+    "Candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "title", "authors", "year", "venue", "publication", "citations", "ids", "url",
+                   "abstract", "relevance", "sources", "suggested_category", "topics", "conference_ref", "status",
+                   "status_updated_at", "slug"],
+      "properties": {
+        "candidate_id": {"type": "string", "pattern": "^c_[0-9a-f]{12}$",
+                         "description": "c_ + sha256(key)[:12]. key 우선순위: doi:<casefold DOI> > arxiv:<버전 제거 id> > s2:<id casefold> > title:<NFKC·casefold·영숫자 외 공백·공백 축약 제목>"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 500},
+        "authors": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 200}},
+        "year": {"type": ["integer", "null"], "minimum": 1800, "maximum": 2100},
+        "venue": {"type": ["string", "null"], "maxLength": 300},
+        "publication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "verified", "verification_sources"],
+          "properties": {
+            "status": {"enum": ["published", "accepted", "preprint", "unknown"]},
+            "verified": {"type": "boolean"},
+            "verification_sources": {"type": "array", "maxItems": 10, "items": {"type": "string", "maxLength": 500}}
+          }
+        },
+        "citations": {"type": ["integer", "null"], "minimum": 0},
+        "ids": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arXiv", "DOI", "S2", "OpenAlex"],
+          "properties": {
+            "arXiv": {"type": ["string", "null"], "pattern": "^\\d{4}\\.\\d{4,5}$", "description": "버전 제거"},
+            "DOI": {"type": ["string", "null"], "pattern": "^10\\.\\d{4,9}/\\S+$", "description": "원래 대소문자 유지, 비교는 casefold"},
+            "S2": {"type": ["string", "null"], "maxLength": 200},
+            "OpenAlex": {"type": ["string", "null"], "maxLength": 200}
+          }
+        },
+        "url": {"type": ["string", "null"], "pattern": "^https://", "maxLength": 2000},
+        "abstract": {"type": ["string", "null"], "maxLength": 5000},
+        "relevance": {"type": "string", "minLength": 1, "maxLength": 600, "description": "1–2문장 관련 이유"},
+        "sources": {"type": "array", "uniqueItems": true, "items": {"enum": ["s2", "arxiv", "openalex", "web"]}},
+        "suggested_category": {"enum": ["wifi-csi", "game-ai", "agent-ai", "computer-vision", "other", null]},
+        "topics": {"type": "array", "maxItems": 10, "items": {"type": "string", "maxLength": 100}},
+        "conference_ref": {
+          "description": "01-Papers/reference/cs-conferences.csv 참고 행(표시 라벨 \"참고\", 품질 판정 아님). 서버 계산, 읽기 응답에서 다시 계산한다.",
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "additionalProperties": false, "required": ["abbr", "name", "score"],
+             "properties": {"abbr": {"type": "string"}, "name": {"type": "string"}, "score": {"type": ["number", "null"]}}}
+          ]
+        },
+        "status": {"enum": ["new", "keep", "registered", "skipped"]},
+        "status_updated_at": {"type": ["string", "null"]},
+        "slug": {"type": ["string", "null"], "pattern": "^[a-z0-9-]+$"},
+        "library": {"description": "읽기 응답에만 있다(저장하지 않음): {slug, match: id|title} 또는 null"}
+      }
+    },
+    "Daily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "date", "created_at", "plan_path", "slots", "report"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "실제 날짜, 파일 이름과 같다"},
+        "created_at": {"type": "string"},
+        "plan_path": {"type": ["string", "null"], "maxLength": 300, "description": "저장소 상대 경로(예: 03-Trends/daily/{date}-plan.md)"},
+        "slots": {
+          "type": "array", "minItems": 3, "maxItems": 3,
+          "description": "computer-vision, multimodal, interest 각 1개(저장 순서도 이 순서)",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slot", "topic", "candidate", "unfilled_reason"],
+            "properties": {
+              "slot": {"enum": ["computer-vision", "multimodal", "interest"]},
+              "topic": {"type": ["string", "null"], "maxLength": 200},
+              "candidate": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/Candidate"}]},
+              "unfilled_reason": {"type": ["string", "null"], "maxLength": 600, "description": "candidate가 null이면 필수(비지 않음)"}
+            }
+          }
+        },
+        "report": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["queries", "sources", "coverage_gaps", "notes"],
+          "properties": {
+            "queries": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 500}},
+            "sources": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 500}},
+            "coverage_gaps": {"type": "array", "maxItems": 50, "items": {"type": "string", "maxLength": 500}},
+            "notes": {"type": "string", "maxLength": 5000}
+          }
+        }
+      }
+    },
+    "SearchSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "search_id", "mode", "created_at", "status", "job_id", "request", "agent",
+                   "report", "candidates", "error", "duration_ms"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "search_id": {"type": "string", "pattern": "^s_[0-9a-f]{12}$"},
+        "mode": {"enum": ["search", "related"]},
+        "created_at": {"type": "string"},
+        "status": {"enum": ["queued", "running", "completed", "failed", "cancelled"],
+                   "description": "읽을 때 queued/running인데 브로커가 job_id를 모르면 failed + error {kind: interrupted}로 고쳐 저장"},
+        "job_id": {"type": ["string", "null"]},
+        "request": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false,
+             "required": ["query", "year_from", "year_to", "limit", "category_hint", "anchors", "verified_only"],
+             "properties": {
+               "query": {"type": "string"},
+               "year_from": {"type": ["integer", "null"]},
+               "year_to": {"type": ["integer", "null"]},
+               "limit": {"type": "integer", "minimum": 1},
+               "category_hint": {"enum": ["wifi-csi", "game-ai", "agent-ai", "computer-vision", "other", null]},
+               "anchors": {"type": "array", "items": {"type": "string"}, "description": "라이브러리 slug"},
+               "verified_only": {"type": "boolean"}
+             }},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "paper", "limit"],
+             "properties": {
+               "kind": {"enum": ["refs", "cites"]},
+               "paper": {"type": "object", "additionalProperties": false, "required": ["slug", "title", "ids"],
+                         "properties": {"slug": {"type": ["string", "null"]}, "title": {"type": "string"}, "ids": {"type": "object"}}},
+               "limit": {"type": "integer", "minimum": 1}
+             }}
+          ]
+        },
+        "agent": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "additionalProperties": false, "required": ["agent", "model", "selector"],
+             "properties": {"agent": {"type": ["string", "null"]}, "model": {"type": ["string", "null"]}, "selector": {"type": ["string", "null"]}}}
+          ]
+        },
+        "report": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "additionalProperties": false,
+             "properties": {
+               "queries": {"type": "array", "items": {"type": "string"}},
+               "sources": {"type": "array", "items": {"type": "string"}},
+               "anchors": {"type": "array", "items": {"type": "object", "description": "{title, ids}"}},
+               "coverage_gaps": {"type": "array", "items": {"type": "string"}},
+               "excluded_count": {"type": ["integer", "null"], "minimum": 0},
+               "notes": {"type": "string"}
+             }}
+          ]
+        },
+        "candidates": {"type": "array", "items": {"$ref": "#/$defs/Candidate"},
+                       "description": "candidate_id로 중복을 합치고 sources는 합집합(merge_candidates)"},
+        "error": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "required": ["message", "kind"],
+             "properties": {"message": {"type": "string"}, "kind": {"type": "string"}}}
+          ]
+        },
+        "duration_ms": {"type": ["integer", "null"], "minimum": 0}
+      }
+    }
+  }
+}

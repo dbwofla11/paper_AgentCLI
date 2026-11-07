@@ -6,6 +6,7 @@ WebUI serves it as ``GET /api/harness`` (``.scripts/docs/webui-api.md``).
 """
 from __future__ import annotations
 
+import fnmatch
 import html
 import json
 import re
@@ -20,6 +21,7 @@ from research_ui import STYLESHEET, page_header
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "100-views" / "harness-dashboard.html"
 SKILLS = ".agents/skills"
+SKILL_FILE = "SKILL.md"
 PERSONAS = "04-Projects/validation/personas"
 OMP_AGENTS = ".omp/agents"
 SYNC_STATE = "graphify-out/sync-state.json"
@@ -112,6 +114,36 @@ def _plain_file(root: Path, relative: str) -> bool:
         return False
 
 
+def _skill_file(root: Path, source: Path) -> bool:
+    """True when ``source`` is ``.agents/skills/<name>/SKILL.md`` and that file is a regular file,
+    not a symlink, inside a skill directory whose real path is inside the real ``root``.
+
+    Only the ``<name>`` entry may be a symlink: shared skills are installed as directory links
+    (e.g. ``-> ../../200-ARIS/upstream/skills/skills-codex/<name>``), whose targets lie outside the
+    static-file allow-list. ``.agents`` and ``.agents/skills`` must be real directories, and no
+    component of the skill directory's real path may be a sensitive name (``security.SENSITIVE_NAMES``).
+    This reads only the file named ``SKILL.md`` into the payload; static serving is unchanged."""
+    from webui import security
+
+    try:
+        base = root.resolve(strict=True)
+        parts = source.relative_to(root).parts
+        if parts[:2] != tuple(SKILLS.split("/")) or len(parts) != 4 or parts[3] != SKILL_FILE:
+            return False
+        if (root / SKILLS).resolve(strict=True) != base / SKILLS:
+            return False
+        directory = (root / SKILLS / parts[2]).resolve(strict=True)
+        if not directory.is_relative_to(base):
+            return False
+        if any(fnmatch.fnmatchcase(part, pattern) for part in directory.relative_to(base).parts
+               for pattern in security.SENSITIVE_NAMES):
+            return False
+        real = directory / SKILL_FILE
+        return not real.is_symlink() and real.is_file()
+    except (OSError, RuntimeError, ValueError):
+        return False
+
+
 def _description(root: Path, path: Path) -> str | None:
     if not _plain_file(root, path.relative_to(root).as_posix()):
         return None
@@ -125,7 +157,7 @@ def _description(root: Path, path: Path) -> str | None:
 def _guide(root: Path, errors: list[dict]) -> dict:
     if not _servable_file(root, MAP_RELATIVE):
         raise ValueError(f"{MAP_RELATIVE}: {REFUSED}")
-    skills = skill_data(root, readable=lambda source: _servable_file(root, source.relative_to(root).as_posix()))
+    skills = skill_data(root, readable=lambda source: _skill_file(root, source))
     for skill in skills:
         if skill["instructions"] is None:
             errors.append({"section": "guide", "error": f"{skill['source']}: {REFUSED}"})

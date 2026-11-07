@@ -260,6 +260,76 @@ class HarnessGetTests(WebUITestCase):
                     finally:
                         skill.unlink()
 
+    def test_skill_directory_symlink_to_in_repo_target_is_read_but_not_served(self):
+        self.fixture()
+        skill_dir = self.root / '.agents/skills/x'
+        (skill_dir / 'SKILL.md').unlink()
+        skill_dir.rmdir()
+        text = '---\ndescription: Linked fixture\n---\n# Linked instructions\n'
+        target = self.put('vendor/x/SKILL.md', text)
+        skill_dir.symlink_to(target.parent, target_is_directory=True)
+
+        data = self.get_data()
+        skill = next(entry for entry in data['guide']['skills'] if entry['name'] == 'x')
+        self.assertEqual(skill['instructions'], text)
+        self.assertFalse(any(error['section'] == 'guide' and skill['source'] in error['error']
+                             for error in data['errors']))
+        self.assertIsNone(data['hrefs']['.agents/skills/x/SKILL.md'])
+        status, _, _ = self.request('GET', '/.agents/skills/x/SKILL.md')
+        self.assertEqual(status, 404)
+
+    def test_skill_directory_symlink_to_outside_repo_is_refused(self):
+        self.fixture()
+        skill_dir = self.root / '.agents/skills/x'
+        (skill_dir / 'SKILL.md').unlink()
+        skill_dir.rmdir()
+        with tempfile.TemporaryDirectory() as outside:
+            (Path(outside) / 'SKILL.md').write_text('OUTSIDE-SKILL-SENTINEL', encoding='utf-8')
+            skill_dir.symlink_to(outside, target_is_directory=True)
+            status, _, body = self.request('GET', '/api/harness')
+            self.assertEqual(status, 200)
+            self.assertNotIn(b'OUTSIDE-SKILL-SENTINEL', body)
+            data = json.loads(body)
+            skill = next(entry for entry in data['guide']['skills'] if entry['name'] == 'x')
+            self.assertIsNone(skill['instructions'])
+            self.assertTrue(any(error['section'] == 'guide' and skill['source'] in error['error']
+                                for error in data['errors']))
+
+    def test_skill_directory_symlink_to_sensitive_directory_is_refused(self):
+        self.fixture()
+        skill_dir = self.root / '.agents/skills/x'
+        (skill_dir / 'SKILL.md').unlink()
+        skill_dir.rmdir()
+        target = self.put('.git/linked-skill/SKILL.md', 'SENSITIVE-SKILL-SENTINEL')
+        skill_dir.symlink_to(target.parent, target_is_directory=True)
+
+        status, _, body = self.request('GET', '/api/harness')
+        self.assertEqual(status, 200)
+        self.assertNotIn(b'SENSITIVE-SKILL-SENTINEL', body)
+        data = json.loads(body)
+        skill = next(entry for entry in data['guide']['skills'] if entry['name'] == 'x')
+        self.assertIsNone(skill['instructions'])
+        self.assertTrue(any(error['section'] == 'guide' and skill['source'] in error['error']
+                            for error in data['errors']))
+
+    def test_skills_parent_directory_symlink_is_refused(self):
+        self.fixture()
+        skills_dir = self.root / '.agents/skills'
+        (skills_dir / 'x/SKILL.md').unlink()
+        (skills_dir / 'x').rmdir()
+        skills_dir.rmdir()
+        target = self.put('vendor/skills/x/SKILL.md', 'PARENT-SYMLINK-SENTINEL')
+        skills_dir.symlink_to(target.parent.parent, target_is_directory=True)
+
+        status, _, body = self.request('GET', '/api/harness')
+        self.assertEqual(status, 200)
+        self.assertNotIn(b'PARENT-SYMLINK-SENTINEL', body)
+        data = json.loads(body)
+        skill = next(entry for entry in data['guide']['skills'] if entry['name'] == 'x')
+        self.assertIsNone(skill['instructions'])
+        self.assertTrue(any(error['section'] == 'guide' and skill['source'] in error['error']
+                            for error in data['errors']))
+
     def test_malformed_graphify_is_isolated(self):
         self.fixture()
         self.put('graphify-out/sync-state.json', '{')

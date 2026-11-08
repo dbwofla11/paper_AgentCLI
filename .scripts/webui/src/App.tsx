@@ -139,7 +139,13 @@ export function App() {
           {route.name === 'papers' ? <LibraryScreen headingRef={headingRef} reloadToken={reloadToken} /> : null}
           {route.name === 'reader' ? (
             <Suspense fallback={<ReaderLoading />}>
-              <ReaderScreen key={route.slug} slug={route.slug} headingRef={headingRef} reloadToken={reloadToken} />
+              <ReaderScreen
+                key={route.slug}
+                slug={route.slug}
+                view={route.view}
+                headingRef={headingRef}
+                reloadToken={reloadToken}
+              />
             </Suspense>
           ) : null}
           {route.name === 'discover' ? (

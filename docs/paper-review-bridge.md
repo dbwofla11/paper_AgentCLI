@@ -33,7 +33,19 @@ WebUI 주소는 `http://127.0.0.1:8765/100-views/webui/`(논문 라이브러리 
 
 ## 격리와 검증
 
-리뷰 에이전트는 저장소의 임시 작업 복사본에서 실행된다. 선택한 PDF만 복사하고 나머지 원문 PDF는 제외한다. `.mcp.json`, `.env*`, `.claude/`, `.codex/`, `.secrets/`, `credentials.json`도 복사하지 않으며, 복사본 밖을 가리키는 심볼릭 링크는 제거한다. 작업 전후 파일 상태를 비교하며 리뷰 Markdown, 리뷰 옆 `figures/`의 해당 논문 방법 구조도(`{slug}-method.html`·`{slug}-method.svg`처럼 리뷰 slug로 시작하는 `.svg`·`.html`), 선택 논문 JSON, 논문 인덱스, 카탈로그, Graphify 출력, 개념 후보 초안만 게시 후보로 받는다. 다른 slug로 시작하거나 다른 확장자인 그림 파일은 허용 범위 밖 변경으로 실패 처리한다. JSON 스키마·5축 필드·실제 읽은 범위를 확인하고, 리뷰에 템플릿 지시문 주석(`<!--`)이 남아 있으면 실패 처리한다. 방법 구조도를 만들지 못한 리뷰는 에이전트가 실패로 보고하며 Mermaid 등으로 대체하지 않는다. Graphify 동기화 실패는 리뷰를 유지한 채 pending으로 남긴다. 실행 중 원본 파일이 바뀌었으면 해당 출력 게시를 거부한다. 실패 상태와 오류 요약은 `04-Projects/review-queue/queue.json`에 남긴다.
+리뷰 에이전트는 저장소의 임시 작업 복사본에서 실행된다. 선택한 PDF만 복사하고 나머지 원문 PDF는 제외한다. `.mcp.json`, `.env*`, `.claude/`, `.codex/`, `.secrets/`, `credentials.json`도 복사하지 않으며, 복사본 밖을 가리키는 심볼릭 링크는 제거한다. 작업 전후 파일 상태를 비교하며 리뷰 Markdown, 리뷰 옆 `figures/`의 해당 논문 방법 구조도(`{slug}-method.html`·`{slug}-method.svg`처럼 리뷰 slug로 시작하는 `.svg`·`.html`)와 시각 요약(`{slug}-visual.src.html`·`{slug}-visual.html`·`{slug}-visual.sheet.png`·`{slug}-visual.sheet-N.png`), 선택 논문 JSON, 논문 인덱스, 카탈로그, Graphify 출력, 개념 후보 초안만 게시 후보로 받는다. 다른 slug로 시작하거나 다른 확장자인 그림 파일은 허용 범위 밖 변경으로 실패 처리한다. JSON 스키마·5축 필드·실제 읽은 범위를 확인하고, 리뷰에 템플릿 지시문 주석(`<!--`)이 남아 있으면 실패 처리한다. 방법 구조도를 만들지 못한 리뷰는 에이전트가 실패로 보고하며 Mermaid 등으로 대체하지 않는다. Graphify 동기화 실패는 리뷰를 유지한 채 pending으로 남긴다. 실행 중 원본 파일이 바뀌었으면 해당 출력 게시를 거부한다. 실패 상태와 오류 요약은 `04-Projects/review-queue/queue.json`에 남긴다.
+
+시각 요약(`paper-review` 5-1단계)은 선택 산출물이다. 실행기에 `visual-explainer` 스킬이 설치되어 있으면 서버가 그 디렉터리를 작업 복사본 루트의 `.visual-explainer/`로 복사한다(심볼릭 링크가 아닌 실제 파일, `.git` 제외, `node_modules/playwright-core`가 있으면 포함). 리뷰 에이전트는 이 사본만 읽고 `node .visual-explainer/kit/render.mjs`로 렌더하며, 설치된 스킬 디렉터리에는 접근 권한을 받지 않는다. 사본은 게시 후보·변경 비교에 들어가지 않고 작업 복사본과 함께 지워진다. 서버는 리뷰 정본 출력을 위 충돌 보호로 먼저 게시한 뒤 시각 요약 파일을 따로 게시하고, 결과를 큐 작업의 `visual`(`status`와 `reason`)에 기록한다.
+
+| `visual.status` | 뜻 |
+|---|---|
+| `published` | 검사를 통과해 시각 요약 파일을 게시했다. 서버가 신선도 확인용 사이드카 `{slug}-visual.json`(리뷰 SHA-256 포함)을 쓴다 |
+| `missing` | 리뷰 에이전트가 새 시각 요약을 만들지 않았다 |
+| `rejected` | `{slug}-visual.html`이 서버 검사를 통과하지 못했다 |
+| `conflict` | 실행 중 실제 저장소의 시각 요약 파일이 바뀌었다 |
+| `failed` | 시각 요약 파일을 복사하거나 쓰지 못했다 |
+
+`published`가 아니면 실제 저장소의 기존 시각 요약 파일은 그대로 두거나 원래대로 되돌린다. 어느 경우에도 리뷰는 완료로 남는다.
 
 작업 복사본에는 Git이 무시하는 개인 논문 기록 `01-Papers/library/`, `01-Papers/reviews/`(`figures/` 포함), `01-Papers/index.md`도 복사한다. 그래서 에이전트와 게시 전 충돌 검사가 실제 저장소의 최신 기록을 본다. 리뷰 대상이 아닌 원문 PDF와 리더 질문 기록(`reader-threads`)은 계속 제외한다.
 

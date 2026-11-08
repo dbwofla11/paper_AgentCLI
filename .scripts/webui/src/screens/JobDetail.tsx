@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import { cancelJob, fetchJob, isAbortError, toApiError, type ApiError } from '../api/client';
-import type { JobErrorKind, JobRecord, TerminalEvent } from '../api/types';
+import { VISUAL_JOB_KIND, type JobErrorKind, type JobRecord, type TerminalEvent } from '../api/types';
 import { StatusBadge } from '../components/Badges';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { formatCost, formatDateTime, formatDuration, jobKindLabel } from '../format';
@@ -381,7 +381,7 @@ export function JobDetail({ jobId, initialRecord, sectionRef, onChanged }: JobDe
           <div>
             <dt>논문</dt>
             <dd>
-              <a href={paperHref(record.slug)}>
+              <a href={paperHref(record.slug, record.kind === VISUAL_JOB_KIND ? 'visual' : 'pdf')}>
                 <code translate="no">{record.slug}</code>
               </a>
             </dd>

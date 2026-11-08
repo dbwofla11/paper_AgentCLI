@@ -176,18 +176,34 @@ def open_paper_figure(slug: str, name: str) -> BinaryIO:
     """Open the method figure SVG beside the paper's review for
     ``GET /api/papers/{slug}/figures/{name}``; the caller streams and closes the handle.
 
-    Validation and opening are one operation: from a descriptor of ``reviews.ROOT`` every
-    component (``01-Papers``, ``reviews``, the review's category folders, ``figures``) is opened
-    with ``dir_fd`` + ``O_DIRECTORY|O_NOFOLLOW`` and the file with ``O_NOFOLLOW``, then fstat'ed,
-    so a symlink at any component — even one swapped in during the request — is refused, never
-    followed. 400 ``bad_request`` for a malformed slug or a name other than
-    ``<slug>-<suffix>.svg``; 404 ``not_found`` when the record is absent, any component is missing,
-    a symlink or not a directory, or the file is not a regular file.
+    400 ``bad_request`` for a malformed slug or a name other than ``<slug>-<suffix>.svg``; 404
+    ``not_found`` as in ``open_in_figures``.
     """
     record = paper_record(slug)
     if not isinstance(name, str) or not security.figure_name_ok(slug, name):
         raise ReaderError(400, "bad_request", "그림 이름은 <slug>-<이름>.svg 형식이어야 합니다.")
-    missing = ReaderError(404, "not_found", "그림 파일을 찾을 수 없습니다.")
+    return open_in_figures(record, name, ReaderError(404, "not_found", "그림 파일을 찾을 수 없습니다."))
+
+
+def open_paper_visual(slug: str) -> BinaryIO:
+    """Open the rendered visual summary ``{slug}-visual.html`` beside the paper's review for
+    ``GET /api/papers/{slug}/visual``; the caller reads and closes the handle. 400
+    ``bad_request`` for a malformed slug; 404 ``not_found`` as in ``open_in_figures``."""
+    record = paper_record(slug)
+    return open_in_figures(record, f"{security.visual_name(slug)}.html",
+                           ReaderError(404, "not_found", "시각 요약 파일을 찾을 수 없습니다."))
+
+
+def open_in_figures(record: dict, name: str, missing: Exception) -> BinaryIO:
+    """Open ``name`` (an already validated plain file name) in the review's ``figures`` folder.
+
+    Validation and opening are one operation: from a descriptor of ``reviews.ROOT`` every
+    component (``01-Papers``, ``reviews``, the review's category folders, ``figures``) is opened
+    with ``dir_fd`` + ``O_DIRECTORY|O_NOFOLLOW`` and the file with ``O_NOFOLLOW``, then fstat'ed,
+    so a symlink at any component — even one swapped in during the request — is refused, never
+    followed. Raises ``missing`` when any component is missing, a symlink or not a directory, or
+    the file is not a regular file.
+    """
     try:
         components = _figure_components(record)
     except (OSError, RuntimeError) as exc:  # a symlink loop while resolving review_path
@@ -831,7 +847,10 @@ def _verification_brief(slug: str) -> dict | None:
 def list_papers(broker=None) -> dict:
     """``{"papers": [PaperSummary], "errors": [{"file", "error"}], "labels", "queued_statuses"}``;
     PDF first, year desc, title. Display title, source URL, labels and the review-needed rule come
-    from ``paper_catalog_html`` so the WebUI and the static library agree."""
+    from ``paper_catalog_html`` so the WebUI and the static library agree. ``has_visual``: the
+    rendered visual summary exists (``visuals.has_visual``)."""
+    from webui import visuals  # visuals imports this module
+
     catalog = paper_catalog_html
     papers, errors = [], []
     for path in sorted(reviews.LIBRARY.glob("*.json")):
@@ -858,6 +877,7 @@ def list_papers(broker=None) -> dict:
             has_review = reviews.review_target(record).is_file()
         except (ValueError, OSError):
             has_review = False
+        has_visual = visuals.has_visual(record, slug)
         abstract = record.get("abstract")
         try:
             threads = load_threads(slug, broker)["threads"]
@@ -869,7 +889,8 @@ def list_papers(broker=None) -> dict:
             "topics": record.get("topics") or [], "one_line_summary": record.get("one_line_summary"),
             "reading_status": record.get("reading_status"),
             "structured_review_status": record.get("structured_review_status"),
-            "has_pdf": has_pdf, "has_review": has_review, "verification": _verification_brief(slug),
+            "has_pdf": has_pdf, "has_review": has_review, "has_visual": has_visual,
+            "verification": _verification_brief(slug),
             "threads": ({"count": len(threads), "updated_at": max(str(t.get("updated_at") or "") for t in threads)}
                         if threads else None),
             "display_title": catalog.display_title({**record, "slug": slug}, reviews.ROOT),
@@ -897,8 +918,11 @@ def _review_info(record: dict) -> tuple[dict, str | None]:
              "sha256": hashlib.sha256(data).hexdigest()}, markdown)
 
 
-def paper_bundle(slug: str) -> dict:
-    """``PaperBundle``: record, PDF facts, review Markdown, verification, evidence targets."""
+def paper_bundle(slug: str, broker=None) -> dict:
+    """``PaperBundle``: record, PDF facts, review Markdown, verification, evidence targets, and the
+    visual summary (``visuals.load_visual``; its ``job`` needs ``broker``)."""
+    from webui import visuals  # visuals imports this module
+
     record = paper_record(slug)
     pdf_info = {"url": f"/api/papers/{slug}/pdf", "available": False, "pages": None, "bytes": None,
                 "sha256": None, "text_available": False}
@@ -917,7 +941,8 @@ def paper_bundle(slug: str) -> dict:
     except (ValueError, OSError):
         verification = None
     return {"paper": record, "pdf": pdf_info, "review": review, "verification": verification,
-            "evidence": evidence_items(record, texts, pdf_info["pages"])}
+            "evidence": evidence_items(record, texts, pdf_info["pages"]),
+            "visual": visuals.load_visual(slug, record, review["sha256"], broker)}
 
 
 # ---- readiness ---------------------------------------------------------------------------------

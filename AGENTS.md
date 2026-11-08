@@ -9,7 +9,7 @@ AI / ML / CS 논문을 **개별 심층 리뷰**하는 작업 공간이다. 산�
 | `00-Inbox/discovery/` | WebUI 논문 탐색 캐시(검색 기록·일일 후보, Git 제외) |
 | `01-Papers/pdfs/{category}/` | 카테고리별 원문 PDF |
 | `01-Papers/reviews/{category}/` | 카테고리별 최종 심층 리뷰 노트 (논문 1편 = 파일 1개) |
-| `01-Papers/reviews/{category}/figures/` | 리뷰의 방법 구조도. `{slug}-method.html`(diagram-design 원본)과 임베드용 `{slug}-method.svg` |
+| `01-Papers/reviews/{category}/figures/` | 리뷰의 방법 구조도 `{slug}-method.html`(diagram-design 원본)·임베드용 `{slug}-method.svg`, 선택 산출물인 시각 요약 `{slug}-visual.src.html`(visual-explainer 원본)·`{slug}-visual.html`(렌더 결과)·`{slug}-visual.sheet*.png`(시각 검사 시트) |
 | `01-Papers/triage/` | 논문별 1차 판정·조사 메모 |
 | `01-Papers/index.md` | 읽은/읽을 논문 인덱스 (한 줄 = 한 편) |
 | `01-Papers/keep.md` | 나중에 읽거나 조사할 대기열 |
@@ -107,7 +107,7 @@ Windows에서는 `py -3 .scripts/bin/onboarding_check.py --create-dirs`를 사�
 | 스킬 호출 | `/skill:<name>` 또는 자연어 + `skill://<name>` | `/<name>` | `$<name>` |
 | 사용자 수준 스킬 디렉터리 | `~/.omp/agent/skills/<name>/` | `~/.claude/skills/<name>/` | `~/.codex/skills/<name>/` |
 
-omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 검증), `idea-critic`(아이디어 심사), `graph-extractor`(그래프 청크)다. 공유 정의는 모델을 지정하지 않으며 개인 설정이나 부모 세션에서 모델을 정한다. 리뷰 독립 검증은 요청 시 수행한다.
+omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 검증), `idea-critic`(아이디어 심사), `graph-extractor`(그래프 청크)다. WebUI 전용 역할은 `paper-reader`(리더 질문), `paper-searcher`(논문 탐색), `visual-designer`(리더의 "시각 요약 만들기")다. 공유 정의는 모델을 지정하지 않으며 개인 설정이나 부모 세션에서 모델을 정한다. 리뷰 독립 검증은 요청 시 수행한다.
 
 기본 관문인 `critical-validation`은 동일한 근거 묶음 경로·SHA-256·brief를 격리된 방법·재현성·새로움 심사자 셋에게 동시에 전달한다. omp에서는 `task` 한 번에 `agent: idea-critic` 항목 셋을 사용하고 각 항목에 해당 역할과 페르소나만 전달한다. 도구 부재, 깊이 제한, 해시 불일치 또는 심사 실패 시 `심사 대기`로 남기며 순차 역할극으로 대체하지 않는다. graphify 청크는 omp에서 청크당 `agent: graph-extractor` 항목 하나를 사용한다.
 
@@ -131,7 +131,7 @@ omp 팀은 `.omp/agents/`의 `paper-analyst`(정독), `paper-verifier`(독립 �
 
 1. **수집** — `paper-search`. 메타데이터 확정 후 `01-Papers/pdfs/{category}/`에 저장.
 2. **트리아지** — `90-Templates/paper/triage-template.md`로 1패스. 메모는 `01-Papers/triage/`, 상태는 `01-Papers/index.md`에 남긴다.
-3. **심층 리뷰** — `paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다. 방법 구조도는 `diagram-design` 스킬(사용자 수준 설치)과 저장소 루트 `.diagram-design` 마커(`profile: research-harness`)로 생성해 같은 카테고리의 `figures/`에 둔다.
+3. **심층 리뷰** — `paper-review`. `90-Templates/paper/review-template.md`를 채워 `01-Papers/reviews/{category}/`에 작성한다. 방법 구조도는 `diagram-design` 스킬(사용자 수준 설치)과 저장소 루트 `.diagram-design` 마커(`profile: research-harness`)로 생성해 같은 카테고리의 `figures/`에 둔다. 리뷰가 끝나면 `visual-explainer` 스킬(사용자 수준 설치, `node` 필요)로 리뷰 Markdown만 근거로 한 시각 요약을 같은 `figures/`에 만든다. 시각 요약 실패는 리뷰 실패가 아니다.
 4. **위치 파악** — 필요 시 `related-work`로 선행/후속 연구 맵핑.
 5. **인덱스 갱신** — `review-index`로 `01-Papers/index.md` 한 줄 추가.
 

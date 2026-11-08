@@ -16,6 +16,7 @@ autoloadSkills: [paper-review]
 - 웹 검색과 URL 읽기: `web_search`, `read <url>`.
 - 하위 에이전트: `task`와 `agent:`; 스킬: `/skill:<name>` 또는 자연어와 `skill://<name>`.
 - 스킬 디렉터리 스크립트 실행: `bash`의 `python3 <스킬 디렉터리>/scripts/self_check.py …`, `python3 <스킬 디렉터리>/scripts/export_svg.py …` (방법 구조도, `diagram-design`은 `~/.omp/agent/skills/diagram-design/`).
+- 시각 요약 렌더: `bash`의 `node <스킬 디렉터리>/kit/render.mjs 01-Papers/reviews/{category}/figures/{slug}-visual.src.html` (`paper-review` 5-1단계). 로컬 리뷰 브리지에서는 작업 복사본 루트의 스킬 사본 `.visual-explainer/`를 쓰고 설치된 스킬은 읽지 않는다. 직접 세션에서는 `~/.omp/agent/skills/visual-explainer/`를 쓴다. 어느 쪽이든 스킬 파일은 고치지 않는다. 실패해도 리뷰는 완료 처리한다.
 
 ## 절차와 근거
 

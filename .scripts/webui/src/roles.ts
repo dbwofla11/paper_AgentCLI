@@ -1,6 +1,7 @@
 import {
   READER_ROLE_AGENT,
   SEARCHER_ROLE_AGENT,
+  VISUAL_ROLE_AGENT,
   type ReviewRoleAgent,
   type ReviewRoles,
   type RoleModelCandidate,
@@ -9,7 +10,7 @@ import {
 
 /** One harness agent card on the status screen. */
 export interface RoleCardSlot {
-  key: keyof ReviewRoles | 'reader' | 'searcher';
+  key: keyof ReviewRoles | 'reader' | 'searcher' | 'visual';
   agent: string;
   title: string;
   /** What the job does when the agent has no omp override. */
@@ -73,6 +74,17 @@ export const SEARCHER_ROLE_SLOT: RoleCardSlot = {
   connectedUse: { subject: '논문 탐색 검색과 등록은', predicate: '의 기본 모델로 실행합니다.' },
   readyText: '논문 탐색 검색과 등록을 이 모델로 실행합니다.',
   blockedText: '이 역할이 준비될 때까지 논문 탐색 검색과 등록을 시작할 수 없습니다. 다른 모델로 대신 실행하지 않습니다.',
+};
+
+/** `visual-designer` draws 시각 요약 on demand (`review.visual`); not a ping target. */
+export const VISUAL_ROLE_SLOT: RoleCardSlot = {
+  key: 'visual',
+  agent: VISUAL_ROLE_AGENT,
+  title: '시각 요약',
+  unconfigured: '미설정 — 연결된 에이전트의 기본 모델 사용',
+  connectedUse: { subject: '논문 리더의 시각 요약 만들기는', predicate: '의 기본 모델로 실행합니다.' },
+  readyText: '논문 리더의 시각 요약 만들기를 이 모델로 실행합니다.',
+  blockedText: '이 역할이 준비될 때까지 논문 리더에서 시각 요약을 만들 수 없습니다. 다른 모델로 대신 실행하지 않습니다.',
 };
 
 /** `config_error` = the omp config could not be read, so whether the role is configured is unknown. */

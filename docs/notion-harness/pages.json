@@ -3,7 +3,7 @@
     "key": "reading",
     "parent": null,
     "title": "논문 읽기",
-    "content": "## 역할\n\n논문을 고르는 단계와 정독하는 단계를 연결한다. 검색 요약으로 리뷰를 쓰지 않고 실제 원문 위치를 근거로 남긴다.\n\n## 실행 흐름\n\n1. paper-search: 업로드·채택 논문 메타데이터와 중복 확인\n2. triage-template: 1패스 판정과 읽을 범위 결정\n3. paper-review: 3패스 정독, diagram-design 방법 구조도와 5축 분석\n4. review-index: 리뷰·JSON·인덱스 경로와 완료 상태 정리\n5. 필요할 때 related-work 또는 paper-relations로 원문 관계 검증\n6. 검증된 정본을 Graphify에 동기화\n\n## 왜 만들었는가\n\n읽은 내용을 다시 찾고, 저자의 주장과 실제 증거를 분리하고, 재현에 필요한 방법·평가 조건을 빠뜨리지 않기 위해서다.\n\n## 근거 문서\n\n- `AGENTS.md`\n- `docs/Harness-Graph.md`\n- `90-Templates/paper/review-template.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "content": "## 역할\n\n논문을 고르는 단계와 정독하는 단계를 연결한다. 검색 요약으로 리뷰를 쓰지 않고 실제 원문 위치를 근거로 남긴다.\n\n## 실행 흐름\n\n1. paper-search: 업로드·채택 논문 메타데이터와 중복 확인\n2. triage-template: 1패스 판정과 읽을 범위 결정\n3. paper-review: 3패스 정독, diagram-design 방법 구조도와 5축 분석, visual-explainer 시각 요약(선택)\n4. review-index: 리뷰·JSON·인덱스 경로와 완료 상태 정리\n5. 필요할 때 related-work 또는 paper-relations로 원문 관계 검증\n6. 검증된 정본을 Graphify에 동기화\n\n## 왜 만들었는가\n\n읽은 내용을 다시 찾고, 저자의 주장과 실제 증거를 분리하고, 재현에 필요한 방법·평가 조건을 빠뜨리지 않기 위해서다.\n\n## 근거 문서\n\n- `AGENTS.md`\n- `docs/Harness-Graph.md`\n- `90-Templates/paper/review-template.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       "AGENTS.md",
       "docs/Harness-Graph.md",
@@ -93,7 +93,7 @@
     "key": "skill-paper-review",
     "parent": "reading",
     "title": "논문 심층 리뷰 · paper-review",
-    "content": "## 역할\n\n3패스 정독 → diagram-design 방법 구조도(SVG) → 5축 리뷰와 JSON → 인덱스·그래프 갱신\n\n## 입력\n\n원문 PDF와 필요할 때 트리아지 메모\n\n## 작동 조건·결과\n\n배경·기여·방법·실험·주장/근거·ablation·한계·재현성·관련 연구를 템플릿에 기록한다. 모든 수치에는 원문 위치를 붙인다. 구조도는 figures/에 HTML 원본과 SVG로 두고, 만들지 못하면 리뷰를 실패로 보고한다.\n\n## 관리\n\n실행 지침의 정본은 아래 SKILL.md다. 호스트 연결과 순서 안내는 상위 스킬 목록·운영 문서에서 확인한다.\n\n## 근거 문서\n\n- `.agents/skills/paper-review/SKILL.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
+    "content": "## 역할\n\n3패스 정독 → diagram-design 방법 구조도(SVG) → 5축 리뷰와 JSON → visual-explainer 시각 요약(선택) → 인덱스·그래프 갱신\n\n## 입력\n\n원문 PDF와 필요할 때 트리아지 메모\n\n## 작동 조건·결과\n\n배경·기여·방법·실험·주장/근거·ablation·한계·재현성·관련 연구를 템플릿에 기록한다. 모든 수치에는 원문 위치를 붙인다. 구조도는 figures/에 HTML 원본과 SVG로 두고, 만들지 못하면 리뷰를 실패로 보고한다. 시각 요약은 리뷰 Markdown만 근거로 figures/에 HTML 한 장으로 만들며, 실패해도 리뷰는 완료한다.\n\n## 관리\n\n실행 지침의 정본은 아래 SKILL.md다. 호스트 연결과 순서 안내는 상위 스킬 목록·운영 문서에서 확인한다.\n\n## 근거 문서\n\n- `.agents/skills/paper-review/SKILL.md`\n\n기준일: 2026-10-07. 이 페이지는 저장소 설정을 설명하는 안내이며 실행 상태의 정본을 대체하지 않습니다.",
     "sources": [
       ".agents/skills/paper-review/SKILL.md"
     ],

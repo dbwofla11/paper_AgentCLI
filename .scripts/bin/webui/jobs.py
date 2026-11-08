@@ -4,6 +4,8 @@ A job's ``work(ctx)`` runs on its own daemon thread and reports progress with
 ``ctx.emit(event)``. Exactly one terminal event (``result`` | ``error`` | ``cancelled``)
 ends a job and determines its status; later emits are ignored. ``gap`` is reserved for the
 replay marker that ``JobBroker.events`` synthesizes when a subscriber fell behind the buffer.
+A job that writes durable results calls ``ctx.begin_commit()`` first: from then on cancellation
+is refused, so a cancel either stops the job before any write or is not accepted at all.
 """
 from __future__ import annotations
 
@@ -39,9 +41,16 @@ class JobContext:
         """Run ``fn`` when the job is cancelled (immediately if cancellation already happened)."""
         self._broker._on_cancel(self.job_id, fn)
 
+    def begin_commit(self) -> bool:
+        """Enter the commit phase (atomic with ``JobBroker.cancel``): True when no cancellation
+        was accepted, after which every cancel is refused and the job ends with its own
+        terminal event; False (nothing changes) when the job is already cancelled."""
+        return self._broker._begin_commit(self.job_id)
+
 
 class _Job:
-    __slots__ = ("record", "work", "context", "events", "base_seq", "hooks", "terminal", "changed", "finished")
+    __slots__ = ("record", "work", "context", "events", "base_seq", "hooks", "terminal", "changed", "finished",
+                 "committing")
 
     def __init__(self, record: dict, work: Callable[[JobContext], None], context: JobContext,
                  changed: threading.Condition):
@@ -54,6 +63,7 @@ class _Job:
         self.terminal = False
         self.changed = changed
         self.finished = threading.Event()  # work returned, or never will run (cancelled while queued)
+        self.committing = False  # ctx.begin_commit() succeeded: cancellation is refused
 
 
 class JobBroker:
@@ -115,7 +125,8 @@ class JobBroker:
         return self._stream(job, max(0, int(after_seq)), heartbeat_s)
 
     def cancel(self, job_id: str) -> bool:
-        """Request cancellation. Returns False for an unknown or already-terminal job.
+        """Request cancellation. Returns False for an unknown or already-terminal job, and for
+        one that entered its commit phase (``JobContext.begin_commit``).
 
         The decision is atomic: a queued job leaves the queue and becomes ``cancelled`` under
         the broker lock, so a concurrent second cancel sees it terminal and gets False. Once
@@ -123,7 +134,7 @@ class JobBroker:
         """
         with self._lock:
             job = self._jobs.get(job_id)
-            if job is None or job.terminal:
+            if job is None or job.terminal or job.committing:
                 return False
             job.context.cancelled.set()
             if job.record["status"] == "queued":
@@ -144,6 +155,12 @@ class JobBroker:
         with self._lock:
             jobs = [self._jobs[job_id] for job_id in job_ids if job_id in self._jobs]
         return all(job.finished.wait(max(0.0, deadline - time.monotonic())) for job in jobs)
+
+    def committing(self, job_id: str) -> bool:
+        """Whether ``job_id`` is in its commit phase (so ``cancel`` refuses it)."""
+        with self._lock:
+            job = self._jobs.get(job_id)
+            return bool(job and job.committing and not job.terminal)
 
     # -- internals --------------------------------------------------------------
     def _schedule_locked(self) -> list[_Job]:
@@ -220,6 +237,14 @@ class JobBroker:
             elif kind == "error":
                 record["error"] = str(payload.get("message") or "error")
         job.changed.notify_all()
+
+    def _begin_commit(self, job_id: str) -> bool:
+        with self._lock:
+            job = self._jobs[job_id]
+            if job.context.cancelled.is_set() or job.terminal:
+                return False
+            job.committing = True
+            return True
 
     def _on_cancel(self, job_id: str, fn: Callable[[], None]) -> None:
         with self._lock:

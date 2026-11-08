@@ -268,6 +268,63 @@
   background: transparent;
 }
 
+/* ── 원문 PDF | 시각 요약: tabs for the left pane ── */
+
+.view-switch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.view-switch-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+/* 48px-tall hit area inside the toolbar; the 2px gap keeps the two tabs' areas apart. */
+.view-switch-tab::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
+.view-switch-tab:hover:not([aria-selected='true']) {
+  color: var(--text-strong);
+}
+
+.view-switch-tab[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-card);
+}
+
+/* A 시각 요약 job is running: a static cue plus a slow pulse (none under reduced motion). */
+.view-switch-busy {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: dot-pulse 1.2s var(--ease-standard) infinite alternate;
+}
+
 /* Menu popover under the 48px bar. */
 .reader-menu .app-menu-popover {
   inset: 44px var(--space-2) auto auto;
@@ -380,7 +437,7 @@
   color: inherit;
 }
 
-/* ── Body: PDF area + side panel ── */
+/* ── Body: left panes (PDF | 시각 요약) + side panel ── */
 
 .reader-body {
   position: relative;
@@ -392,10 +449,29 @@
 .pdf-area {
   position: relative;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-width: 0;
   background: var(--surface-sunken);
+}
+
+/* Both left panes share one grid cell. The hidden one keeps its box (visibility, not display), so the
+   PDF keeps its scroll position, zoom and fit width; `inert` takes it out of focus order and the
+   accessibility tree. */
+.reader-views {
+  display: grid;
+  flex: 1;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.reader-view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.reader-view[data-shown='false'] {
+  visibility: hidden;
 }
 
 .pdf-scroller {
@@ -455,6 +531,162 @@
   background: var(--gradient-ai);
   transform-origin: left center;
   transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* ── 시각 요약 pane: the sandboxed page fills the pane and scrolls inside its own frame ── */
+
+.visual-pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.visual-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 44px;
+  padding: 6px 8px 6px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.visual-bar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.visual-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.visual-notices {
+  display: grid;
+  flex: none;
+  gap: var(--space-2);
+  max-height: 45%;
+  padding: var(--space-3) var(--space-4);
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.visual-notices:empty {
+  display: none;
+}
+
+.visual-notices .notice {
+  background: var(--surface);
+}
+
+.visual-notices .notice[data-tone='danger'] {
+  background: var(--danger-container);
+}
+
+.visual-frame-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.visual-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--surface);
+}
+
+.visual-frame-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+/* No summary yet, its job, or why it failed: one centered column that scrolls on short screens. */
+.visual-state {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 600px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 32px 24px;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.visual-state h2 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.visual-state p {
+  margin: 0;
+}
+
+.visual-state-error {
+  color: var(--danger-text);
+}
+
+.visual-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.visual-progress {
+  display: grid;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.visual-state .visual-progress {
+  justify-self: stretch;
+}
+
+.visual-progress-title {
+  margin: 0;
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.visual-progress-step {
+  overflow-wrap: anywhere;
+}
+
+.visual-progress .cancel-feedback {
+  margin: 0;
+}
+
+.visual-progress .cancel-feedback:empty {
+  display: none;
+}
+
+/* Publishing began (409 `publishing`): 만들기 취소 stays focusable but reads as unavailable, like `.btn:disabled`. */
+.visual-progress .cancel-control .btn[aria-disabled='true'] {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .pdf-page {
@@ -2082,6 +2314,30 @@
   }
 }
 
+/* Below 960px the labeled view tabs would push the toolbar's right end off screen next to the PDF
+   controls: they show icons only (36px each; the label stays as each tab's name), and the title may
+   shrink further before the 767px tier lets it collapse. */
+@media (max-width: 959px) {
+  .reader-title {
+    min-width: 64px;
+  }
+
+  .view-switch-tab {
+    justify-content: center;
+    min-width: 36px;
+    padding: 0 10px;
+  }
+
+  .view-switch-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 900px) {
   .panel-resizer {
     display: none;
@@ -2115,8 +2371,18 @@
 }
 
 @media (max-width: 479px) {
+  /* With the view tabs, back, title, page n/N, 보기 도구, panel toggle and app menu fit one row from 348px. */
   .reader-toolbar {
+    column-gap: 4px;
     padding: 0 6px 0 4px;
+  }
+
+  .visual-bar {
+    padding-left: 12px;
+  }
+
+  .visual-notices {
+    padding: var(--space-3);
   }
 }
 
@@ -2125,7 +2391,8 @@
   .side-panel-body,
   .turn-progress-dot,
   .turn-progress::before,
-  .claim-card::after {
+  .claim-card::after,
+  .view-switch-busy {
     animation: none;
   }
 

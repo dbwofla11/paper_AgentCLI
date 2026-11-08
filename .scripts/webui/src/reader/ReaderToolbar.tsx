@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type Ref } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent, type Ref } from 'react';
 import {
   ArrowLeft as IconBack,
+  ChartNoAxesCombined as IconVisual,
   ChevronDown as IconDown,
   ChevronUp as IconUp,
+  FileText as IconPdf,
   Highlighter as IconHighlight,
   Minus as IconMinus,
   MoveHorizontal as IconFitWidth,
@@ -13,12 +15,13 @@ import {
 } from 'lucide-react';
 import { AppMenu, ConnectionDot } from '../components/AppHeader';
 import { useConnection } from '../hooks/useConnection';
-import { PAPERS_HREF, useHashRoute } from '../hooks/useHashRoute';
+import { PAPERS_HREF, useHashRoute, type ReaderView } from '../hooks/useHashRoute';
 
 /**
  * Toolbar tiers, paired with the `max-width: 767px` and `max-width: 479px` blocks in reader.css.
  * Compact: zoom, fit and tools move into 보기 도구. Phone: the page steps move there too, so back,
- * title, page n/N, 보기 도구, panel toggle and app menu fit in one row down to 320px.
+ * title, the view tabs (icons only below 960px), page n/N, 보기 도구, panel toggle and app menu fit in
+ * one row down to 348px; narrower, the bar scrolls sideways. The 시각 요약 view drops the PDF controls.
  */
 const COMPACT_QUERY = '(max-width: 767px)';
 const PHONE_QUERY = '(max-width: 479px)';
@@ -111,12 +114,80 @@ export interface PdfControls {
   onToggleHighlights: () => void;
 }
 
+/** Left-pane switch `원문 PDF | 시각 요약`; absent while the paper is not loaded. */
+export interface ViewControls {
+  view: ReaderView;
+  onChange: (view: ReaderView) => void;
+  /** A 시각 요약 job of this paper is queued or running. */
+  visualBusy: boolean;
+}
+
 export interface ReaderToolbarProps {
   title: string;
   headingRef: Ref<HTMLHeadingElement>;
+  /** PDF controls; null while the PDF is missing or loading, and while the 시각 요약 is shown. */
   pdf: PdfControls | null;
+  views: ViewControls | null;
   /** Side panel toggle; absent while the paper is not loaded. */
   panel: { open: boolean; onToggle: () => void } | null;
+}
+
+const VIEW_TABS = [
+  { key: 'pdf', label: '원문 PDF', Icon: IconPdf },
+  { key: 'visual', label: '시각 요약', Icon: IconVisual },
+] as const;
+
+/** Ids pairing a view tab with the left-pane panel it controls (`ReaderScreen` renders both panels). */
+export function readerViewIds(view: ReaderView): { tab: string; panel: string } {
+  return { tab: `reader-view-tab-${view}`, panel: `reader-view-${view}` };
+}
+
+/**
+ * Tabs for the left pane. Both panels stay mounted, so selection follows focus: arrows, Home and End
+ * switch at once. Below 960px only the icons show; the labels stay as the tabs' names.
+ */
+function ViewSwitch({ view, onChange, visualBusy }: ViewControls) {
+  const tabRefs = useRef(new Map<ReaderView, HTMLButtonElement>());
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return;
+    event.preventDefault();
+    const next: ReaderView =
+      event.key === 'Home' ? 'pdf' : event.key === 'End' ? 'visual' : view === 'pdf' ? 'visual' : 'pdf';
+    onChange(next);
+    tabRefs.current.get(next)?.focus();
+  };
+  return (
+    <div className="view-switch" role="tablist" aria-label="왼쪽 화면">
+      {VIEW_TABS.map(({ key, label, Icon }) => (
+        <button
+          key={key}
+          ref={(element) => {
+            if (element) tabRefs.current.set(key, element);
+            else tabRefs.current.delete(key);
+          }}
+          type="button"
+          role="tab"
+          id={readerViewIds(key).tab}
+          className="view-switch-tab"
+          aria-selected={view === key}
+          aria-controls={readerViewIds(key).panel}
+          tabIndex={view === key ? 0 : -1}
+          title={key === 'visual' && visualBusy ? `${label} (만드는 중)` : label}
+          onClick={() => onChange(key)}
+          onKeyDown={onKeyDown}
+        >
+          <Icon />
+          <span className="view-switch-label">{label}</span>
+          {key === 'visual' && visualBusy ? (
+            <>
+              <span className="view-switch-busy" aria-hidden="true" />
+              <span className="visually-hidden"> (만드는 중)</span>
+            </>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function PageStepButton({
@@ -275,11 +346,12 @@ function ViewToolsMenu({ pdf, pageSteps }: { pdf: PdfControls; pageSteps: boolea
 }
 
 /**
- * The reader's only top bar (48px; no global header on this route): back, title, PDF controls,
- * panel toggle, connection dot, and the app menu with navigation and theme. Below 768px the zoom,
- * fit and tool controls collapse into 보기 도구, and below 480px the page steps join them.
+ * The reader's only top bar (48px; no global header on this route): back, title, the 원문 PDF | 시각 요약
+ * tabs, PDF controls (PDF view only), panel toggle, connection dot, and the app menu with navigation
+ * and theme. Below 960px the tabs show icons only, below 768px the zoom, fit and tool controls
+ * collapse into 보기 도구, and below 480px the page steps join them.
  */
-export function ReaderToolbar({ title, headingRef, pdf, panel }: ReaderToolbarProps) {
+export function ReaderToolbar({ title, headingRef, pdf, views, panel }: ReaderToolbarProps) {
   const route = useHashRoute();
   const connection = useConnection();
   const compact = useMediaQuery(COMPACT_QUERY);
@@ -292,6 +364,7 @@ export function ReaderToolbar({ title, headingRef, pdf, panel }: ReaderToolbarPr
       <h1 className="reader-title" ref={headingRef} tabIndex={-1} title={title}>
         {title}
       </h1>
+      {views ? <ViewSwitch {...views} /> : null}
       {pdf ? (
         <>
           <div className="toolbar-group" role="group" aria-label="쪽 이동">

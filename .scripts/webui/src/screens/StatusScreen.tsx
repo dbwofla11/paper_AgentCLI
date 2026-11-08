@@ -13,6 +13,7 @@ import {
   READER_ROLE_SLOT,
   REVIEW_ROLE_SLOTS,
   SEARCHER_ROLE_SLOT,
+  VISUAL_ROLE_SLOT,
   roleState,
   selectedCandidate,
   type RoleCardSlot,
@@ -199,6 +200,7 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
   const extraSlots = [
     { slot: READER_ROLE_SLOT, resolution: data.reader_role },
     { slot: SEARCHER_ROLE_SLOT, resolution: data.searcher_role },
+    { slot: VISUAL_ROLE_SLOT, resolution: data.visual_role },
   ];
   if (roles) {
     for (const { slot, resolution } of extraSlots) if (resolution) cards.push({ slot, resolution });
@@ -226,8 +228,8 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
       {roles ? (
         <>
           <p className="field-hint role-intro">
-            하네스의 리뷰·리더·탐색 에이전트 설정을 omp에서 읽어 그대로 따릅니다. 설정된 역할이 연결된 에이전트보다
-            우선합니다.
+            하네스의 리뷰·리더·탐색·시각 요약 에이전트 설정을 omp에서 읽어 그대로 따릅니다. 설정된 역할이 연결된
+            에이전트보다 우선합니다.
           </p>
           {configErrors.length > 0 ? (
             <div className="notice role-config-error" data-tone="danger">
@@ -239,7 +241,7 @@ function ReviewRolesPanel({ data }: { data: StatusPayload }) {
               ))}
               <p>
                 설정을 읽지 못한 역할은 미설정으로 간주하지 않습니다. 설정을 다시 읽을 때까지 논문 리뷰, 리뷰 검증, 리더
-                질문, 논문 탐색 검색을 시작하지 않습니다. 터미널에서{' '}
+                질문, 논문 탐색 검색, 시각 요약 만들기를 시작하지 않습니다. 터미널에서{' '}
                 <code translate="no">omp config get task.agentModelOverrides --json</code>이 동작하는지 확인한 뒤 ‘새로
                 고침’을 누르세요.
               </p>

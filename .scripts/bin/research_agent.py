@@ -26,6 +26,10 @@ DISCOVERY_DOMAINS = (
     'aclanthology.org', 'proceedings.mlr.press', 'proceedings.neurips.cc', 'openaccess.thecvf.com',
     'dblp.org', 'paperswithcode.com', 'huggingface.co', 'github.com', 'raw.githubusercontent.com')
 DISCOVERY_TOOLS = {'claude': 'Read,Glob,Grep,Bash,WebSearch,WebFetch', 'omp': 'read,grep,glob,bash,web_search'}
+# WebUI visual-summary runs (visual-designer, `review.visual`): the only hosts the visual-explainer
+# look check may reach (the page's Google Fonts, Noto Sans/Serif KR included).
+VISUAL_FONT_DOMAINS = ('fonts.googleapis.com', 'fonts.gstatic.com')
+VISUAL_TOOLS = {'claude': 'Read,Edit,Write,Bash,Glob,Grep', 'omp': 'read,grep,glob,bash,edit,write'}
 
 
 def _claude_model(model: str | None, effort: str | None) -> list[str]:
@@ -235,6 +239,58 @@ def discovery_command(agent: str, cwd: Path, prompt: str, *, schema_path: Path, 
                 *(['--model', model] if model else []), '--tools', DISCOVERY_TOOLS['omp'],
                 '--approval-mode', 'yolo', *(['--append-system-prompt', system] if system else []),
                 *(['--max-time', str(timeout_seconds)] if timeout_seconds else []), '--', prompt]
+    raise ValueError('지원하는 에이전트는 codex, claude, omp입니다.')
+
+
+def visual_settings() -> dict:
+    """claude `--settings` of a visual-summary run: the sandbox of every other run plus a network
+    allow-list of VISUAL_FONT_DOMAINS, so the look check's browser can load the page fonts.
+    That the sandbox admits exactly these hosts is [INFERENCE] as for `discovery_settings`."""
+    sandbox = {**SANDBOX_SETTINGS['sandbox'], 'network': {'allowedDomains': list(VISUAL_FONT_DOMAINS)}}
+    return {'sandbox': sandbox}
+
+
+def visual_command(agent: str, cwd: Path, prompt: str, *, skill_dir: Path, system: str | None = None,
+                   model: str | None = None, effort: str | None = None,
+                   timeout_seconds: int | None = None) -> list[str]:
+    """JSONL-streaming, session-less command of a WebUI visual-summary run (`visual-designer`).
+
+    Runs in a throwaway workspace (`cwd`) holding `review.md` and `skill_dir`, the job's own copy of
+    the visual-explainer skill (`visuals.copy_skill`, `<cwd>/.visual-explainer`); the agent writes
+    the page source there and renders it with `node .visual-explainer/kit/render.mjs`. No run gets
+    a root outside `cwd`: claude gets Read/Edit/Write/Bash/Glob/Grep and the sandbox with
+    VISUAL_FONT_DOMAINS; codex runs `workspace-write` without network plus the reader's
+    plugin/app/hook/MCP lockdown; omp keeps skills on, gets `VISUAL_TOOLS['omp']` and the copy's
+    SKILL.md attached. `model=None` keeps the CLI's own default model. `--` comes right before the prompt."""
+    executable = shutil.which(agent)
+    if not executable:
+        raise ValueError(f'{agent} CLI를 PATH에서 찾을 수 없습니다.')
+    skill = Path(skill_dir)
+    if agent == 'claude':
+        tools = VISUAL_TOOLS['claude']
+        return [executable, '--print', '--output-format', 'stream-json', '--verbose',
+                '--include-partial-messages', '--restricted', '--permission-mode', 'dontAsk',
+                '--tools', tools, '--allowedTools', tools, '--no-session-persistence',
+                '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
+                '--settings', json.dumps(visual_settings()),
+                *(['--append-system-prompt', system] if system else []),
+                *_claude_model(model, effort), '--', prompt]
+    if agent == 'codex':
+        # codex exec has no system-prompt flag: the system text is prepended to the prompt.
+        text = f'{system}\n\n---\n\n{prompt}' if system else prompt
+        disabled = [part for feature in CODEX_READER_DISABLED_FEATURES for part in ('--disable', feature)]
+        servers = [part for name in codex_mcp_servers(executable, cwd)
+                   for part in ('-c', f'mcp_servers.{name}.enabled=false')]
+        return [executable, 'exec', '--json', '--skip-git-repo-check', '--ephemeral', '--cd', str(cwd),
+                '--sandbox', 'workspace-write', '-c', 'approval_policy="never"', *disabled, *servers,
+                *_codex_model(model, effort), '--', text]
+    if agent == 'omp':
+        return [executable, '-p', '--mode', 'json', '--no-session', '--no-title', '--no-extensions',
+                '--no-rules', '--no-context-files', '--no-lsp', '--cwd', str(cwd),
+                *(['--model', model] if model else []), '--tools', VISUAL_TOOLS['omp'],
+                '--approval-mode', 'yolo', *(['--append-system-prompt', system] if system else []),
+                *(['--max-time', str(timeout_seconds)] if timeout_seconds else []),
+                f'@{skill / "SKILL.md"}', '--', prompt]
     raise ValueError('지원하는 에이전트는 codex, claude, omp입니다.')
 
 

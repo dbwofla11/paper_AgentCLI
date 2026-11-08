@@ -10,6 +10,7 @@ it never gates publishing. Its report is a machine artifact under ``verification
 """
 from __future__ import annotations
 
+import contextlib
 import fnmatch
 import hashlib
 import json
@@ -132,16 +133,23 @@ def allowed_output(name: str, record_path: Path, review_path: Path) -> bool:
     review_name = root_relative(review_path).as_posix()
     if name in {record_name, review_name, "01-Papers/index.md", "100-views/paper-library.html"} or name.startswith("graphify-out/") or name.startswith("00-Inbox/concept-candidates/"):
         return True
-    # This review's method figure files: `<review dir>/figures/<slug>-<suffix>.(svg|html)`.
+    # This review's figure files: method figures `<review dir>/figures/<slug>-<suffix>.(svg|html)`
+    # and the visual summary `<slug>-visual.(src.html|html|sheet[-N].png)` (never its sidecar).
     figures = f"{posixpath.dirname(review_name)}/{security.FIGURE_DIR}/"
-    return (name.startswith(figures) and "/" not in name[len(figures):]
-            and security.figure_name_ok(Path(review_name).stem, name[len(figures):], ("svg", "html")))
+    if not name.startswith(figures) or "/" in name[len(figures):]:
+        return False
+    slug, leaf = Path(review_name).stem, name[len(figures):]
+    return security.figure_name_ok(slug, leaf, ("svg", "html")) or security.visual_output_ok(slug, leaf)
 
 
+# The job's own copy of the visual-explainer skill inside a stage or visual workspace
+# (`visuals.copy_skill`); never cloned, snapshotted, or published.
+VISUAL_SKILL_COPY = ".visual-explainer"
 STAGING_IGNORES = (".git", "__pycache__", "*.pyc", "pdfs", ".mcp.json",
                    ".env", ".env.*", ".claude", ".codex", ".secrets",
                    "credentials.json", "node_modules", ".cache",
-                   ".research-harness-agent.json", ".research-harness-agent.tmp", "reader-threads")
+                   ".research-harness-agent.json", ".research-harness-agent.tmp", "reader-threads",
+                   VISUAL_SKILL_COPY)
 
 
 def staging_inventory(root: Path) -> set[Path]:
@@ -232,6 +240,27 @@ def review_command(stage: Path, last_message: Path, prompt: str, selected: str =
                                   timeout_seconds=timeout_seconds, root=root, model=model, effort=effort)
 
 
+@contextlib.contextmanager
+def stage_visual_skill(stage: Path, runner: str) -> Iterator[None]:
+    """For one generation run: ``runner``'s visual-explainer skill copied to
+    ``<stage>/.visual-explainer`` (paper-review step 5-1 reads and renders with that copy, never
+    the installed skill), removed after the run so a fallback attempt's audit and the publish never
+    see it. A missing skill or a failed copy leaves no copy; the agent then skips the visual summary."""
+    from webui import visuals  # visuals imports this module
+
+    try:
+        visuals.copy_skill(runner, stage)
+    except OSError:
+        pass
+    try:
+        yield
+    finally:
+        try:
+            visuals.remove_skill_copy(stage)
+        except OSError:
+            pass
+
+
 def runtime_status(requested: str | None = None) -> dict:
     """Connected-agent status plus review readiness under the harness review roles.
 
@@ -281,7 +310,15 @@ def generation_prompt(slug: str, record: dict, configured: bool) -> str:
         "01-Papers/index.md, Graphify sync artifacts, and the generated 100-views/paper-library.html. "
         "Remove every template instruction comment (<!-- ... -->) from the review. "
         "Do not edit wiki-index.md or wiki-log.md; the bridge updates them after publishing. "
-        "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review."
+        "Do not modify any other paper, skill, script, PDF, or user configuration. If a tool or source required for the paper review is missing, stop and report failure. Graphify failure is retryable: record it as pending and preserve the completed review. "
+        "After the review is final, optionally render its visual summary with the visual-explainer skill (paper-review skill step 5-1) "
+        f"using only this workspace's copy of that skill at ./{VISUAL_SKILL_COPY}/ (read its SKILL.md and references there; never edit the copy; "
+        f"if ./{VISUAL_SKILL_COPY}/ is absent, skip the visual summary and report why) "
+        f"into figures/ beside the review: {slug}-visual.src.html, then run "
+        f"`node ./{VISUAL_SKILL_COPY}/kit/render.mjs <figures dir>/{slug}-visual.src.html` from the workspace root, which writes {slug}-visual.html and its look sheets "
+        f"({slug}-visual.sheet.png, {slug}-visual.sheet-N.png); never write {slug}-visual.json. "
+        "A missing visual-explainer skill or node, or a failed visual summary, never fails the review: "
+        f"delete partial {slug}-visual.* files and report the reason."
     )
     if not configured:
         return prompt
@@ -319,21 +356,23 @@ def run_generation(stage: Path, last_message: Path, prompt: str, status: dict, r
     """
     def run(runner: str, model: str | None = None, effort: str | None = None) -> subprocess.CompletedProcess:
         last_message.unlink(missing_ok=True)  # output evidence must belong to this attempt
-        return subprocess.run(
-            review_command(stage, last_message, prompt, runner, timeout_seconds=timeout, model=model, effort=effort),
-            cwd=stage, capture_output=True, text=True,
-            timeout=timeout + 60 if runner == "omp" else timeout, check=False,
-        )
+        with stage_visual_skill(stage, runner):
+            return subprocess.run(
+                review_command(stage, last_message, prompt, runner, timeout_seconds=timeout, model=model, effort=effort),
+                cwd=stage, capture_output=True, text=True,
+                timeout=timeout + 60 if runner == "omp" else timeout, check=False,
+            )
 
     if resolution.get("configured") is None:
         raise RuntimeError(roles.unavailable_reason(resolution))
     if not resolution["configured"]:
         runner = status["agent"]
-        result = subprocess.run(
-            review_command(stage, last_message, prompt, runner, timeout_seconds=timeout),
-            cwd=stage, capture_output=True, text=True,
-            timeout=timeout + 60 if runner == "omp" else timeout, check=False,
-        )
+        with stage_visual_skill(stage, runner):
+            result = subprocess.run(
+                review_command(stage, last_message, prompt, runner, timeout_seconds=timeout),
+                cwd=stage, capture_output=True, text=True,
+                timeout=timeout + 60 if runner == "omp" else timeout, check=False,
+            )
         return result, {"selector": None, "runner": runner, "attempts": [
             {"selector": None, "runner": runner, "exit_code": result.returncode, "error_kind": None,
              "assistant_output": None, "staged_changes": None, "advanced": False}]}
@@ -520,6 +559,28 @@ def preserve_outputs(stage: Path, names: set[str], destination: Path) -> Path:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
     return destination
+
+
+def preserve_visual(stage: Path, visual: dict, names: set[str], destination: Path) -> dict:
+    """`preserve_outputs` for the optional visual summary files (``stage_visual``'s ``names``),
+    copied into the same pre-verifier ``destination``. A copy failure never touches the canonical
+    copy: the partial visual copies are removed and the returned queue ``visual`` is ``failed``,
+    so ``publish_staged_visual`` publishes nothing and the review still publishes."""
+    if visual["status"] != "published":
+        return visual
+    try:
+        for name in sorted(names):
+            target = destination / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(stage / name, target)
+    except OSError as exc:
+        for name in names:
+            try:
+                (destination / name).unlink(missing_ok=True)
+            except OSError:
+                pass
+        return {"status": "failed", "reason": f"검증 전 시각 요약 파일을 보관하지 못했습니다: {exc}"}
+    return visual
 
 
 def verify_stage(stage: Path, review_path: Path, pdf_path: Path, resolution: dict, timeout: int) -> dict:
@@ -767,6 +828,86 @@ def _store_verification(slug: str, target: Path, resolution: dict, outcome: dict
     return verification_summary(report), report.get("error")
 
 
+# ---- visual summary in a staged review ----------------------------------------------------------
+
+def _figures_name(review_path: Path) -> str:
+    """Repository-relative ``figures`` folder beside ``review_path``."""
+    return posixpath.join(posixpath.dirname(root_relative(review_path).as_posix()), security.FIGURE_DIR)
+
+
+def stage_visual(stage: Path, review_path: Path, slug: str, changed: set[str]) -> tuple[dict, set[str]]:
+    """Status of the visual summary the review agent left in the stage, plus the staged names of
+    its files (page, source, sheets; empty unless the page passed the check).
+
+    ``published`` (pending ``publish_staged_visual``) when ``{slug}-visual.html`` changed and passes
+    ``visuals.checked_visual``; ``missing`` when it did not change or is gone; ``rejected`` when the
+    check fails. Every ``{slug}-visual.*`` name is always removed from ``changed`` in place: the
+    canonical review publish never carries the optional visual summary."""
+    from webui import visuals  # visuals imports this module
+
+    figures = _figures_name(review_path)
+    staged = {name for name in changed if posixpath.dirname(name) == figures
+              and security.visual_output_ok(slug, posixpath.basename(name))}
+    changed.difference_update(staged)
+    page = f"{figures}/{security.visual_name(slug)}.html"
+    if page not in staged or not (stage / page).is_file():
+        return {"status": "missing", "reason": "리뷰 에이전트가 새 시각 요약을 만들지 않았습니다."}, set()
+    try:
+        visuals.checked_visual(stage, slug, tuple(figures.split("/")))
+    except ValueError as exc:
+        return {"status": "rejected", "reason": str(exc)}, set()
+    names = {f"{figures}/{path.name}" for path in (stage / figures).iterdir()
+             if security.visual_output_ok(slug, path.name) and path.is_file() and not path.is_symlink()}
+    return {"status": "published", "reason": None}, names
+
+
+def publish_staged_visual(source: Path, review_path: Path, record: dict, slug: str, visual: dict,
+                          live_before: dict, meta: dict) -> tuple[dict, list[str]]:
+    """Publish a ``published``-pending staged visual summary from ``source`` (the stage or its
+    validated copy) by itself, after the canonical review outputs; returns the final queue
+    ``visual`` and the repository paths written. Never raises: the review stays completed.
+
+    The live ``{slug}-visual.*`` set (sidecar included) must still match ``live_before``, else
+    ``conflict`` with nothing written; a page that no longer passes the check is ``rejected``; an
+    unreadable source or a failed write (the previous live files restored) is ``failed``. On success
+    the set becomes the staged files plus a sidecar (``source: "review"``, ``check: null``)."""
+    from webui import reader, visuals  # visuals imports this module
+
+    if visual["status"] != "published":
+        return visual, []
+    figures = _figures_name(review_path)
+    components = tuple(figures.split("/"))
+    try:
+        html = visuals.checked_visual(source, slug, components)
+    except ValueError as exc:
+        return {"status": "rejected", "reason": str(exc)}, []
+    expected = {posixpath.basename(name): digest for name, digest in live_before.items()
+                if posixpath.dirname(name) == figures and visuals.managed_name(slug, posixpath.basename(name))}
+    data = visuals.sidecar(meta.get("review_sha256"), "review", meta.get("job_id"), meta, None)
+    try:
+        files = visuals.visual_outputs(source, slug, components)
+        files[f"{security.visual_name(slug)}.html"] = html
+        visuals.replace_visual(record, slug, files, data, expected)
+    except OSError as exc:
+        return {"status": "failed", "reason": f"시각 요약 파일을 읽지 못했습니다: {exc}"}, []
+    except reader.ReaderError as exc:
+        return {"status": "conflict" if exc.code == "conflict" else "failed", "reason": exc.message}, []
+    return {"status": "published", "reason": None}, [f"{figures}/{name}" for name in sorted(files)]
+
+
+def visual_message(visual: dict) -> str:
+    status = visual["status"]
+    if status == "published":
+        return "시각 요약도 게시했습니다."
+    if status == "rejected":
+        return f"시각 요약 없음(검사 실패, 게시하지 않음): {visual['reason']}"
+    if status in ("conflict", "failed"):
+        return (f"시각 요약은 게시하지 않았고 기존 시각 요약은 그대로 둡니다({'충돌' if status == 'conflict' else '저장 실패'}): "
+                f"{visual['reason']} 리더에서 \"시각 요약 만들기\"로 다시 만들 수 있습니다.")
+    return f"시각 요약 없음: {visual['reason']} 리더에서 \"시각 요약 만들기\"로 다시 만들 수 있습니다."
+
+
+
 def review_worker(job_id: str, slug: str, timeout: int) -> None:
     job = _start_job(job_id)
     if job is None:
@@ -835,14 +976,23 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             changed = {name for name in before.keys() | after.keys() if before.get(name) != after.get(name)}
             if "01-Papers/index.md" not in changed or "100-views/paper-library.html" not in changed:
                 raise RuntimeError("index or paper catalog was not regenerated")
+            # A visual summary is optional: it never rides in the canonical publish set and is
+            # published by itself after it (publish_staged_visual), so it cannot fail the review.
+            visual, visual_names = stage_visual(stage, target, slug, changed)
+            review_sha256 = sha256_file(stage / root_relative(target))
             # Verification reports on the validated review before publishing; it never gates it.
             # Publishing reads a copy taken now, so nothing the verifier does to the stage matters.
             outcome = None
             source = stage
             if verification_role.get("configured"):
                 source = preserve_outputs(stage, changed, Path(tmp) / "validated")
+                visual = preserve_visual(stage, visual, visual_names, source)
                 outcome = verify_stage(stage, target, pdf_path, verification_role, timeout)
             publish, sync_status = publish_review_outputs(source, changed, live_before, record_path, target)
+            visual, visual_files = publish_staged_visual(source, target, record, slug, visual, live_before, {
+                "job_id": job_id, "review_sha256": review_sha256, "agent": generation.get("runner"),
+                "selector": generation.get("selector")})
+            publish += visual_files
             verify_error = None
             if outcome is None:
                 verification = verification_summary(None)
@@ -859,8 +1009,10 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             message += (" 위키 인덱스·작업 기록 갱신은 실패했습니다"
                         "(python3 .scripts/bin/wiki.py index로 다시 갱신하세요): " + wiki_error)
         message += " " + verification_message(verification, slug, verify_error)
+        message += " " + visual_message(visual)
         _update_job(job_id, status="completed", completed_at=now(), changed_files=publish,
-                    graphify_sync=sync_status, generation=generation, verification=verification, message=message)
+                    graphify_sync=sync_status, generation=generation, verification=verification,
+                    visual=visual, message=message)
     except Exception as exc:  # preserve a retryable failure record for the UI
         fields = {"generation": generation} if generation else {}
         _update_job(job_id, status="failed", updated_at=now(), message=str(exc)[-4000:], **fields)

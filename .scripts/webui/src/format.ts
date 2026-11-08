@@ -75,6 +75,7 @@ const JOB_KIND_LABELS: Record<string, string> = {
   'harness.tests': '하네스 테스트',
   'discovery.search': '논문 탐색 검색',
   'discovery.register': '논문 등록',
+  'review.visual': '시각 요약 생성',
 };
 
 export function jobKindLabel(kind: string): string {

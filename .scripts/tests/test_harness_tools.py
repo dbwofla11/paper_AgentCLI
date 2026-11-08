@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".scripts/bin"))
-from webui import server as webui_server, reviews as review_bridge
+from webui import server as webui_server, reviews as review_bridge, visuals
 
 
 def load(name, path):
@@ -244,6 +244,19 @@ class ViewTests(unittest.TestCase):
             for name in excluded:
                 self.assertNotIn(Path(name), inventory)
 
+    def test_visual_output_allowlist(self):
+        review = ROOT / "01-Papers/reviews/other/example.md"
+        record = ROOT / "01-Papers/library/example.json"
+        base = "01-Papers/reviews/other/figures/"
+        for name in ("example-visual.src.html", "example-visual.html",
+                     "example-visual.sheet.png", "example-visual.sheet-2.png"):
+            with self.subTest(name=name):
+                self.assertTrue(review_bridge.allowed_output(base + name, record, review))
+        for name in ("other-visual.html", "a.sheet.png", "nested/example-visual.html",
+                     "example-visual.json", "example-visual.sheet-x.png"):
+            with self.subTest(name=name):
+                self.assertFalse(review_bridge.allowed_output(base + name, record, review))
+
     def test_review_figure_allowlist_and_publication(self):
         with tempfile.TemporaryDirectory() as directory:
             root = (Path(directory) / "live").resolve()
@@ -272,7 +285,9 @@ class ViewTests(unittest.TestCase):
                 self.assertEqual((root / name).read_text(), "figure")
 
     def test_review_worker_refreshes_live_wiki_and_rejects_staged_wiki_edits(self):
-        for forbidden in (None, "wiki-index.md", "wiki-log.md", "wiki-failure", "comment", "missing-scope"):
+        for forbidden in (None, "wiki-index.md", "wiki-log.md", "wiki-failure", "comment",
+                          "missing-scope", "visual-published", "visual-missing", "visual-rejected",
+                          "visual-conflict", "visual-copy-failure", "canonical-conflict", "skill-copy"):
             with self.subTest(forbidden=forbidden), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory).resolve()
                 subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
@@ -288,6 +303,20 @@ class ViewTests(unittest.TestCase):
                     path = root / name
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(content, encoding="utf-8")
+                live_visual = root / "01-Papers/reviews/other/figures/example-visual.html"
+                if forbidden in ("visual-conflict", "visual-copy-failure"):
+                    live_visual.parent.mkdir(parents=True, exist_ok=True)
+                    live_visual.write_text("original visual", encoding="utf-8")
+                    live_visual.with_suffix(".json").write_text("original sidecar", encoding="utf-8")
+                skill = root / "installed-skill"
+                (skill / "kit").mkdir(parents=True)
+                (skill / "SKILL.md").write_text("installed skill", encoding="utf-8")
+                (skill / "kit/render.mjs").write_text("render", encoding="utf-8")
+                (skill / "node_modules/playwright-core").mkdir(parents=True)
+                (skill / "node_modules/playwright-core/index.js").write_text("playwright", encoding="utf-8")
+                (skill / ".git").mkdir()
+                (skill / ".git/config").write_text("private", encoding="utf-8")
+                (skill / "link.md").symlink_to(skill / "SKILL.md")
                 script = root / ".scripts/bin/wiki.py"
                 script.parent.mkdir(parents=True)
                 shutil.copy2(ROOT / ".scripts/bin/wiki.py", script)
@@ -304,6 +333,14 @@ class ViewTests(unittest.TestCase):
                         return subprocess.CompletedProcess(command, 0, stdout=json.dumps(value), stderr="")
                     if command[0] == "fixture-review-agent":
                         stage = Path(kwargs["cwd"])
+                        if forbidden == "skill-copy":
+                            copied = stage / ".visual-explainer"
+                            self.assertEqual((copied / "SKILL.md").read_text(encoding="utf-8"), "installed skill")
+                            self.assertTrue((copied / "kit/render.mjs").is_file())
+                            self.assertTrue((copied / "node_modules/playwright-core/index.js").is_file())
+                            self.assertFalse((copied / ".git").exists())
+                            self.assertFalse(any(path.is_symlink() for path in copied.rglob("*")))
+                            (copied / "SKILL.md").write_text("agent edit", encoding="utf-8")
                         updated = {**record, "structured_review_status": "complete",
                                    "review": {f"axis-{i}": {"summary": "summary", "claims": ["claim"]}
                                               for i in range(5)}}
@@ -322,6 +359,19 @@ class ViewTests(unittest.TestCase):
                         state.write_text(json.dumps({"sources": {record_name: {"status": "success"}}}), encoding="utf-8")
                         if forbidden in ("wiki-index.md", "wiki-log.md"):
                             (stage / forbidden).write_text("agent injected content\n", encoding="utf-8")
+                        if forbidden in ("visual-published", "visual-rejected", "visual-conflict", "visual-copy-failure"):
+                            visual = stage / "01-Papers/reviews/other/figures/example-visual.html"
+                            visual.parent.mkdir(parents=True, exist_ok=True)
+                            visual.write_text(
+                                "<html>invalid</html>" if forbidden == "visual-rejected" else
+                                '<html><style data-ve-kit></style><script data-ve-kit></script></html>',
+                                encoding="utf-8")
+                        if forbidden == "visual-copy-failure":
+                            visual.with_name("example-visual.src.html").write_text("new source", encoding="utf-8")
+                        if forbidden == "visual-conflict":
+                            live_visual.write_text("concurrent visual", encoding="utf-8")
+                        if forbidden == "canonical-conflict":
+                            (root / record_name).write_text("concurrent record", encoding="utf-8")
                         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
                     if len(command) > 1 and command[1].endswith("paper_record.py"):
                         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
@@ -334,7 +384,17 @@ class ViewTests(unittest.TestCase):
                         return subprocess.CompletedProcess(command, 1, stdout="", stderr="fixture wiki failure")
                     return real_run(command, **kwargs)
 
+                real_write = visuals._write_at
+                writes = []
+                def write_visual(folder, name, data):
+                    writes.append(name)
+                    if forbidden == "visual-copy-failure" and len(writes) == 2:
+                        raise OSError("injected visual write failure")
+                    return real_write(folder, name, data)
+
                 with patch.object(review_bridge, "ROOT", root), \
+                     patch.object(visuals, "_write_at", side_effect=write_visual), \
+                     patch.object(visuals, "skill_dir", return_value=skill), \
                      patch.object(review_bridge, "load_queue", return_value=queue), \
                      patch.object(review_bridge, "save_queue"), \
                      patch.object(review_bridge, "read_record", return_value=(root / record_name, record)), \
@@ -353,6 +413,46 @@ class ViewTests(unittest.TestCase):
                     if forbidden == "comment":
                         self.assertIn("review still contains template instruction comments", job["message"])
                     self.assertFalse((root / review_name).exists())
+                elif forbidden == "canonical-conflict":
+                    self.assertEqual(job["status"], "failed")
+                    self.assertIn("live source files changed", job["message"])
+                    self.assertEqual((root / record_name).read_text(encoding="utf-8"), "concurrent record")
+                    self.assertFalse((root / review_name).exists())
+                elif forbidden == "visual-conflict":
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertEqual(job["visual"]["status"], "conflict")
+                    self.assertTrue(job["visual"]["reason"])
+                    self.assertTrue((root / review_name).is_file())
+                    self.assertEqual(live_visual.read_text(encoding="utf-8"), "concurrent visual")
+                    self.assertEqual(live_visual.with_suffix(".json").read_text(encoding="utf-8"), "original sidecar")
+                elif forbidden == "skill-copy":
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertEqual((skill / "SKILL.md").read_text(encoding="utf-8"), "installed skill")
+                    self.assertFalse((root / ".visual-explainer").exists())
+                    self.assertFalse(any(".visual-explainer" in name for name in job["changed_files"]))
+                elif forbidden == "visual-copy-failure":
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertEqual(job["visual"]["status"], "failed")
+                    self.assertTrue(job["visual"]["reason"])
+                    self.assertTrue((root / review_name).is_file())
+                    self.assertGreaterEqual(len(writes), 2)
+                    self.assertEqual(live_visual.read_text(encoding="utf-8"), "original visual")
+                    self.assertEqual(live_visual.with_suffix(".json").read_text(encoding="utf-8"), "original sidecar")
+                    self.assertFalse(live_visual.with_name("example-visual.src.html").exists())
+                elif forbidden in ("visual-published", "visual-missing", "visual-rejected"):
+                    self.assertEqual(job["status"], "completed", job.get("message"))
+                    self.assertTrue((root / review_name).is_file())
+                    expected = forbidden.removeprefix("visual-")
+                    self.assertEqual(job["visual"]["status"], expected)
+                    visual = root / "01-Papers/reviews/other/figures/example-visual.html"
+                    sidecar = visual.with_suffix(".json")
+                    self.assertEqual(visual.exists(), expected == "published")
+                    self.assertEqual(sidecar.exists(), expected == "published")
+                    if sidecar.exists():
+                        meta = json.loads(sidecar.read_text(encoding="utf-8"))
+                        self.assertEqual(meta["source"], "review")
+                        self.assertEqual(meta["review_sha256"],
+                                         hashlib.sha256((root / review_name).read_bytes()).hexdigest())
                 elif forbidden and forbidden != "wiki-failure":
                     self.assertEqual(job["status"], "failed", job.get("message"))
                     self.assertIn("outside allowed outputs", job["message"])
@@ -860,6 +960,28 @@ class InstallerTests(unittest.TestCase):
                 result = subprocess.run([sys.executable, str(target / ".scripts/bin/verify_harness.py")],
                                         cwd=target, env=env, capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                skill = target / ".agents/skills/paper-review/SKILL.md"
+                original_skill = skill.read_text(encoding="utf-8")
+                self.assertIn("visual-explainer", original_skill)
+                skill.write_text(original_skill.replace("visual-explainer", "visual-removed"), encoding="utf-8")
+                manifest = target / ".research-harness-manifest.json"
+                original_manifest = manifest.read_text(encoding="utf-8")
+                alias_skill = target / ".claude/skills/paper-review/SKILL.md"
+                if host == "claude" and not alias_skill.parent.is_symlink():
+                    alias_skill.write_text(skill.read_text(encoding="utf-8"), encoding="utf-8")
+                    manifest_data = json.loads(original_manifest)
+                    manifest_data["files"][".claude/skills/paper-review"]["sha256"] = installer.digest_tree(alias_skill.parent)
+                    manifest.write_text(json.dumps(manifest_data), encoding="utf-8")
+                invalid_skill = subprocess.run(
+                    [sys.executable, str(target / ".scripts/bin/verify_harness.py")],
+                    cwd=target, env=env, capture_output=True, text=True, timeout=30)
+                self.assertEqual(invalid_skill.returncode, 1, invalid_skill.stdout + invalid_skill.stderr)
+                self.assertIn("FAIL", invalid_skill.stdout)
+                self.assertIn("visual-explainer", invalid_skill.stdout)
+                skill.write_text(original_skill, encoding="utf-8")
+                if host == "claude" and not alias_skill.parent.is_symlink():
+                    alias_skill.write_text(original_skill, encoding="utf-8")
+                    manifest.write_text(original_manifest, encoding="utf-8")
                 template = target / "90-Templates/paper/review-template.md"
                 original_template = template.read_text(encoding="utf-8")
                 template.write_text(original_template + "\n```mermaid\nflowchart LR\n```\n", encoding="utf-8")

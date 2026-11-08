@@ -15,6 +15,7 @@
 | uv / uvx | 논문 MCP 서버, Graphify 설치 | `uv --version`, `uvx --version` |
 | Graphify | 논문 관계 질의·정본 갱신 | `graphify --help` |
 | diagram-design 스킬 + 프로필 | 심층 리뷰의 방법 구조도(SVG) 생성 | `onboarding_check.py` WARN 여부 |
+| visual-explainer 스킬 + Node.js | 심층 리뷰의 시각 요약(선택, WebUI 리더 "시각 요약") 생성 | `onboarding_check.py` WARN 여부 |
 | EXA_API_KEY | 선택 기능 Exa 의미 검색 | 환경 진단의 설정 여부 표시 |
 | Orca | 예약 실행·Orca worker 기능 | 해당 기능을 사용할 때 별도 구성 |
 
@@ -123,6 +124,14 @@ Claude 또는 omp를 선택했다면 첫 명령을 각각 `--host claude` 또는
 | 사용자 수준 스킬 (사용하는 호스트) | omp `~/.omp/agent/skills/diagram-design/`, Claude `~/.claude/skills/diagram-design/`, Codex `~/.codex/skills/diagram-design/` (다른 호스트 설치본으로의 심볼릭 링크 가능) |
 | 저장소 마커 | 루트 `.diagram-design` 파일, 내용 `profile: research-harness` 한 줄 (저장소에 포함) |
 | 프로필 | `~/.diagram-design/profiles/research-harness.md` (`Font source: system`) |
+
+심층 리뷰는 끝에 리뷰 전체의 시각 요약(HTML 한 장)을 `visual-explainer` 스킬로 만든다. 선택 산출물이라 준비되지 않았으면 `onboarding_check.py`가 `WARN`으로 알리고, 리뷰는 시각 요약 없이 완료된다. WebUI 리더의 "시각 요약 만들기"도 같은 준비가 필요하다(없으면 503 `visual_unavailable`). WebUI 작업(리뷰·시각 요약 만들기)은 설치된 스킬 디렉터리를 작업 폴더의 `.visual-explainer/`로 복사해 그 사본만 쓰므로, 에이전트가 설치된 스킬을 고치지 않는다. 사본은 작업이 끝나면 지워진다.
+
+| 구성 | 위치 |
+|---|---|
+| 사용자 수준 스킬 (사용하는 호스트) | omp `~/.omp/agent/skills/visual-explainer/`, Claude `~/.claude/skills/visual-explainer/`, Codex `~/.codex/skills/visual-explainer/`. `SKILL.md`와 `kit/render.mjs`가 있어야 한다. 원본은 [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer)(MIT, 확인한 판 v0.15.0)의 `plugins/visual-explainer` 폴더이며, 한 호스트에 복사하고 다른 호스트는 심볼릭 링크로 연결해도 된다 |
+| Node.js | PATH의 `node` (`render.mjs` 실행) |
+| 시각 검사 (선택) | `npm install --no-save --prefix <스킬 디렉터리> playwright-core`로 스킬 폴더에 `playwright-core`를 설치하고, 브라우저는 Google Chrome 또는 `npx playwright-core@<버전> install chromium-headless-shell`을 쓴다. 없으면 렌더가 "Visual check skipped"를 출력하고 페이지는 그대로 만든다 |
 
 `research_harness_check.py`는 다른 저장소에 설치기가 만든 manifest를 검사한다. 이 저장소의 첫 실행 진단에는 위 명령을 사용한다. 여기에서 설치 manifest가 없다는 오류가 나는 것은 설치기를 자기 저장소에 실행하라는 뜻이 아니다.
 
@@ -236,6 +245,7 @@ python3 -B .scripts/bin/onboarding_check.py --host codex --with-mcp --with-graph
 | manifest 누락 | 이 저장소는 onboarding_check.py; 외부 설치 대상은 research_harness_check.py |
 | PDF를 읽지 못함 | 페이지 읽기 지원을 점검하고 읽기 실패를 명시; 리뷰 완료 보류 |
 | 리뷰가 "방법 구조도 생성 불가"로 실패 | `onboarding_check.py`의 diagram-design WARN 확인; 스킬·`.diagram-design` 마커·프로필 준비 |
+| 리뷰 보고나 리더에 "시각 요약 없음" | `onboarding_check.py`의 visual-explainer·node WARN 확인; 준비 뒤 리더에서 "시각 요약 만들기" |
 
 ## 9. 발표에서 보여줄 순서
 

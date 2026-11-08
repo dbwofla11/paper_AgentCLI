@@ -86,6 +86,37 @@ class OnboardingChecks(unittest.TestCase):
                     self.assertFalse(any(status == "FAIL" for status, _ in result), result)
                     self.assertGreater(sum(status == "WARN" for status, _ in result), base_warn, result)
 
+    def test_visual_prerequisites_are_warnings_for_each_host(self):
+        for host, skill_dir in (("omp", ".omp/agent/skills"), ("claude", ".claude/skills"),
+                                ("codex", ".codex/skills")):
+            with self.subTest(host=host), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "repo"
+                home = Path(temporary) / "home"
+                self.fixture(root)
+                skill = home / skill_dir / "visual-explainer/SKILL.md"
+                skill.parent.mkdir(parents=True)
+                skill.write_text("skill", encoding="utf-8")
+                render = skill.parent / "kit/render.mjs"
+                render.parent.mkdir()
+                render.write_text("// fixture", encoding="utf-8")
+                with patch.dict(os.environ, {"HOME": str(home)}), \
+                     patch.object(doctor.subprocess, "run", return_value=SimpleNamespace(returncode=0)):
+                    with patch.object(doctor.shutil, "which", return_value="/bin/tool"):
+                        skill.unlink()
+                        result = doctor.check(root, host)
+                    self.assertTrue(any(status == "WARN" and "visual-explainer" in text
+                                        for status, text in result), result)
+                    self.assertFalse(any(status == "FAIL" and "visual-explainer" in text
+                                         for status, text in result), result)
+                    skill.write_text("skill", encoding="utf-8")
+                    with patch.object(doctor.shutil, "which",
+                                      side_effect=lambda cmd: None if cmd == "node" else "/bin/tool"):
+                        result = doctor.check(root, host)
+                    self.assertTrue(any(status == "WARN" and "node" in text.lower()
+                                        for status, text in result), result)
+                    self.assertFalse(any(status == "FAIL" and "node" in text.lower()
+                                         for status, text in result), result)
+
     def test_relocated_clone_accepts_relative_links_and_rejects_broken_ones(self):
         with tempfile.TemporaryDirectory() as temporary:
             old = Path(temporary) / "old"

@@ -34,6 +34,7 @@ GENERATION = "paper-analyst"
 VERIFICATION = "paper-verifier"
 READER = "paper-reader"  # WebUI paper reader answers; resolved on demand, not part of review_roles()
 SEARCHER = "paper-searcher"  # WebUI paper discovery (논문 탐색) runs; resolved on demand like READER
+VISUAL = "visual-designer"  # WebUI on-demand visual summaries (review.visual); resolved on demand like READER
 ROLE_AGENTS = {"generation": GENERATION, "verification": VERIFICATION}
 SOURCE = "omp-config"
 CACHE_TTL_S = 5.0
@@ -177,6 +178,7 @@ def resolve(agent_name: str, root: Path) -> dict:
             else "미설정: 리뷰 독립 검증을 수행하지 않습니다." if agent_name == VERIFICATION
             else "미설정: 연결된 에이전트(.research-harness-agent.json)의 기본 모델로 답합니다." if agent_name == READER
             else "미설정: 연결된 에이전트(.research-harness-agent.json)의 기본 모델로 검색합니다." if agent_name == SEARCHER
+            else "미설정: 연결된 에이전트(.research-harness-agent.json)의 기본 모델로 시각 요약을 만듭니다." if agent_name == VISUAL
             else "미설정")
         return resolution
     resolution["configured"] = True

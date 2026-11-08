@@ -30,7 +30,7 @@ import discovery_cache
 import harness_dashboard
 import research_agent
 import thought_experiments_html
-from webui import discovery, jobs, reader, reviews, roles, security
+from webui import discovery, jobs, reader, reviews, roles, security, visuals
 
 VERSION = "webui-m0"
 WEBUI_HOME = "/100-views/webui/"
@@ -76,6 +76,8 @@ API_ROUTES = (
     (re.compile(r"/api/papers/([^/]+)"), {"GET": "paper"}),
     (re.compile(r"/api/papers/([^/]+)/pdf"), {"GET": "paper_pdf"}),
     (re.compile(r"/api/papers/([^/]+)/figures/([^/]+)"), {"GET": "paper_figure", "HEAD": "paper_figure"}),
+    (re.compile(r"/api/papers/([^/]+)/visual"),
+     {"GET": "paper_visual", "HEAD": "paper_visual", "POST": "create_paper_visual"}),
     (re.compile(r"/api/papers/([^/]+)/threads"), {"GET": "paper_threads"}),
     (re.compile(r"/api/papers/([^/]+)/threads/([^/]+)"), {"DELETE": "delete_thread"}),
     (re.compile(r"/api/papers/([^/]+)/ask"), {"POST": "ask_paper"}),
@@ -542,7 +544,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                          "runner": research_agent.RUNNERS.get(status.get("agent")), "pdf_reader": "pdftotext",
                          "max_parallel": reviews.MAX_JOBS, "queue": reviews.load_queue(),
                          "reader_role": roles.resolve(roles.READER, reviews.ROOT),
-                         "searcher_role": roles.resolve(roles.SEARCHER, reviews.ROOT)})
+                         "searcher_role": roles.resolve(roles.SEARCHER, reviews.ROOT),
+                         "visual_role": roles.resolve(roles.VISUAL, reviews.ROOT)})
 
     # -- API: paper reader -----------------------------------------------------
     def _reader_error(self, exc: reader.ReaderError) -> None:
@@ -553,7 +556,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _api_paper(self, args: tuple, query: str, payload: dict) -> None:
         try:
-            bundle = reader.paper_bundle(args[0])
+            bundle = reader.paper_bundle(args[0], self.server.broker)
         except reader.ReaderError as exc:
             self._reader_error(exc)
             return
@@ -580,6 +583,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self._send_file(handle, "image/svg+xml", (
             ("Content-Security-Policy", security.FIGURE_CSP),
             ("Content-Disposition", f'inline; filename="{name}"')))
+
+    def _api_paper_visual(self, args: tuple, query: str, payload: dict) -> None:
+        slug = args[0]
+        try:
+            body = visuals.read_served(slug)
+        except reader.ReaderError as exc:
+            self._reader_error(exc)
+            return
+        except OSError:
+            self._error(404, "not_found", "시각 요약 파일을 읽을 수 없습니다.")
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Security-Policy", security.VISUAL_CSP)
+        self.send_header("Content-Disposition", f'inline; filename="{security.visual_name(slug)}.html"')
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def _api_create_paper_visual(self, args: tuple, query: str, payload: dict) -> None:
+        try:
+            body = visuals.submit_visual(args[0], self.server.broker, self._pinned_agent(),
+                                         self.server.discovery_lock)
+        except reader.ReaderError as exc:
+            self._reader_error(exc)
+            return
+        self._json(202, body)
 
     def _api_paper_threads(self, args: tuple, query: str, payload: dict) -> None:
         try:
@@ -703,22 +734,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
             body["verification"] = verification
         self._json(200, body)
 
-    def _enqueue_review_job(self, slug: str, agent: str | None, kind: str | None = None) -> dict | None:
-        """Append a queued review-queue job unless one is already queued or running.
+    def _enqueue_review_job(self, slug: str, agent: str | None,
+                            kind: str | None = None) -> tuple[dict | None, tuple[int, str, str] | None]:
+        """Append a queued review-queue job unless one is already queued or running, or a
+        ``review.visual`` job of the same slug is (both write its ``figures/``). Returns
+        ``(job, None)`` or ``(None, (status, code, message))``.
 
-        Review jobs carry no ``kind``; verify-only jobs carry ``kind: "verify"``.
+        Review jobs carry no ``kind``; verify-only jobs carry ``kind: "verify"``. Checked under
+        ``reviews.LOCK``, which ``visuals.submit_visual`` also holds for its queue check and submit.
         """
         with reviews.LOCK:
             data = reviews.load_queue()
             if any(item.get("status") in {"queued", "running"} for item in data["jobs"]):
-                return None
+                return None, (409, "review_active", "another paper review is already active")
+            if visuals.active_job(self.server.broker, slug) is not None:
+                return None, (409, "visual_active", "a visual summary job for this paper is active; wait for it")
             job_id = hashlib.sha256(f"{slug}:{time.time_ns()}".encode()).hexdigest()[:16]
             job = {"job_id": job_id, **({"kind": kind} if kind else {}), "slug": slug,
                    "record": str(reviews.root_relative(reviews.LIBRARY / f"{slug}.json")),
                    "status": "queued", "agent": agent, "created_at": reviews.now(), "message": "accepted"}
             data["jobs"].append(job)
             reviews.save_queue(data)
-            return job
+            return job, None
 
     def _api_create_review(self, args: tuple, query: str, payload: dict) -> None:
         try:
@@ -735,9 +772,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not status["ready"]:
                 self._error(503, "agent_unavailable", status["reason"])
                 return
-            job = self._enqueue_review_job(slug, agent=reviews.review_agent(status))
+            job, refusal = self._enqueue_review_job(slug, agent=reviews.review_agent(status))
             if job is None:
-                self._error(409, "review_active", "another paper review is already active")
+                self._error(*refusal)
                 return
             threading.Thread(target=reviews.review_worker, args=(job["job_id"], slug, self.server.review_timeout),
                              daemon=True).start()
@@ -773,9 +810,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if reason:
             self._error(503, "verifier_unavailable", reason)
             return
-        job = self._enqueue_review_job(slug, kind="verify", agent=roles.selected_candidate(resolution)["runner"])
+        job, refusal = self._enqueue_review_job(slug, kind="verify", agent=roles.selected_candidate(resolution)["runner"])
         if job is None:
-            self._error(409, "review_active", "another paper review is already active")
+            self._error(*refusal)
             return
         threading.Thread(target=reviews.verify_worker, args=(job["job_id"], slug, self.server.review_timeout),
                          daemon=True).start()
@@ -824,7 +861,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._error(404, "not_found", "unknown job")
             return
         if not broker.cancel(args[0]):
-            self._error(409, "already_finished", "job already finished")
+            if broker.committing(args[0]):
+                self._error(409, "publishing", "결과를 게시하는 중이라 취소할 수 없습니다.")
+            else:
+                self._error(409, "already_finished", "job already finished")
             return
         self._json(202, {"job": broker.get(args[0])})
 
@@ -913,18 +953,21 @@ class WebUIServer(http.server.ThreadingHTTPServer):
 
     def server_close(self) -> None:
         """Stop listening after cancelling reader jobs, discovery jobs (searches, registrations),
-        and harness checks and waiting briefly for their cleanup (``reader.shutdown``: turn
-        recorded, CLI group ended, temp workspace removed; ``discovery.shutdown``: session saved,
-        CLI group ended, workspace removed; harness checks: process group ended), at most
-        HARNESS_SHUTDOWN_WAIT_S in total for checks."""
+        visual-summary jobs, and harness checks and waiting briefly for their cleanup
+        (``reader.shutdown``: turn recorded, CLI group ended, temp workspace removed;
+        ``discovery.shutdown``: session saved, CLI group ended, workspace removed;
+        ``visuals.shutdown``: CLI group ended, workspace removed, nothing published; harness
+        checks: process group ended), at most HARNESS_SHUTDOWN_WAIT_S in total for checks."""
         try:
             deadline = time.monotonic() + HARNESS_SHUTDOWN_WAIT_S
-            # No harness check or discovery job is submitted after this.
+            # No harness check, discovery job or visual-summary job is submitted after this.
             with self.harness_lock, self.discovery_lock:
                 self.broker.closing.set()
             checks = [job for job in self.broker.list() if is_harness_job(job)]
-            # Discovery jobs are cancelled now too, so their CLIs stop while the reader shuts down.
-            for job in [*checks, *(job for job in self.broker.list() if job.get("kind") in discovery.DISCOVERY_JOB_KINDS)]:
+            # Discovery and visual-summary jobs are cancelled now too, so their CLIs stop while the
+            # reader shuts down.
+            agent_kinds = (*discovery.DISCOVERY_JOB_KINDS, visuals.JOB_KIND)
+            for job in [*checks, *(job for job in self.broker.list() if job.get("kind") in agent_kinds)]:
                 if job.get("status") in {"queued", "running"}:
                     self.broker.cancel(job["job_id"])
             try:
@@ -933,9 +976,14 @@ class WebUIServer(http.server.ThreadingHTTPServer):
                         sys.stderr.write(f"논문 리더 작업 일부가 {reader.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
                                          "남은 작업 폴더는 다음 실행 때 지웁니다.\n")
                 finally:
-                    if not discovery.shutdown(self.broker):
-                        sys.stderr.write(f"논문 탐색 작업이 {discovery.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
-                                         "검색은 다음 실행 때 '중단됨'으로 표시되고, 등록은 후보 상태가 그대로 남습니다.\n")
+                    try:
+                        if not discovery.shutdown(self.broker):
+                            sys.stderr.write(f"논문 탐색 작업이 {discovery.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
+                                             "검색은 다음 실행 때 '중단됨'으로 표시되고, 등록은 후보 상태가 그대로 남습니다.\n")
+                    finally:
+                        if not visuals.shutdown(self.broker):
+                            sys.stderr.write(f"시각 요약 작업이 {visuals.SHUTDOWN_WAIT_S:g}초 안에 끝나지 않았습니다. "
+                                             "기존 시각 요약은 그대로 남습니다.\n")
             finally:
                 if not self.broker.wait_finished([job["job_id"] for job in checks],
                                                  max(0.0, deadline - time.monotonic())):

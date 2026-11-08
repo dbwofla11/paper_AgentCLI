@@ -189,6 +189,8 @@ export interface StatusPayload {
   reader_role: RoleResolution | null;
   /** `paper-searcher` resolution (논문 탐색 검색); null when the server omits it (normalized in fetchStatus). */
   searcher_role: RoleResolution | null;
+  /** `visual-designer` resolution (시각 요약 생성); null when the server omits it (normalized in fetchStatus). */
+  visual_role: RoleResolution | null;
 }
 
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -204,10 +206,13 @@ export interface JobRecord {
   agent: string | null;
   /**
    * Role the job ran as: a review role for role pings, `paper-reader` for `paper.ask`, `paper-searcher`
-   * for `discovery.search` and `discovery.register`; absent for agent pings.
+   * for `discovery.search` and `discovery.register`, `visual-designer` for `review.visual`; absent for agent pings.
    */
-  role?: ReviewRoleAgent | typeof READER_ROLE_AGENT | typeof SEARCHER_ROLE_AGENT | null;
-  /** Paper slug: the paper a `paper.ask` answers about, or the library slug a `discovery.register` writes. */
+  role?: ReviewRoleAgent | typeof READER_ROLE_AGENT | typeof SEARCHER_ROLE_AGENT | typeof VISUAL_ROLE_AGENT | null;
+  /**
+   * Paper slug: the paper a `paper.ask` answers about or a `review.visual` draws, or the library slug a
+   * `discovery.register` writes.
+   */
   slug?: string;
   cost_usd: number | null;
   error: string | null;
@@ -351,6 +356,8 @@ export interface PaperSummary {
   structured_review_status: string | null;
   has_pdf: boolean;
   has_review: boolean;
+  /** True when `{slug}-visual.html` (the 시각 요약) exists beside the review. */
+  has_visual: boolean;
   /** True when the structured review is not complete or its Markdown file is missing. */
   review_needed: boolean;
   verification: PaperVerificationSummary | null;
@@ -448,11 +455,47 @@ export interface PaperBundle {
   };
   review: { path: string | null; available: boolean; markdown: string | null; sha256: string | null };
   verification: VerificationReport | null;
+  visual: PaperVisual;
   evidence: {
     pages: number | null;
     items: EvidenceItem[];
     summary: { matched: number; page_only: number; unresolved: number };
   };
+}
+
+/** Harness agent that draws 시각 요약 on demand (`.omp/agents/visual-designer.md`). */
+export const VISUAL_ROLE_AGENT = 'visual-designer';
+
+/** Broker job kind of an on-demand 시각 요약 (`POST /api/papers/{slug}/visual`). */
+export const VISUAL_JOB_KIND = 'review.visual';
+
+/**
+ * `postMessage` the server-injected bridge in the 시각 요약 page sends when a `data-ve-page` link is
+ * clicked (`.scripts/docs/webui-api.md`, 시각 요약).
+ */
+export interface VisualPageMessage {
+  type: 'research-webui:visual-page';
+  page: number;
+}
+
+export const VISUAL_PAGE_MESSAGE: VisualPageMessage['type'] = 'research-webui:visual-page';
+
+/** `visual` of GET /api/papers/{slug}: the 시각 요약 beside the review and its sidecar facts. */
+export interface PaperVisual {
+  /** `GET /api/papers/{slug}/visual`, always built by the client (never taken from the response). */
+  url: string;
+  available: boolean;
+  generated_at: string | null;
+  /** sha256 of the review Markdown the summary was drawn from. */
+  review_sha256: string | null;
+  /** True when the review changed since; null when the sidecar is missing (freshness unknown). */
+  stale: boolean | null;
+  /** `review` = drawn during the paper review; `visual-job` = the reader's 시각 요약 만들기. */
+  source: 'review' | 'visual-job' | null;
+  /** Result of the kit's browser check; `skipped` when no browser could run. */
+  check: 'passed' | 'problems' | 'skipped' | null;
+  /** The queued or running `review.visual` job of this paper; null otherwise. */
+  job: JobRecord | null;
 }
 
 /** Fractions (0–1) of the displayed page box, origin top-left: [x0, y0, x1, y1] with x0 < x1, y0 < y1. */

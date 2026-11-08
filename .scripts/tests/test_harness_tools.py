@@ -222,6 +222,28 @@ class ViewTests(unittest.TestCase):
         self.assertFalse(review_bridge.allowed_output("paper-library.html", record, review))
         self.assertFalse(review_bridge.allowed_output("100-views/harness-dashboard.html", record, review))
 
+    def test_staging_includes_ignored_review_data_but_not_pdfs_or_threads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
+            (root / ".gitignore").write_text(
+                "/01-Papers/index.md\n/01-Papers/library/\n/01-Papers/reviews/**\n",
+                encoding="utf-8")
+            included = ("01-Papers/index.md", "01-Papers/library/example.json",
+                        "01-Papers/reviews/other/example.md",
+                        "01-Papers/reviews/other/figures/example-visual.html")
+            excluded = ("01-Papers/pdfs/example.pdf",
+                        "01-Papers/reviews/other/reader-threads/thread.json")
+            for name in included + excluded:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture", encoding="utf-8")
+            inventory = review_bridge.staging_inventory(root)
+            for name in included:
+                self.assertIn(Path(name), inventory)
+            for name in excluded:
+                self.assertNotIn(Path(name), inventory)
+
     def test_review_figure_allowlist_and_publication(self):
         with tempfile.TemporaryDirectory() as directory:
             root = (Path(directory) / "live").resolve()

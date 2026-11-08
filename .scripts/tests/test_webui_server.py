@@ -167,6 +167,69 @@ class ServerSecurityTests(unittest.TestCase):
             self.assertEqual(self.request('GET', '/01-Papers/reviews/other/figures/' + name)[0], 404)
         self.assertEqual(self.request('GET', '/01-Papers/reviews/other/example.md')[0], 200)
 
+    def test_visual_route_headers_bridge_and_static_isolation(self):
+        library = self.root / '01-Papers/library'
+        library.mkdir(parents=True)
+        category = self.root / '01-Papers/reviews/other'
+        figures = category / 'figures'
+        figures.mkdir(parents=True)
+        (category / 'example.md').write_text('review')
+        visual = figures / 'example-visual.html'
+        visual.write_text('<html><body><a href="#" data-ve-page="7">p.7</a></body></html>')
+        (library / 'example.json').write_text(json.dumps({
+            'slug': 'example', 'title': 'Example',
+            'source': {'review_path': '01-Papers/reviews/other/example.md'}}))
+        url = '/api/papers/example/visual'
+        csp = ("default-src 'none'; script-src 'unsafe-inline'; "
+               "style-src 'unsafe-inline' https://fonts.googleapis.com; "
+               "font-src https://fonts.gstatic.com; img-src data: blob:; "
+               "connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; "
+               "form-action 'none'; sandbox allow-scripts")
+        with patch.object(reviews, 'LIBRARY', library):
+            status, headers, body = self.request('GET', url)
+            self.assertEqual(status, 200)
+            self.assertEqual(headers['Content-Type'], 'text/html; charset=utf-8')
+            self.assertEqual(headers['Content-Security-Policy'], csp)
+            self.assertNotIn('X-Frame-Options', headers)
+            self.assertEqual(headers['X-Content-Type-Options'], 'nosniff')
+            self.assertEqual(headers['Cache-Control'], 'no-store')
+            self.assertIn(b'research-webui:visual-page', body)
+            self.assertIn(b'data-ve-page', body)
+            self.assertIn(b'preventDefault', body)
+            self.assertIn(b'postMessage', body)
+            self.assertIn(b'data-research-webui-bridge', body)
+            for selector in (b'.ve-bar', b'.ve-sel', b'.ve-pop'):
+                self.assertIn(selector, body)
+            self.assertEqual(int(headers['Content-Length']), len(body))
+            status, head, empty = self.request('HEAD', url)
+            self.assertEqual((status, empty), (200, b''))
+            for name in ('Content-Type', 'Content-Security-Policy', 'Content-Length',
+                         'X-Content-Type-Options', 'Cache-Control'):
+                self.assertEqual(head[name], headers[name])
+            self.assertNotIn('X-Frame-Options', head)
+            self.assertEqual(self.request('GET', '/api/session')[1]['X-Frame-Options'], 'DENY')
+            self.assertEqual(self.request('GET', '/01-Papers/reviews/other/figures/example-visual.html')[0], 404)
+            for path, code, reason in (( '/api/papers/absent/visual', 404, 'not_found'),
+                                       ('/api/papers/%2e%2e%2fx/visual', 400, 'bad_request')):
+                status, _, data = self.request('GET', path)
+                self.assertEqual((status, json.loads(data)['code']), (code, reason))
+            visual.unlink()
+            self.assertEqual(self.request('GET', url)[0], 404)
+            visual.symlink_to(Path(self.outside.name) / 'secret')
+            self.assertEqual(self.request('GET', url)[0], 404)
+            visual.unlink()
+            figures.rmdir()
+            figures.symlink_to(Path(self.outside.name), target_is_directory=True)
+            (Path(self.outside.name) / 'example-visual.html').write_text('outside')
+            self.assertEqual(self.request('GET', url)[0], 404)
+            figures.unlink()
+            figures.mkdir()
+            (figures / 'example-visual.html').write_text('inside')
+            moved = Path(self.outside.name) / 'category'
+            category.rename(moved)
+            category.symlink_to(moved, target_is_directory=True)
+            self.assertEqual(self.request('GET', url)[0], 404)
+
     def test_figure_api_rejects_category_replaced_by_outside_symlink(self):
         library = self.root / '01-Papers/library'
         library.mkdir(parents=True)

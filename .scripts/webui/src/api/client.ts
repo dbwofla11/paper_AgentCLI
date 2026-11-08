@@ -29,6 +29,7 @@ import type {
   PaperBundle,
   PaperLabels,
   PapersPayload,
+  PaperVisual,
   PublicationStatus,
   ReaderStatus,
   ReaderThread,
@@ -321,6 +322,7 @@ export async function fetchStatus(signal?: AbortSignal): Promise<StatusPayload> 
     review_roles: generation && verification ? { generation, verification } : null,
     reader_role: normalizeResolution(body.reader_role),
     searcher_role: normalizeResolution(body.searcher_role),
+    visual_role: normalizeResolution(body.visual_role),
   };
 }
 
@@ -343,6 +345,10 @@ export async function createJob(payload: CreateJobRequest): Promise<JobRecord> {
   return body.job;
 }
 
+/**
+ * Requests cancellation. 404 `not_found`, 409 `already_finished`, or 409 `publishing` when a job began
+ * publishing its result: it can no longer be cancelled and ends on its own (follow its stream to the end).
+ */
 export async function cancelJob(jobId: string): Promise<JobRecord> {
   const body = await sendJson<{ job?: JobRecord }>(`${jobPath(jobId)}/cancel`, {});
   if (!body.job) throw badResponse();
@@ -382,6 +388,37 @@ function paperPath(slug: string): string {
   return `/api/papers/${encodeURIComponent(slug)}`;
 }
 
+/** `GET /api/papers/{slug}/visual`: the 시각 요약 page (sandboxed iframe source and 새 탭에서 열기 link). */
+function paperVisualUrl(slug: string): string {
+  return `${paperPath(slug)}/visual`;
+}
+
+function isJobRecord(value: unknown): value is JobRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'job_id' in value &&
+    typeof value.job_id === 'string' &&
+    'status' in value &&
+    typeof value.status === 'string'
+  );
+}
+
+/** A server without 시각 요약 support omits `visual`: it reads as absent. The URL is always the client's own. */
+function normalizeVisual(slug: string, value: Partial<PaperVisual> | null | undefined): PaperVisual {
+  const visual: Partial<PaperVisual> = value ?? {};
+  return {
+    url: paperVisualUrl(slug),
+    available: visual.available === true,
+    generated_at: typeof visual.generated_at === 'string' && visual.generated_at ? visual.generated_at : null,
+    review_sha256: typeof visual.review_sha256 === 'string' && visual.review_sha256 ? visual.review_sha256 : null,
+    stale: typeof visual.stale === 'boolean' ? visual.stale : null,
+    source: visual.source === 'review' || visual.source === 'visual-job' ? visual.source : null,
+    check: visual.check === 'passed' || visual.check === 'problems' || visual.check === 'skipped' ? visual.check : null,
+    job: isJobRecord(visual.job) ? visual.job : null,
+  };
+}
+
 function normalizeThread(value: ReaderThread): ReaderThread {
   return { ...value, anchor: value.anchor ?? null, turns: Array.isArray(value.turns) ? value.turns : [] };
 }
@@ -405,6 +442,7 @@ export async function fetchPapers(signal?: AbortSignal): Promise<PapersPayload> 
       abstract: typeof paper.abstract === 'string' && paper.abstract ? paper.abstract : null,
       source_url: typeof paper.source_url === 'string' && paper.source_url ? paper.source_url : null,
       review_needed: paper.review_needed === true,
+      has_visual: paper.has_visual === true,
     })),
     errors: Array.isArray(body.errors) ? body.errors : [],
     labels: { category: stringMap(labels.category), reading_status: stringMap(labels.reading_status) },
@@ -423,6 +461,7 @@ export async function fetchPaper(slug: string, signal?: AbortSignal): Promise<Pa
     pdf: body.pdf,
     review: body.review,
     verification: body.verification ?? null,
+    visual: normalizeVisual(slug, body.visual),
     evidence: {
       pages: body.evidence.pages ?? null,
       items: items.map((item) => ({
@@ -465,6 +504,17 @@ export async function askPaper(slug: string, payload: AskRequest): Promise<AskRe
   });
   if (!body.job || !body.thread) throw badResponse();
   return { job: body.job, thread: normalizeThread(body.thread) };
+}
+
+/**
+ * 시각 요약 만들기 (202): queues a `review.visual` job. The server probes the `visual-designer` role
+ * first, which can take a few seconds. 400, 404 `not_found`, 409 `review_missing`/`visual_active`/
+ * `review_active`, 503 `role_config_error`/`designer_unavailable`/`visual_unavailable`/`shutting_down`.
+ */
+export async function startVisual(slug: string): Promise<JobRecord> {
+  const body = await sendJson<{ job?: unknown }>(paperVisualUrl(slug), {}, { timeoutMs: STATUS_TIMEOUT_MS });
+  if (!isJobRecord(body.job)) throw badResponse();
+  return body.job;
 }
 
 export async function fetchReaderStatus(signal?: AbortSignal): Promise<ReaderStatus> {

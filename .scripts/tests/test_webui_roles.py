@@ -311,6 +311,180 @@ class RoleResolutionTests(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_status_contains_visual_role_with_unconfigured_fallback(self):
+        roles.clear_cache()
+        conn = http.client.HTTPConnection('127.0.0.1', self.http.server_port, timeout=3)
+        try:
+            conn.request('GET', '/api/status')
+            response = conn.getresponse()
+            payload = json.loads(response.read())
+            self.assertEqual(response.status, 200)
+            visual = payload['visual_role']
+            self.assertEqual(visual['agent_name'], 'visual-designer')
+            self.assertEqual(set(visual), set(payload['searcher_role']))
+            self.assertFalse(visual['configured'])
+            self.assertEqual(roles.VISUAL, 'visual-designer')
+        finally:
+            conn.close()
+
+    def test_visual_job_conflicts_and_missing_prerequisites(self):
+        self.paper()
+        host = f'127.0.0.1:{self.http.server_port}'
+        headers = {'Origin': 'http://' + host, 'X-CSRF-Token': 'token',
+                   'Content-Type': 'application/json'}
+        def post():
+            conn = http.client.HTTPConnection('127.0.0.1', self.http.server_port, timeout=3)
+            try:
+                conn.request('POST', '/api/papers/example/visual', b'{}', headers)
+                response = conn.getresponse()
+                return response.status, json.loads(response.read())
+            finally:
+                conn.close()
+        with tempfile.TemporaryDirectory() as home, patch.dict('os.environ', {'HOME': home}):
+            skill = Path(home) / '.omp/agent/skills/visual-explainer'
+            skill.mkdir(parents=True)
+            (skill / 'SKILL.md').write_text('fixture', encoding='utf-8')
+            (skill / 'kit').mkdir()
+            (skill / 'kit/render.mjs').write_text('// fixture', encoding='utf-8')
+            roles.clear_cache()
+            self.queue.write_text(json.dumps({'jobs': [
+                {'job_id': 'busy', 'status': 'running', 'slug': 'example'}]}), encoding='utf-8')
+            status, body = post()
+            self.assertEqual((status, body['code']), (409, 'review_active'))
+            self.queue.write_text(json.dumps({'jobs': []}), encoding='utf-8')
+            (skill / 'SKILL.md').unlink()
+            status, body = post()
+            self.assertEqual((status, body['code']), (503, 'visual_unavailable'))
+            (skill / 'SKILL.md').write_text('fixture', encoding='utf-8')
+            from webui import visuals
+            with patch.object(visuals, 'node_path', return_value=None):
+                status, body = post()
+            self.assertEqual((status, body['code']), (503, 'visual_unavailable'))
+            (self.root / '01-Papers/reviews/other/example.md').unlink()
+            status, body = post()
+            self.assertEqual((status, body['code']), (409, 'review_missing'))
+
+    def test_visual_jobs_publish_reject_cancel_and_prevent_overlap(self):
+        from webui import visuals
+        self.paper()
+        record_path = self.root / '01-Papers/library/example.json'
+        record = json.loads(record_path.read_text(encoding='utf-8'))
+        record['structured_review_status'] = 'pending'
+        record_path.write_text(json.dumps(record), encoding='utf-8')
+        self.config['task.agentModelOverrides']['paper-verifier'] = 'openai-codex/a:high'
+        definitions = self.root / '.omp/agents'
+        definitions.mkdir(parents=True)
+        (definitions / 'visual-designer.md').write_text('Visual designer', encoding='utf-8')
+        skill = self.root / 'installed-skill'
+        (skill / 'kit').mkdir(parents=True)
+        (skill / 'SKILL.md').write_text('installed fixture', encoding='utf-8')
+        (skill / 'kit/render.mjs').write_text('// render fixture', encoding='utf-8')
+        (skill / 'node_modules/playwright-core').mkdir(parents=True)
+        (skill / 'node_modules/playwright-core/index.js').write_text('// playwright', encoding='utf-8')
+        (skill / '.git').mkdir()
+        (skill / '.git/config').write_text('private', encoding='utf-8')
+        (skill / 'alias.md').symlink_to(skill / 'SKILL.md')
+        figures = self.root / '01-Papers/reviews/other/figures'
+        figures.mkdir()
+        html = figures / 'example-visual.html'
+        html.write_text('old visual', encoding='utf-8')
+        (figures / 'example-visual.sheet-2.png').write_bytes(b'old sheet')
+        host = f'127.0.0.1:{self.http.server_port}'
+        headers = {'Origin': 'http://' + host, 'X-CSRF-Token': 'token',
+                   'Content-Type': 'application/json'}
+        def post():
+            conn = http.client.HTTPConnection('127.0.0.1', self.http.server_port, timeout=3)
+            try:
+                conn.request('POST', '/api/papers/example/visual', b'{}', headers)
+                response = conn.getresponse()
+                return response.status, json.loads(response.read())
+            finally:
+                conn.close()
+        valid = b'<html><style data-ve-kit></style><script data-ve-kit></script></html>'
+        for mode in ('missing', 'markers', 'too-large', 'cancel', 'success'):
+            with self.subTest(mode=mode):
+                entered, release = threading.Event(), threading.Event()
+                class FakeRun:
+                    def events(self):
+                        entered.set()
+                        if mode == 'cancel':
+                            release.wait(5)
+                        yield {'type': 'result', 'text': 'CHECK: passed', 'cost_usd': None,
+                               'duration_ms': None, 'usage': None}
+                    def cancel(self):
+                        release.set()
+                    def terminate(self):
+                        release.set()
+                def launch(agent, argv, request):
+                    workspace = Path(request.cwd)
+                    copied = workspace / '.visual-explainer'
+                    self.assertEqual((copied / 'SKILL.md').read_text(encoding='utf-8'), 'installed fixture')
+                    self.assertTrue((copied / 'kit/render.mjs').is_file())
+                    self.assertTrue((copied / 'node_modules/playwright-core/index.js').is_file())
+                    self.assertFalse((copied / '.git').exists())
+                    self.assertFalse(any(path.is_symlink() for path in copied.rglob('*')))
+                    self.assertNotEqual((copied / 'SKILL.md').stat().st_ino, (skill / 'SKILL.md').stat().st_ino)
+                    self.assertTrue((workspace / 'review.md').is_file())
+                    if mode != 'missing':
+                        data = (b'<html></html>' if mode == 'markers' else
+                                valid + b'x' * (3 * 1024 * 1024) if mode == 'too-large' else valid)
+                        (workspace / 'example-visual.html').write_bytes(data)
+                    (workspace / 'example-visual.src.html').write_text('source', encoding='utf-8')
+                    (workspace / 'example-visual.sheet.png').write_bytes(b'new sheet')
+                    return FakeRun()
+                def visual_command(agent, workspace, prompt, **kwargs):
+                    copied = Path(workspace) / '.visual-explainer'
+                    self.assertEqual(kwargs['skill_dir'], copied)
+                    self.assertIn('.visual-explainer', prompt)
+                    self.assertNotIn(str(skill), prompt)
+                    return ['fixture']
+                roles.clear_cache()
+                with patch.object(visuals, 'skill_dir', return_value=skill), \
+                     patch.object(visuals, 'node_path', return_value='/bin/node'), \
+                     patch.object(research_agent, 'visual_command', side_effect=visual_command), \
+                     patch.object(llm, 'launch', side_effect=launch):
+                    status, body = post()
+                    self.assertEqual(status, 202, body)
+                    job = body['job']
+                    self.assertEqual((job['kind'], job['role'], job['slug']),
+                                     ('review.visual', 'visual-designer', 'example'))
+                    self.assertTrue(entered.wait(3))
+                    if mode == 'cancel':
+                        try:
+                            status, conflict = post()
+                            self.assertEqual((status, conflict['code']), (409, 'visual_active'))
+                            for route, payload in (('/api/reviews', {'slug': 'example'}),
+                                                   ('/api/reviews/example/verify', {})):
+                                conn = http.client.HTTPConnection('127.0.0.1', self.http.server_port, timeout=3)
+                                try:
+                                    conn.request('POST', route, json.dumps(payload), headers)
+                                    response = conn.getresponse()
+                                    conflict = json.loads(response.read())
+                                    self.assertEqual((response.status, conflict['code']), (409, 'visual_active'))
+                                finally:
+                                    conn.close()
+                        finally:
+                            self.http.broker.cancel(job['job_id'])
+                            release.set()
+                            self.http.broker.wait_finished([job['job_id']], 5)
+                    self.assertTrue(self.http.broker.wait_finished([job['job_id']], 5))
+                    events = [item[1] for item in self.http.broker.events(job['job_id']) if item]
+                if mode in ('missing', 'markers', 'too-large'):
+                    self.assertEqual((events[-1]['type'], events[-1]['kind']), ('error', 'invalid_output'))
+                    self.assertEqual(html.read_text(encoding='utf-8'), 'old visual')
+                elif mode == 'cancel':
+                    self.assertEqual(events[-1]['type'], 'cancelled')
+                    self.assertEqual(html.read_text(encoding='utf-8'), 'old visual')
+                else:
+                    self.assertEqual(events[-1]['type'], 'result')
+                    self.assertEqual(html.read_bytes(), valid)
+                    self.assertEqual((figures / 'example-visual.sheet.png').read_bytes(), b'new sheet')
+                    self.assertFalse((figures / 'example-visual.sheet-2.png').exists())
+                    meta = json.loads((figures / 'example-visual.json').read_text(encoding='utf-8'))
+                    self.assertEqual(meta['source'], 'visual-job')
+                    self.assertEqual(meta['review_sha256'], hashlib.sha256(
+                        (self.root / '01-Papers/reviews/other/example.md').read_bytes()).hexdigest())
+
     def test_ask_config_error_and_region_missing_tools(self):
         self.paper()
         self.config['task.agentModelOverrides']['paper-reader'] = 'anthropic/a:high'
@@ -529,6 +703,12 @@ class RoleResolutionTests(unittest.TestCase):
             {'job_id': 'job-1', 'slug': 'example', 'status': 'queued'}]}), encoding='utf-8')
         review_name = record['source']['review_path']
         pdf_name = record['source']['pdf_path']
+        if outcome == 'visual_preserve_failure':
+            figures = (self.root / review_name).parent / 'figures'
+            figures.mkdir(parents=True)
+            (figures / 'example-visual.html').write_bytes(b'old visual')
+            (figures / 'example-visual.json').write_bytes(b'old sidecar')
+            (figures / 'example-visual.src.html').write_bytes(b'old source')
         invoked = []
         def generation_command(stage, last_message, prompt, runner, **kwargs):
             invoked.append(('generation', runner, kwargs, prompt))
@@ -583,6 +763,11 @@ class RoleResolutionTests(unittest.TestCase):
                 review = stage / review_name
                 review.parent.mkdir(parents=True, exist_ok=True)
                 review.write_text('# Review\n읽은 범위: 1\n', encoding='utf-8')
+                if outcome == 'visual_preserve_failure':
+                    figures = review.parent / 'figures'
+                    (figures / 'example-visual.html').write_bytes(
+                        b'<html><style data-ve-kit></style><script data-ve-kit></script></html>')
+                    (figures / 'example-visual.src.html').write_bytes(b'new source')
                 (stage / '01-Papers/index.md').write_text('# Papers\nexample\n', encoding='utf-8')
                 graph = stage / 'graphify-out/sync-state.json'
                 graph.parent.mkdir(parents=True, exist_ok=True)
@@ -595,7 +780,18 @@ class RoleResolutionTests(unittest.TestCase):
             return subprocess.CompletedProcess(argv, 0, stdout='', stderr='')
         def clone(stage, pdf):
             shutil.copytree(self.root, stage)
+        real_copy = shutil.copy2
+        failed_visual_copies = []
+        def copy(src, dst, *args, **kwargs):
+            source, destination = Path(src), Path(dst)
+            if (outcome == 'visual_preserve_failure'
+                    and source.name.startswith('example-visual.')
+                    and 'validated' in destination.parts):
+                failed_visual_copies.append(source.name)
+                raise OSError('injected visual preserve failure')
+            return real_copy(src, dst, *args, **kwargs)
         with patch('subprocess.run', side_effect=run), \
+                patch.object(reviews.shutil, 'copy2', side_effect=copy), \
                 patch.object(reviews, 'git_visible_files', return_value=None), \
                 patch.object(reviews, 'review_command', side_effect=generation_command), \
                 patch.object(reviews, 'run_verifier', side_effect=verifier), \
@@ -612,7 +808,25 @@ class RoleResolutionTests(unittest.TestCase):
             self.assertEqual(invoked[0][0:2], ('generation', 'claude'))
             self.assertEqual((invoked[0][2]['model'], invoked[0][2]['effort']), ('a', 'high'))
         self.assertIn('.agents/skills/paper-review/SKILL.md', invoked[0][3])
+        if outcome == 'visual_preserve_failure':
+            self.assertTrue(failed_visual_copies, 'visual preservation copy must be attempted')
         return job, invoked, self.root / '04-Projects/review-queue/verifications/example.json'
+
+    def test_verifier_visual_preserve_failure_does_not_block_review(self):
+        job, invoked, _ = self.run_review_case('visual_preserve_failure')
+        self.assertEqual(invoked[1][0], 'verification')
+        self.assertEqual(job['visual']['status'], 'failed')
+        self.assertIn('injected visual preserve failure', job['visual']['reason'])
+        self.assertEqual((self.root / '01-Papers/reviews/other/example.md').read_text(encoding='utf-8'),
+                         '# Review\n읽은 범위: 1\n')
+        record = json.loads((self.root / '01-Papers/library/example.json').read_text(encoding='utf-8'))
+        self.assertEqual(record['structured_review_status'], 'complete')
+        self.assertEqual(len(record['review']), 5)
+        self.assertEqual((self.root / '01-Papers/index.md').read_text(encoding='utf-8'), '# Papers\nexample\n')
+        figures = self.root / '01-Papers/reviews/other/figures'
+        self.assertEqual((figures / 'example-visual.html').read_bytes(), b'old visual')
+        self.assertEqual((figures / 'example-visual.src.html').read_bytes(), b'old source')
+        self.assertEqual((figures / 'example-visual.json').read_bytes(), b'old sidecar')
 
     def test_worker_verifies_before_publish_and_stores_blocking_issues(self):
         job, invoked, report_path = self.run_review_case('issues')

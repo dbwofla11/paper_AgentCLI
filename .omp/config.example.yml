@@ -7,6 +7,7 @@
 #   graph-extraction: "anthropic/claude-opus-5-5:medium"
 #   paper-reading: "anthropic/claude-opus-5-5:medium"
 #   paper-search: "anthropic/claude-opus-5-5:low"
+#   visual-design: "anthropic/claude-opus-5-5:medium"
 # task:
 #   agentModelOverrides:
 #     # 리뷰 생성(paper-analyst)·검증(paper-verifier). WebUI 논문 리뷰도 이 두 항목을 따른다.
@@ -19,6 +20,8 @@
 #     paper-reader: "@paper-reading"
 #     # WebUI 논문 탐색 검색·등록(paper-searcher). 생략하면 연결된 에이전트 기본 모델
 #     paper-searcher: "@paper-search"
+#     # WebUI 리더 "시각 요약 만들기"(visual-designer). 생략하면 연결된 에이전트 기본 모델
+#     visual-designer: "@visual-design"
 # retry:
 #   rateLimitWalksChain: true
 #   fallbackChains:
@@ -30,5 +33,6 @@
 #     paper-critique: []
 #     paper-reading: []
 #     paper-search: []
+#     visual-design: []
 # contextFiles:
 #   extra: [AGENTS.local.md]

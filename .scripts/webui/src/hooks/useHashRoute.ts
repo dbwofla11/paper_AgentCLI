@@ -3,9 +3,12 @@ import { useMemo, useSyncExternalStore } from 'react';
 /** `#/discover` tabs: external search (with its history) and the daily-candidate feed. */
 export type DiscoverView = 'search' | 'daily';
 
+/** Left pane of the reader: the original PDF (default) or the 시각 요약 (`?view=visual`). */
+export type ReaderView = 'pdf' | 'visual';
+
 export type Route =
   | { name: 'papers' }
-  | { name: 'reader'; slug: string }
+  | { name: 'reader'; slug: string; view: ReaderView }
   | { name: 'discover'; view: DiscoverView; id: string | null; prefill: string | null }
   | { name: 'ideas' }
   | { name: 'harness' }
@@ -24,8 +27,19 @@ export function jobHref(jobId: string): string {
   return `${JOBS_HREF}/${encodeURIComponent(jobId)}`;
 }
 
-export function paperHref(slug: string): string {
-  return `#/papers/${encodeURIComponent(slug)}`;
+/**
+ * The reader opens on the PDF; only an explicit `?view=visual` link opens the 시각 요약. That query is a
+ * one-shot request: the reader drops it from the URL once shown, and its view toggle never writes one,
+ * so a reload always opens the PDF (decision V9).
+ */
+export function paperHref(slug: string, view: ReaderView = 'pdf'): string {
+  const path = `#/papers/${encodeURIComponent(slug)}`;
+  return view === 'visual' ? `${path}?view=visual` : path;
+}
+
+/** Rewrites the current history entry's hash (no new entry); `hashchange` still fires, so routes follow. */
+export function replaceHash(href: string): void {
+  if (window.location.hash !== href) window.location.replace(href);
 }
 
 /** A stored search session (`00-Inbox/discovery/searches/{id}.json`). */
@@ -52,9 +66,9 @@ function decoded(value: string): string | null {
 }
 
 /**
- * `#/` → 논문 라이브러리, `#/papers/<slug>` → 리더, `#/discover[/searches/<id>|/daily[/<date>]]` → 탐색,
+ * `#/` → 논문 라이브러리, `#/papers/<slug>[?view=visual]` → 리더, `#/discover[/searches/<id>|/daily[/<date>]]` → 탐색,
  * `#/ideas` → 사고실험, `#/harness` → 하네스, `#/status` → 상태, `#/jobs[/<id>]` → 작업.
- * A `?query` after the path is read only by 탐색 (`q` prefills the search form).
+ * A `?query` after the path is read only by 탐색 (`q` prefills the search form) and the reader (`view`).
  */
 export function parseHash(hash: string): Route {
   const fragment = hash.replace(/^#/, '');
@@ -76,7 +90,8 @@ export function parseHash(hash: string): Route {
   const paper = /^\/papers\/([^/]+)\/?$/.exec(path);
   if (paper) {
     const slug = decoded(paper[1]);
-    return slug ? { name: 'reader', slug } : { name: 'not_found', path };
+    if (!slug) return { name: 'not_found', path };
+    return { name: 'reader', slug, view: query.get('view') === 'visual' ? 'visual' : 'pdf' };
   }
   const match = /^\/jobs(?:\/([^/]+))?\/?$/.exec(path);
   if (!match) return { name: 'not_found', path };

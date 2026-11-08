@@ -4,18 +4,21 @@ import type { EvidenceItem, PaperBundle, ReaderAnchor, ReaderStatus, ReaderThrea
 import { ErrorNotice } from '../components/ErrorNotice';
 import { useToast } from '../components/Toast';
 import { formatCount } from '../format';
-import { PAPERS_HREF } from '../hooks/useHashRoute';
+import { PAPERS_HREF, paperHref, replaceHash, type ReaderView } from '../hooks/useHashRoute';
 import { ReaderContext, type ReaderActions } from '../reader/context';
 import { targetKey, targetsByPage } from '../reader/evidence';
 import { PdfPane, type FlashState, type PdfPaneHandle } from '../reader/PdfPane';
 import { QuestionsPanel, ReaderRoleBadge, regionBlockedReason, type DraftAnchor } from '../reader/QuestionsPanel';
-import { ReaderToolbar } from '../reader/ReaderToolbar';
+import { ReaderToolbar, readerViewIds } from '../reader/ReaderToolbar';
 import { RelatedStrip } from '../reader/RelatedStrip';
 import { ReviewPanel, type ReviewView, type VerifyControl } from '../reader/ReviewPanel';
 import { clampPanelWidth, SidePanel, type PanelTab } from '../reader/SidePanel';
 import { usePdfDocument } from '../reader/usePdfDocument';
 import { useThreads } from '../reader/useThreads';
 import { useVerification } from '../reader/useVerification';
+import { useVisualJob } from '../reader/useVisualJob';
+import { VisualPane, type VisualBlock } from '../reader/VisualPane';
+import { blockedReason } from '../roles';
 import { useStatus } from '../status';
 import { verifierBlockedReason } from '../verification';
 import '../styles/reader.css';
@@ -91,10 +94,13 @@ function ReaderUnavailable({ error, onRetry }: { error: ApiError; onRetry: () =>
 
 export default function ReaderScreen({
   slug,
+  view: routeView,
   headingRef,
   reloadToken,
 }: {
   slug: string;
+  /** Left pane requested by the URL: `?view=visual` opens the 시각 요약 once, anything else the PDF (decision V9). */
+  view: ReaderView;
   headingRef: Ref<HTMLHeadingElement>;
   reloadToken: number;
 }) {
@@ -148,6 +154,14 @@ export default function ReaderScreen({
     [refreshAppStatus, toast],
   );
   const verification = useVerification(slug, onVerified);
+  const reloadBundle = useCallback(() => setBundleToken((token) => token + 1), []);
+  const visualTask = useVisualJob(
+    slug,
+    bundleState.bundle?.visual.job ?? null,
+    bundleState.loading,
+    reloadBundle,
+    refreshAppStatus,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -172,12 +186,25 @@ export default function ReaderScreen({
   }, [title]);
 
   // ── View state ──
+  // The shown pane lives here only: toolbar toggles never touch the URL, so a reload opens the PDF (V9).
+  const [view, setView] = useState<ReaderView>(routeView);
   const [zoom, setZoom] = useState(1);
   const [fit, setFit] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [captureMode, setCaptureMode] = useState(false);
+  // A `?view=visual` link arriving while the reader is open (the 시각 요약 toast, a typed URL) opens the
+  // 시각 요약 too. The drop of that query below changes the route back to `pdf`: that leaves the pane alone.
+  const [syncedRouteView, setSyncedRouteView] = useState(routeView);
+  if (syncedRouteView !== routeView) {
+    setSyncedRouteView(routeView);
+    if (routeView === 'visual') {
+      setView('visual');
+      setCaptureMode(false);
+    }
+  }
   const [highlightsVisible, setHighlightsVisible] = useState(true);
   const [panelOpen, setPanelOpen] = useState(() => !window.matchMedia(NARROW_QUERY).matches);
+  // Clamped for this window only; the stored width changes only when the reader resizes the panel.
   const [panelWidth, setPanelWidth] = useState(() => clampPanelWidth(storedPanelWidth(), window.innerWidth));
   const [tab, setTab] = useState<PanelTab>('review');
   const [reviewView, setReviewView] = useState<ReviewView>('evidence');
@@ -191,8 +218,37 @@ export default function ReaderScreen({
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const paneRef = useRef<PdfPaneHandle>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const pdfAreaRef = useRef<HTMLDivElement>(null);
+  const visualPaneRef = useRef<HTMLDivElement>(null);
+  /** Set by a `p.N` link in the 시각 요약: the PDF takes focus once it shows. */
+  const focusPdfRequest = useRef(false);
   const flashTimer = useRef(0);
   const draftRef = useRef<DraftAnchor | null>(null);
+
+  /** Shows a left pane for this visit only (the URL keeps no view). The 시각 요약 has no region capture. */
+  const changeView = useCallback((next: ReaderView) => {
+    setView(next);
+    if (next === 'visual') setCaptureMode(false);
+  }, []);
+
+  // `?view=visual` is a one-shot request (library badge, job page, toast): once the pane shows, the entry
+  // is rewritten to the plain reader URL, so a reload opens the PDF whichever pane is shown by then.
+  useEffect(() => {
+    if (routeView === 'visual') replaceHash(paperHref(slug));
+  }, [routeView, slug]);
+
+  // The pane that just hid held focus (a p.N link inside the 시각 요약, a control in the hidden pane):
+  // the shown pane takes it, the PDF on its page scroller.
+  useEffect(() => {
+    const hidden = view === 'pdf' ? visualPaneRef.current : pdfAreaRef.current;
+    const active = document.activeElement;
+    const requested = view === 'pdf' && focusPdfRequest.current;
+    focusPdfRequest.current = false;
+    if (!hidden || !(requested || (active !== null && hidden.contains(active)))) return;
+    if (view === 'visual') visualPaneRef.current?.focus({ preventScroll: true });
+    else if (paneRef.current) paneRef.current.focus();
+    else pdfAreaRef.current?.focus({ preventScroll: true });
+  }, [view]);
 
   const items = bundle?.evidence.items ?? EMPTY_ITEMS;
   const claims = useMemo(() => new Map(items.map((item) => [item.claim_id, item])), [items]);
@@ -216,14 +272,25 @@ export default function ReaderScreen({
     flashTimer.current = window.setTimeout(() => setFlash(null), FLASH_MS);
   }, []);
 
+  /** Scrolls the PDF to `page` and flashes it; from the 시각 요약 it switches the left pane back first. */
   const goToPage = useCallback(
     (page: number, keys?: readonly string[]) => {
       if (page < 1 || page > pageCount) return;
+      changeView('pdf');
       const named = keys && keys.length > 0 ? keys : null;
+      // The hidden PDF keeps its layout (visibility only), so it scrolls before it shows.
       paneRef.current?.scrollToPage(page, named ? { keys: named } : {});
       startFlash(named ?? [], named ? null : page);
     },
-    [pageCount, startFlash],
+    [pageCount, startFlash, changeView],
+  );
+
+  const openVisualPage = useCallback(
+    (page: number) => {
+      focusPdfRequest.current = true;
+      goToPage(page);
+    },
+    [goToPage],
   );
 
   const focusClaim = useCallback((claimId: string) => {
@@ -256,6 +323,7 @@ export default function ReaderScreen({
         return;
       }
       if (anchor.page < 1 || anchor.page > pageCount) return;
+      changeView('pdf');
       setOverlay(anchor);
       const y =
         anchor.kind === 'text' && anchor.rects.length > 0
@@ -265,7 +333,7 @@ export default function ReaderScreen({
             : undefined;
       paneRef.current?.scrollToPage(anchor.page, y === undefined ? {} : { y });
     },
-    [claimTargets, goToPage, pageCount],
+    [claimTargets, goToPage, pageCount, changeView],
   );
 
   const replaceDraft = useCallback((next: DraftAnchor | null) => {
@@ -327,19 +395,18 @@ export default function ReaderScreen({
     [pageCount],
   );
 
+  // Saved only here, when the reader drags or steps the resizer: a narrow window's clamp is never stored.
   const resizePanel = useCallback((width: number) => {
-    setPanelWidth(clampPanelWidth(width, bodyRef.current?.clientWidth ?? window.innerWidth));
-  }, []);
-
-  useEffect(() => {
+    const next = clampPanelWidth(width, bodyRef.current?.clientWidth ?? window.innerWidth);
+    setPanelWidth(next);
     try {
-      window.localStorage.setItem(PANEL_WIDTH_KEY, String(panelWidth));
+      window.localStorage.setItem(PANEL_WIDTH_KEY, String(next));
     } catch {
       // Storage can be unavailable (private mode); the width then lasts for this visit.
     }
-  }, [panelWidth]);
+  }, []);
 
-  // R toggles region capture, Esc leaves it (outside text fields).
+  // R toggles region capture on the PDF view, Esc leaves it (outside text fields).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || editableTarget(event.target)) return;
@@ -347,14 +414,21 @@ export default function ReaderScreen({
         setCaptureMode(false);
         return;
       }
-      if ((event.key === 'r' || event.key === 'R') && !event.metaKey && !event.ctrlKey && !event.altKey && pageCount > 0) {
+      if (
+        (event.key === 'r' || event.key === 'R') &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        pageCount > 0 &&
+        view === 'pdf'
+      ) {
         event.preventDefault();
         setCaptureMode((on) => !on);
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [captureMode, pageCount]);
+  }, [captureMode, pageCount, view]);
 
   const figureUrl = useCallback((src: string) => figureApiUrl(slug, src), [slug]);
 
@@ -370,6 +444,7 @@ export default function ReaderScreen({
           title={bundleState.error ? slug : '논문을 불러오는 중…'}
           headingRef={headingRef}
           pdf={null}
+          views={null}
           panel={null}
         />
         {bundleState.error ? (
@@ -391,15 +466,39 @@ export default function ReaderScreen({
     : !bundle.pdf.available
       ? '원문 PDF가 없어 리뷰와 대조할 수 없습니다.'
       : null;
+  // A review job and a 시각 요약 job of one paper never run together (the server answers 409 either way).
+  const visualRunning = visualTask.job ? '이 논문의 시각 요약을 만드는 중입니다. 끝난 뒤 검증할 수 있습니다.' : null;
   const verify: VerifyControl = {
     job: verification.job,
     pending: verification.pending,
     error: verification.error,
-    blocked: fileBlocked ?? roleBlocked,
-    blockedFix: fileBlocked ? null : !appStatus.data ? (appStatus.loading ? null : 'recheck') : roleBlocked ? 'status' : null,
+    blocked: fileBlocked ?? visualRunning ?? roleBlocked,
+    blockedFix:
+      fileBlocked || visualRunning
+        ? null
+        : !appStatus.data
+          ? appStatus.loading
+            ? null
+            : 'recheck'
+          : roleBlocked
+            ? 'status'
+            : null,
     onStart: verification.start,
     onRecheck: refreshAppStatus,
   };
+
+  // Why 시각 요약 만들기 cannot start now; a running verification of this paper would race its review
+  // reads and `figures/` writes (the server answers 409 `review_active` as well).
+  const verifyRunning = verification.job?.status === 'queued' || verification.job?.status === 'running';
+  const visualRoleBlocked = appStatus.data?.visual_role ? blockedReason(appStatus.data.visual_role) : null;
+  const visualBlocked: VisualBlock | null = !bundle.review.available
+    ? { reason: '리뷰 문서가 없어 시각 요약을 만들 수 없습니다. 먼저 논문 리뷰를 실행하세요.', status: false }
+    : verifyRunning
+      ? { reason: '이 논문의 검증이 진행 중입니다. 끝난 뒤 만들 수 있습니다.', status: false }
+      : visualRoleBlocked
+        ? { reason: `시각 요약 역할(visual-designer): ${visualRoleBlocked}`, status: true }
+        : null;
+  const pdfIds = readerViewIds('pdf');
 
   let pdfArea;
   if (!bundle.pdf.available) {
@@ -465,7 +564,7 @@ export default function ReaderScreen({
           title={title}
           headingRef={headingRef}
           pdf={
-            pageCount > 0
+            view === 'pdf' && pageCount > 0
               ? {
                   pageCount,
                   currentPage,
@@ -481,6 +580,7 @@ export default function ReaderScreen({
                 }
               : null
           }
+          views={{ view, onChange: changeView, visualBusy: visualTask.job !== null }}
           panel={{ open: panelOpen, onToggle: () => setPanelOpen((open) => !open) }}
         />
         {captureMode ? (
@@ -489,7 +589,31 @@ export default function ReaderScreen({
           </p>
         ) : null}
         <div className="reader-body" ref={bodyRef}>
-          <div className="pdf-area">{pdfArea}</div>
+          {/* Both panes stay mounted in one cell; the hidden one keeps its layout (PDF scroll and zoom survive). */}
+          <div className="reader-views">
+            <div
+              ref={pdfAreaRef}
+              id={pdfIds.panel}
+              role="tabpanel"
+              aria-labelledby={pdfIds.tab}
+              className="reader-view pdf-area"
+              data-shown={view === 'pdf' ? 'true' : 'false'}
+              inert={view !== 'pdf'}
+              tabIndex={-1}
+            >
+              {pdfArea}
+            </div>
+            <VisualPane
+              paneRef={visualPaneRef}
+              title={title}
+              visual={bundle.visual}
+              shown={view === 'visual'}
+              task={visualTask}
+              blocked={visualBlocked}
+              pageCount={pageCount}
+              onOpenPage={openVisualPage}
+            />
+          </div>
           <SidePanel
             open={panelOpen}
             width={panelWidth}

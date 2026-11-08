@@ -22,10 +22,11 @@
 
 | 대상 | 헤더 |
 |---|---|
-| 모든 응답 | `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY` |
+| 모든 응답 | `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`(`/api/papers/{slug}/visual`만 제외) |
 | `/api/*` | `Cache-Control: no-store` |
 | `/100-views/webui/` 아래 | `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'` |
 | `GET`·`HEAD /api/papers/{slug}/figures/{name}` 200 | 위 `/api/*` 헤더에 더해 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:`, `Content-Disposition: inline; filename="<name>"` |
+| `/api/papers/{slug}/visual` (모든 상태) | `X-Frame-Options` 없음(WebUI가 iframe으로 띄운다). 200이면 `Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; sandbox allow-scripts`, `Content-Disposition: inline; filename="{slug}-visual.html"`(아래 "시각 요약") |
 
 CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` 등)은 inline script를 쓰므로 CSP를 적용하지 않는다.
 
@@ -39,19 +40,21 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 | GET | `/paper-library.html`, `/harness-dashboard.html`, `/thought-experiments.html` | 302 → `/100-views/<name>` (기존 주소 유지) |
 | GET | 정적 파일 | 아래 "정적 파일" 규칙. `/100-views/webui/`는 `index.html`을 준다. |
 | GET | `/api/session` | `{"csrf_token", "workspace_id", "port", "version": "webui-m0"}` |
-| GET | `/api/status` | 기존 브리지와 같은 키: `ok`, `workspace_id`, 에이전트 상태 필드(`agent`, `ready`, `reason`, `candidates` 등), `pdf_reader_ready`, `runner`, `pdf_reader`, `max_parallel`, `queue`. 추가 키 `review_roles`: `{"generation": <역할 해석>, "verification": <역할 해석>}`(아래 "리뷰 역할"), `reader_role`: `paper-reader`의 역할 해석(아래 "논문 리더"), `searcher_role`: `paper-searcher`의 역할 해석(아래 "논문 탐색"). `ready`·`reason`은 리뷰 준비 상태로, 역할이 설정되어 있으면 역할 기준이다. |
+| GET | `/api/status` | 기존 브리지와 같은 키: `ok`, `workspace_id`, 에이전트 상태 필드(`agent`, `ready`, `reason`, `candidates` 등), `pdf_reader_ready`, `runner`, `pdf_reader`, `max_parallel`, `queue`. 추가 키 `review_roles`: `{"generation": <역할 해석>, "verification": <역할 해석>}`(아래 "리뷰 역할"), `reader_role`: `paper-reader`의 역할 해석(아래 "논문 리더"), `searcher_role`: `paper-searcher`의 역할 해석(아래 "논문 탐색"), `visual_role`: `visual-designer`의 역할 해석(아래 "시각 요약"). `ready`·`reason`은 리뷰 준비 상태로, 역할이 설정되어 있으면 역할 기준이다. |
 | GET | `/api/reviews/{slug}` | `{"jobs": [...]}` — 리뷰 큐에서 해당 slug의 작업. 검증 보고서가 있으면 `verification`(아래 "검증 보고서")도 준다. |
-| POST | `/api/reviews` | 본문 `{"slug"}`. 리뷰 한 편을 큐에 넣고 202 `{"job"}`. 이미 완료면 409 `review_complete`, 다른 리뷰 진행 중이면 409 `review_active`, 에이전트·리뷰 역할 미준비면 503 `agent_unavailable`, 잘못된 slug·PDF면 400 `bad_request` |
-| POST | `/api/reviews/{slug}/verify` | 본문 `{}`. 이미 리뷰된 논문에 검증 단계만 실행하고 202 `{"job"}`(큐 작업 `kind: "verify"`). 잘못된 slug·레코드는 400 `bad_request`, 리뷰 Markdown이 없으면 409 `review_missing`, PDF가 없으면 409 `pdf_missing`, 역할 설정을 읽지 못하면 503 `role_config_error`, `paper-verifier` 미설정이면 409 `verifier_unconfigured`, 설정됐지만 실행기 미준비면 503 `verifier_unavailable`, 다른 리뷰·검증 진행 중이면 409 `review_active` |
+| POST | `/api/reviews` | 본문 `{"slug"}`. 리뷰 한 편을 큐에 넣고 202 `{"job"}`. 이미 완료면 409 `review_complete`, 다른 리뷰 진행 중이면 409 `review_active`, 같은 slug의 `review.visual` 작업이 `queued`·`running`이면 409 `visual_active`, 에이전트·리뷰 역할 미준비면 503 `agent_unavailable`, 잘못된 slug·PDF면 400 `bad_request` |
+| POST | `/api/reviews/{slug}/verify` | 본문 `{}`. 이미 리뷰된 논문에 검증 단계만 실행하고 202 `{"job"}`(큐 작업 `kind: "verify"`). 잘못된 slug·레코드는 400 `bad_request`, 리뷰 Markdown이 없으면 409 `review_missing`, PDF가 없으면 409 `pdf_missing`, 역할 설정을 읽지 못하면 503 `role_config_error`, `paper-verifier` 미설정이면 409 `verifier_unconfigured`, 설정됐지만 실행기 미준비면 503 `verifier_unavailable`, 다른 리뷰·검증 진행 중이면 409 `review_active`, 같은 slug의 `review.visual` 작업이 진행 중이면 409 `visual_active` |
 | GET | `/api/jobs` | `{"jobs": [record…]}` (최신순) |
 | POST | `/api/jobs` | 본문 `{"kind": "agent.ping", "agent"?: "claude"\|"codex"\|"omp", "role"?: "paper-analyst"\|"paper-verifier"}` → 202 `{"job": record}`. `agent`와 `role`은 함께 쓸 수 없다. 모르는 kind(`paper.ask`·`harness.*`·`discovery.*` 포함 — 검색은 `POST /api/discovery/searches`, 등록은 `POST /api/discovery/register`로만 제출)·agent·role, 문자열이 아닌 값(배열·객체·숫자 등), `agent`+`role` 동시 지정은 400 `bad_request` |
 | GET | `/api/jobs/{id}` | `{"job": record}`, 없으면 404 |
 | GET | `/api/jobs/{id}/events` | SSE 스트림(아래). 없는 작업은 404, 동시 스트림이 상한이면 503 `too_many_streams` |
-| POST | `/api/jobs/{id}/cancel` | 202 `{"job": record}`. 이미 끝났으면 409 `already_finished`, 없으면 404 |
+| POST | `/api/jobs/{id}/cancel` | 202 `{"job": record}`. 이미 끝났으면 409 `already_finished`, 결과 게시(커밋 단계, `review.visual`)를 시작한 작업이면 409 `publishing`, 없으면 404 |
 | GET | `/api/papers` | `PapersPayload`: `{"papers": [PaperSummary], "errors": [{"file", "error"}], "labels", "queued_statuses"}`(아래 "논문 리더") |
 | GET | `/api/papers/{slug}` | `PaperBundle`. 잘못된 slug 400 `bad_request`, 레코드 없음 404 `not_found` |
 | GET | `/api/papers/{slug}/pdf` | `application/pdf` 본문과 `Content-Length`. 400, 404, PDF가 없거나 `01-Papers/pdfs` 밖이면 409 `pdf_missing` |
 | GET·HEAD | `/api/papers/{slug}/figures/{name}` | 리뷰 방법 구조도 SVG(아래 "리뷰 그림"). 200 `image/svg+xml`, `Content-Length`, `Last-Modified`. 잘못된 slug·이름 400 `bad_request`, 레코드·파일 없음 404 `not_found` |
+| GET·HEAD | `/api/papers/{slug}/visual` | 시각 요약 페이지(아래 "시각 요약"). 200 `text/html; charset=utf-8`, `Content-Length`(브리지 삽입 뒤 길이). 잘못된 slug 400 `bad_request`, 레코드·파일 없음 404 `not_found` |
+| POST | `/api/papers/{slug}/visual` | 본문 `{}`. 시각 요약 생성 작업 `review.visual`을 제출하고 202 `{"job": JobRecord}`. 400 `bad_request`, 404 `not_found`, 409 `review_missing`·`review_active`·`visual_active`, 503 `role_config_error`·`designer_unavailable`·`visual_unavailable`·`shutting_down`(아래 "시각 요약") |
 | GET | `/api/papers/{slug}/threads` | `{"slug", "threads": [Thread]}`. 진행 중 턴은 브로커 기준으로 다시 확인한다. 400, 404 |
 | DELETE | `/api/papers/{slug}/threads/{thread_id}` | 본문 `{}`. 200 `{"deleted": "t_…"}`. 400, 404 `not_found`(레코드)·`thread_not_found`, 진행 중 턴이 있으면 409 `thread_busy` |
 | POST | `/api/papers/{slug}/ask` | 202 `{"job": record, "thread": Thread}`. 오류는 아래 "질문 오류" |
@@ -121,7 +124,7 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 
 ## 검증 보고서
 
-리뷰 작업은 생성 결과가 기존 검증(허용 출력·JSON 스키마·5축·읽은 범위·템플릿 지시문 주석 `<!--` 없음·인덱스·카탈로그)을 통과한 뒤, 게시하기 **전에** 같은 staged 작업 공간에서 `paper-verifier`를 읽기 전용으로 실행한다. 허용 출력은 그 논문의 레코드 JSON·리뷰 Markdown, 리뷰 옆 `figures/{slug}-<이름>.svg|html`(다른 slug 접두·확장자·하위 폴더는 불허), `01-Papers/index.md`, `100-views/paper-library.html`, `graphify-out/*`, `00-Inbox/concept-candidates/*`다. 프롬프트는 `.omp/agents/paper-verifier.md` 본문, staged 리뷰 경로, PDF 경로, 그 파일 frontmatter의 출력 스키마다. 스키마는 임시 파일로 써서 codex `--output-schema`·claude `--json-schema`에 넘긴다. 답은 필수 키·타입·판정 값(`supported`·`mismatch`·`unsupported`·`unverifiable`)을 검사한다.
+리뷰 작업은 생성 결과가 기존 검증(허용 출력·JSON 스키마·5축·읽은 범위·템플릿 지시문 주석 `<!--` 없음·인덱스·카탈로그)을 통과한 뒤, 게시하기 **전에** 같은 staged 작업 공간에서 `paper-verifier`를 읽기 전용으로 실행한다. 허용 출력은 그 논문의 레코드 JSON·리뷰 Markdown, 리뷰 옆 `figures/{slug}-<이름>.svg|html`과 시각 요약 `figures/{slug}-visual.src.html|.html|.sheet.png|.sheet-N.png`(다른 slug 접두·확장자·하위 폴더·사이드카 `{slug}-visual.json`은 불허), `01-Papers/index.md`, `100-views/paper-library.html`, `graphify-out/*`, `00-Inbox/concept-candidates/*`다. 프롬프트는 `.omp/agents/paper-verifier.md` 본문, staged 리뷰 경로, PDF 경로, 그 파일 frontmatter의 출력 스키마다. 스키마는 임시 파일로 써서 codex `--output-schema`·claude `--json-schema`에 넘긴다. 답은 필수 키·타입·판정 값(`supported`·`mismatch`·`unsupported`·`unverifiable`)을 검사한다.
 
 변경 감사: 검증 전후로 staged 작업 공간 **전체**를 제외 없이 기록한다(`audit_snapshot`: 선택한 PDF·캐시 포함, 일반 파일은 SHA-256, 심볼릭 링크는 대상, 디렉터리·특수 파일은 종류). 하나라도 다르면(덮어쓰기·삭제·생성·파일→디렉터리·심볼릭 링크 교체 포함) 검증 `error`다. 보고서의 `review_sha256`·`pdf_sha256`은 검증 **전에** 잰 staged 리뷰·PDF 값이다.
 
@@ -144,6 +147,7 @@ CORS 헤더는 보내지 않는다. 기존 정적 화면(`paper-library.html` �
 - 리뷰 작업: `generation: {"selector": str|null, "runner", "attempts": [{"selector": str|null, "runner", "exit_code": int, "error_kind": str|null, "assistant_output": bool|null, "staged_changes": bool|null, "advanced": bool}]}`(미설정 생성 역할이면 `selector: null`, `runner`는 연결 에이전트, 시도 1건). `error_kind`·`assistant_output`은 실패한 시도에서만 채우고, `staged_changes`는 후보가 둘 이상일 때만 잰다. `advanced: true`는 그 시도 뒤 다음 후보로 넘어갔다는 뜻이다. 생성이 실패해도 시도 기록은 남는다.
 - 리뷰·검증 작업: `verification: {"status": "passed"|"issues"|"error"|"skipped", "blocking_issues": int, "mismatches": int, "report_path": str|null, "selector": str|null, "runner": str|null, "note"?: str}`. `passed`는 확인한 주장이 1건 이상이고 차단 이슈가 없으며 모든 판정이 `supported`일 때, `issues`는 그 밖의 결과다. 확인한 주장이 0건이면 통과로 보지 않는다: 차단 이슈도 없으면 `issues`이고 `note: "검증된 주장이 없음"`을 붙인다(`note`는 이 경우에만 있다). `mismatches`는 판정이 `supported`가 아닌 주장 수다. 검증 역할이 미설정이면 `skipped`이고 보고서를 쓰지 않는다. `message` 끝에 한국어 한 줄 검증 요약을 붙인다.
 - 검증 작업은 `kind: "verify"`를 가진다(리뷰 작업에는 `kind`가 없다). 검증 결과가 `error`면 작업 상태도 `failed`다. 리뷰·검증 작업은 같은 단일 실행 잠금을 쓴다.
+- 리뷰 작업: `visual: {"status": "published"|"missing"|"rejected"|"conflict"|"failed", "reason": str|null}`(아래 "시각 요약 › 리뷰 브리지"). 시각 요약은 리뷰 성패에 영향을 주지 않는다.
 
 ## 논문 리더
 
@@ -154,7 +158,7 @@ PDF를 읽으며 선택 텍스트·선택 영역·쪽·리뷰 항목을 앵커�
 ```jsonc
 // PaperSummary — 정렬: has_pdf 먼저, 연도 내림차순, 제목
 {"slug", "title", "authors": [], "year", "venue", "category", "topics": [], "one_line_summary",
- "reading_status", "structured_review_status", "has_pdf": true, "has_review": true,
+ "reading_status", "structured_review_status", "has_pdf": true, "has_review": true, "has_visual": false,
  "verification": {"status": "passed|issues|error|skipped", "stale": false} | null,
  "threads": {"count": 3, "updated_at": "…"} | null,
  "display_title": "…",            // 비지 않음: title → PDF 제목(pdfinfo) → 확인된 대체 제목 → slug
@@ -175,7 +179,8 @@ PDF를 읽으며 선택 텍스트·선택 영역·쪽·리뷰 항목을 앵커�
  "pdf": {"url": "/api/papers/{slug}/pdf", "available": true, "pages": 21 | null, "bytes": 123, "sha256": "…", "text_available": true},
  "review": {"path": "01-Papers/reviews/…md", "available": true, "markdown": "…" | null, "sha256": "…" | null},
  "verification": <검증 보고서 + summary(위 "검증 보고서")> | null,
- "evidence": {"pages": 21, "items": [EvidenceItem], "summary": {"matched": n, "page_only": n, "unresolved": n}}}
+ "evidence": {"pages": 21, "items": [EvidenceItem], "summary": {"matched": n, "page_only": n, "unresolved": n}},
+ "visual": VisualInfo}   // 아래 "시각 요약"
 
 // EvidenceItem — 리뷰 주장 하나(축 순서 × 주장 번호)
 {"claim_id": "evaluation_and_evidence.4", "axis": "evaluation_and_evidence", "index": 4,
@@ -308,6 +313,90 @@ gitignore 대상이며 정적 파일로 제공하지 않는다(아래 "정적 �
 9. 클라이언트는 그 쪽의 정규화된 pdf.js 텍스트에서 바늘을 찾아 DOM Range의 `getClientRects()`로 사각형을 그리고, 쪽 비율로 저장해 확대·축소에도 맞춘다. 못 찾으면 쪽 여백 표시를 보여 준다.
 
 알려진 실패(모두 쪽 표시로 떨어지며 사라지지 않는다): 예전 리뷰의 인쇄 쪽 번호, PDF에 없는 재계산 값(`36.95`), 그림 앵커는 캡션만 강조, `(5)`가 다른 괄호 숫자와 겹침, 두 단에 걸친 인용, 스캔 PDF(텍스트가 없어 모두 `page`), pdftotext와 pdf.js의 추출 차이.
+
+## 시각 요약
+
+리뷰 Markdown 하나를 visual-explainer 스킬(작업 공간에 복사한 스킬로 `node ./.visual-explainer/kit/render.mjs`)로 그린 한 페이지 HTML이다. 구현은 `webui/visuals.py`(파일·검사·게시·작업·브리지), `webui/reader.py`(`open_paper_visual`, `has_visual`·`visual` 필드), `webui/reviews.py`(리뷰 브리지), 라우팅은 `webui/server.py`다. 시각 요약 실패는 리뷰 실패가 아니다.
+
+### 파일
+
+리뷰 Markdown 폴더의 `figures/`(리뷰 그림과 같은 곳, gitignore·Graphify 제외·정적 제공 차단 대상):
+
+| 파일 | 쓰는 쪽 | 제공 |
+|---|---|---|
+| `{slug}-visual.src.html` | 에이전트(페이지 원본) | 안 함 |
+| `{slug}-visual.html` | `render.mjs` 출력 | `GET /api/papers/{slug}/visual`만 |
+| `{slug}-visual.sheet.png`, `{slug}-visual.sheet-N.png` | `render.mjs`의 시각 검사(look) 시트, 로컬 디버그용 | 안 함 |
+| `{slug}-visual.json` | 서버만(사이드카) | 안 함 |
+
+에이전트 출력 이름은 `security.visual_output_ok`: `^{slug}-visual\.(src\.html|html|sheet(-\d+)?\.png)$`. 사이드카(`schema_version` `"1.0"`):
+
+```jsonc
+{"schema_version": "1.0", "review_sha256": "<만들 때 넘긴 리뷰 .md의 SHA-256>", "generated_at": "…",
+ "source": "review" | "visual-job", "job_id": "…", "agent": "claude" | null, "model": "…" | null,
+ "selector": "anthropic/…" | null, "check": "passed" | "problems" | "skipped" | null}
+```
+
+레코드 스키마(`paper-record.schema.json`)는 바꾸지 않는다. 존재 여부는 파일로 판단한다.
+
+### 형식
+
+```jsonc
+// PaperSummary.has_visual — {slug}-visual.html이 링크 없이 닿는 일반 파일이면 true
+// PaperBundle.visual (VisualInfo)
+{"url": "/api/papers/{slug}/visual", "available": true,
+ "generated_at": "…" | null, "review_sha256": "…" | null,
+ "stale": false | true | null,   // 사이드카 review_sha256 ≠ 현재 review.sha256이면 true. 페이지가 없거나 읽을 수 있는 사이드카가 없으면 null
+ "source": "review" | "visual-job" | null, "check": "passed" | "problems" | "skipped" | null,
+ "job": JobRecord | null}        // 이 slug의 queued·running review.visual 작업
+```
+
+### `GET`·`HEAD /api/papers/{slug}/visual`
+
+- 열기는 "리뷰 그림"과 같은 디스크립터 워크(`reader.open_in_figures`, 이름은 `{slug}-visual.html` 고정)다. 잘못된 slug 400 `bad_request`, 레코드·파일 없음·심볼릭 링크·일반 파일 아님 404 `not_found`.
+- 헤더는 위 "응답 헤더"의 시각 요약 행이다. `sandbox allow-scripts` 덕에 새 탭에서 직접 열어도 불투명 출처로 실행되어 WebUI 출처 권한(저장소·쿠키·같은 출처 창 스크립팅)이 없다. WebUI CSP는 바꾸지 않는다(`frame-src`가 없으면 `default-src 'self'`가 같은 출처 프레임을 허용한다).
+- 본문은 저장된 페이지의 마지막 `</body`(대소문자 무시) 앞에, 없으면 끝에 고정 브리지 `<style data-research-webui-bridge>…</style><script data-research-webui-bridge>…</script>`를 넣은 것이다. `Content-Length`는 삽입 뒤 길이다.
+  - style: kit의 선택·댓글 UI(`.ve-bar`, `.ve-sel`, `.ve-pop`, `.ve-toast`, `dialog.ve-respond`, `fieldset.ask`)를 `display: none !important`로 숨긴다. kit에는 이 UI를 끄는 공개 스위치가 없다(`kit/kit.js`가 `window.veReply?.page()`를 무조건 부른다).
+  - script: 문서 캡처 단계 `click`에서 `[data-ve-page]` 요소를 찾으면 기본 동작과 전파를 막고, 값이 `^[1-9][0-9]{0,5}$`이며 부모 창이 있을 때만 `parent.postMessage({type: "research-webui:visual-page", page: N}, "*")`를 보낸다(불투명 출처라 대상 출처를 지정할 수 없다; 쪽 번호 외 정보는 없다).
+- 부모(WebUI) 수신 규칙: `event.source === iframe.contentWindow`이고 `data.type === "research-webui:visual-page"`이며 `Number.isInteger(page) && 1 <= page <= pageCount`일 때만 왼쪽 영역을 PDF로 바꾸고 그 쪽으로 이동한다. iframe은 `sandbox="allow-scripts"`(`allow-same-origin` 금지), `referrerpolicy="no-referrer"`.
+- 생성 규칙: 쪽 근거는 `<a href="#" data-ve-page="7">p.7</a>`로 표시한다. `<ve-ask>`·외부 링크·이미지 파일 참조는 금지, Google Fonts는 레지스터 글꼴과 Noto Sans KR·Noto Serif KR css2 `<link>` 하나만 쓴다. 테마는 운영체제 설정(`prefers-color-scheme`)만 따른다.
+
+### `POST /api/papers/{slug}/visual` — 작업 `review.visual`
+
+표준 가드(CSRF, Origin, JSON, 64 KiB)를 거친다. 본문 `{}` → 202 `{"job": JobRecord}`(`kind: "review.visual"`, `role: "visual-designer"`, `slug`, `agent`는 선택 실행기).
+
+| 상태 | 코드 | 조건 |
+|---|---|---|
+| 400 | `bad_request` | 잘못된 slug |
+| 404 | `not_found` | 레코드 없음 |
+| 409 | `review_missing` | 리뷰 Markdown 없음 |
+| 409 | `review_active` | 리뷰 큐에 이 slug의 `queued`·`running` 작업(리뷰·검증)이 있음 |
+| 409 | `visual_active` | 이 slug의 `review.visual` 작업이 `queued`·`running` |
+| 503 | `role_config_error` | 역할 설정을 읽지 못함 |
+| 503 | `designer_unavailable` | `visual-designer`가 설정됐지만 준비된 후보가 없음, 또는 미설정인데 연결 에이전트가 준비되지 않음 |
+| 503 | `visual_unavailable` | 선택 실행기의 스킬 폴더(omp `~/.omp/agent/skills`, claude `~/.claude/skills`, codex `~/.codex/skills` 아래 `visual-explainer`)에 `SKILL.md`·`kit/render.mjs`가 없거나 `node`가 PATH에 없음 |
+| 503 | `shutting_down` | 서버 종료 중 |
+
+마지막 검사와 제출은 `server.discovery_lock`과 `reviews.LOCK` 아래 한 단계다. 반대로 리뷰·검증 제출도 `reviews.LOCK` 아래에서 같은 slug의 `review.visual`이 진행 중이면 409 `visual_active`다(둘 다 `figures/`를 쓴다).
+
+- 역할 `visual-designer`(`roles.VISUAL`, `.omp/agents/visual-designer.md`): `paper-searcher`와 같은 해석. 설정되면 후보 순서·사용 한도 시 다음 후보 이동은 "리뷰 역할"과 같고, **미설정이면 연결 에이전트의 기본 모델**이다. `/api/status`의 `visual_role`이 이 해석이다. 시스템 프롬프트는 그 정의 파일 본문이다.
+- 작업 공간: 임시 폴더 `webui-visual-*`에 `review.md`(리뷰 Markdown 복사본)와 스킬 복사본 `.visual-explainer/`를 둔다. 에이전트는 작업 공간 루트에 `{slug}-visual.src.html`을 쓰고 `node ./.visual-explainer/kit/render.mjs {slug}-visual.src.html`로 `{slug}-visual.html`(+시트)을 만든다. 프롬프트의 스킬 경로는 이 상대 경로다.
+- 스킬 복사본(`visuals.copy_skill`): 시도(후보)마다 실행기별 설치 스킬(`visuals.skill_dir`)을 `<작업 공간>/.visual-explainer/`로 새로 복사한다. 일반 파일과 폴더만 복사하고(`node_modules/playwright-core` 포함, 시각 검사용) `.git`·심볼릭 링크·특수 파일은 뺀다. 에이전트에게는 설치 스킬 경로를 주지 않으므로(`--add-dir` 없음) 에이전트가 고쳐도 설치 스킬은 바뀌지 않는다. 복사본은 게시하지 않고 작업 공간과 함께 지운다. 복사에 실패하면 그 시도는 `error`다. 후보를 바꿀 때마다 이전 시도의 `{slug}-visual.*`도 지운다.
+- 명령(`research_agent.visual_command`): claude는 stream-json, 도구 `Read,Edit,Write,Bash,Glob,Grep`(작업 공간 밖 디렉터리 추가 없음), `--settings`는 샌드박스 + `network.allowedDomains: ["fonts.googleapis.com", "fonts.gstatic.com"]`(시각 검사 브라우저의 글꼴용); codex는 `exec --json --ephemeral --sandbox workspace-write`(네트워크 없음) + 리더와 같은 plugin·app·hook·MCP 차단; omp는 스킬을 끄지 않고 `--tools read,grep,glob,bash,edit,write`, 복사본의 `@<작업 공간>/.visual-explainer/SKILL.md` 첨부. 제한 시간 900초(CLI 여유 +30초). 취소는 `POST /api/jobs/{id}/cancel`.
+- 답 마지막 줄 `CHECK: passed|problems|skipped`를 사이드카 `check`로 쓴다(없으면 `null`).
+- 검사(`visuals.checked_visual`): 작업 공간 루트의 `{slug}-visual.html`을 링크를 따라가지 않고 디스크립터로 열어 일반 파일, 1 B 이상 3 MiB 이하, UTF-8, kit 표시 `<style data-ve-kit`·`<script data-ve-kit` 둘 다 있음, `<ve-ask` 없음을 확인한다. 실패하면 `error`(`kind: "invalid_output"`), 기존 시각 요약은 그대로다.
+- 게시(`visuals.publish_visual` → `visuals.replace_visual`, 종료 이벤트 **전**, `reviews.LOCK` 아래): 리뷰 큐가 이 slug로 활성이면 `error`(`kind: "review_active"`). 리뷰 폴더의 `figures/`(없으면 만듦, 각 조각은 `O_NOFOLLOW` 디스크립터 워크)에서 라이브 `{slug}-visual.*`(사이드카 포함)를 먼저 읽어 두고, 시트·원본·페이지를 임시 파일 + 이름 바꾸기로 교체하고, 새 집합에 없는 이전 시트와 원본을 지운 뒤 사이드카(`source: "visual-job"`, `review_sha256`은 작업 공간에 넘긴 리뷰의 해시)를 마지막에 쓴다. 기존 파일을 읽지 못하면(심볼릭 링크·일반 파일 아님·크기 초과) 아무것도 쓰지 않고, 쓰기·지우기가 실패하면 읽어 둔 이전 파일로 되돌린 뒤 `error`(`kind: "publish_failed"`)다. 성공 종료 이벤트는 `result`에 `visual: <사이드카>`를 더한다.
+- 게시·취소 경계(`JobContext.begin_commit`): 페이지 검사 뒤, 게시 직전에 작업이 커밋 단계에 들어간다. 그 전에 받아들여진 취소는 아무것도 쓰지 않고 `cancelled`로 끝난다. 커밋 단계부터는 취소를 받지 않으므로(`POST /api/jobs/{id}/cancel` → 409 `publishing`, 서버 종료의 취소도 무시) 작업은 게시 결과(`result` 또는 `error`)로 끝난다. 서버 종료(`visuals.shutdown`)는 진행 중 작업을 취소하고(게시 중인 작업은 끝나기를 기다린다) 5초 안에 CLI 그룹을 끝낸다. 재시작 뒤에는 작업이 사라지므로 클라이언트는 번들을 다시 읽는다.
+
+### 리뷰 브리지
+
+리뷰 에이전트(`paper-analyst`)는 paper-review 스킬 단계 5-1로 staged 작업 공간의 `figures/`에 시각 요약을 만들 수 있다(위 허용 출력). 생성 실행마다(`reviews.stage_visual_skill`) 그 실행기의 설치 스킬을 staged 작업 공간의 `.visual-explainer/`로 위와 같은 규칙으로 복사하고, 실행이 끝나면 지운다. 프롬프트는 이 복사본(`./.visual-explainer/`, 렌더는 작업 공간 루트에서 `node ./.visual-explainer/kit/render.mjs <figures>/{slug}-visual.src.html`)만 쓰게 하고, 없으면 시각 요약을 건너뛰게 한다. 어떤 실행기에도 설치 스킬 경로를 주지 않는다. `.visual-explainer`는 `STAGING_IGNORES`에 있어 복제·스냅숏·게시 대상이 아니다. 리뷰 검증·카탈로그 검사 뒤 `reviews.stage_visual`이 판정하고, 이번 작업의 `{slug}-visual.*` 변경은 **항상** 정본 게시 목록에서 뺀다:
+
+- `missing`: 새(바뀐) 페이지가 없음. `rejected`: 검사 실패. 둘 다 아무것도 게시하지 않는다.
+- 검사를 통과하면 정본 리뷰 출력(기존 충돌 보호 그대로)을 먼저 게시한 뒤 `reviews.publish_staged_visual`이 시각 요약만 따로 게시한다(`visuals.replace_visual`, 사이드카 `source: "review"`, `check: null`). 검증 역할이 설정되면 검증 전에 정본 출력(`preserve_outputs`)과 시각 요약 파일(`reviews.preserve_visual`)을 따로 보관한다. 시각 요약 파일 보관 실패는 부분 복사본을 지우고 `failed`로 남길 뿐 정본 게시를 막지 않는다. 라이브 `{slug}-visual.*`(사이드카 포함)가 작업 시작 때 스냅숏과 다르면 아무것도 쓰지 않고 `conflict`, 게시 시점 재검사 실패는 `rejected`, 파일 읽기·쓰기 실패는 이전 라이브 파일을 되돌리고 `failed`, 성공은 `published`(게시한 경로는 `changed_files`에 들어간다).
+- 어느 경우든 리뷰 작업은 `completed`다. 큐 작업의 `visual`은 `{"status": "published"|"missing"|"rejected"|"conflict"|"failed", "reason": str|null}`이다.
+
+결과는 리뷰 큐 작업의 `visual`과 `message`에 남는다. `paper-verifier`는 시각 요약을 대조하지 않는다.
 
 ## 하네스
 
@@ -683,25 +772,26 @@ keep.md 항목 형식은 `webui/discovery.py`의 `KEEP_ENTRY`가 정본이다. `
 - 경로의 각 조각이 디스크의 실제 이름과 대소문자까지 같아야 한다. 대소문자 변형(`/100-VIEWS/…`)은 404다.
 - 심볼릭 링크를 따라 resolve한 경로가 저장소 밖이거나 허용 목록 밖이면 404다.
 - `.git`, `.env*`, `.mcp.json`, `.secrets`, `credentials.json`, `.claude`, `.codex`, `.research-harness-agent.json`, `reader-threads`(논문 리더 스레드)는 허용 경로 안에 있어도 404다.
-- `01-Papers/reviews/` 아래 어느 깊이든 `figures` 조각(대소문자 무시)이 있는 경로와 그 아래 모든 경로(리뷰 그림 `*.html`·`*.svg`, 하위 폴더 리뷰의 `…/nested/figures/` 포함)는 404다. 심볼릭 링크의 실제 대상이 그 아래여도 404다. 에이전트가 만든 HTML·SVG가 CSP 없이 같은 출처에서 실행되지 않도록, SVG만 위 "리뷰 그림" API로 제공한다.
+- `01-Papers/reviews/` 아래 어느 깊이든 `figures` 조각(대소문자 무시)이 있는 경로와 그 아래 모든 경로(리뷰 그림 `*.html`·`*.svg`, 시각 요약 `{slug}-visual.*`, 하위 폴더 리뷰의 `…/nested/figures/` 포함)는 404다. 심볼릭 링크의 실제 대상이 그 아래여도 404다. 에이전트가 만든 HTML·SVG가 CSP 없이 같은 출처에서 실행되지 않도록, SVG는 위 "리뷰 그림" API로, 시각 요약 페이지는 "시각 요약" API로만 제공한다.
 - `00-Inbox/discovery/` 아래 모든 경로(일일 후보·검색 기록 캐시, `README.md` 포함)는 404다(대소문자 무시, 심볼릭 링크의 실제 대상이 그 아래여도 404). 캐시는 위 "논문 탐색" API로만 읽는다.
 - 디렉터리 목록은 보여주지 않는다. 슬래시 없는 디렉터리 요청은 301로 슬래시를 붙이고, `index.html`이 없으면 404다.
 
 ## 작업 레코드
 
 ```json
-{"job_id": "…", "kind": "agent.ping|paper.ask|discovery.search|discovery.register|harness.verify|harness.tests", "status": "queued|running|completed|failed|cancelled",
+{"job_id": "…", "kind": "agent.ping|paper.ask|discovery.search|discovery.register|review.visual|harness.verify|harness.tests", "status": "queued|running|completed|failed|cancelled",
  "created_at": "2026-11-03T07:00:00+00:00", "started_at": null, "ended_at": null,
  "agent": "claude", "cost_usd": null, "error": null, "last_seq": 0, "role": "paper-analyst"}
 ```
 
-`role`은 역할 작업(`agent.ping`의 `role`, `paper.ask`의 `paper-reader`, `discovery.*`의 `paper-searcher`)에만, `slug`는 `paper.ask`와 `discovery.register`에만 있다. `harness.*` 작업은 `agent: null`이고 `role`·`slug`가 없다.
+`role`은 역할 작업(`agent.ping`의 `role`, `paper.ask`의 `paper-reader`, `discovery.*`의 `paper-searcher`, `review.visual`의 `visual-designer`)에만, `slug`는 `paper.ask`·`discovery.register`·`review.visual`에만 있다. `harness.*` 작업은 `agent: null`이고 `role`·`slug`가 없다.
 
 - 시각은 ISO-8601 UTC 초 단위다. 작업은 메모리에만 있으며 서버를 끄면 사라진다.
 - 동시에 최대 2개를 실행하고 나머지는 FIFO로 기다린다. 작업당 이벤트는 최근 10,000개까지 보관한다.
 - 상태는 종료 이벤트로 정한다: `result` → `completed`, `error` → `failed`, `cancelled` → `cancelled`. 작업 함수가 예외를 내면 `error`, 종료 이벤트 없이 끝나면 `error` "job ended without result"를 기록한다. 취소 요청 뒤 종료 이벤트 없이 끝나면 `cancelled`다.
 - 종료 이벤트는 정확히 하나다. 처음 기록된 종료 이벤트가 이기고, 그 뒤의 이벤트(종료 이벤트 포함)는 버린다.
 - 취소는 브로커 잠금 안에서 결정한다. 대기 중인 작업은 큐에서 빠지는 것과 `cancelled` 기록이 한 번에 일어나므로, 동시에 들어온 두 번째 취소는 409 `already_finished`를 받는다. 실행 중인 작업은 취소가 받아들여진(202) 뒤 작업이 `result`나 `error`를 내도 `cancelled`로 기록한다.
+- 커밋 단계: 영구 결과를 쓰는 작업(현재 `review.visual`)은 쓰기 직전에 `ctx.begin_commit()`을 부른다. 이것도 브로커 잠금 안에서 결정한다: 이미 취소가 받아들여졌으면 `False`(작업은 아무것도 쓰지 않고 `cancelled`), 아니면 그때부터 `cancel`이 거부되고(`POST /api/jobs/{id}/cancel` → 409 `publishing`) 작업은 자기 종료 이벤트로 끝난다.
 - `agent`는 `start` 이벤트의 실제 에이전트로, `cost_usd`는 `result` 이벤트 값으로, `error`는 `error` 이벤트 메시지로 갱신한다.
 
 `agent.ping`은 임시 폴더에서 도구 없이 "Reply with exactly: OK"를 보내는 연결 확인 작업이다(제한 시간 120초). 에이전트가 설치·로그인되지 않았으면 종료 이벤트 `error`(`retryable: false`)로 끝난다. `role`을 주면 그 역할의 후보(실행기·모델·effort)로 보내고 위의 후보 이동 규칙을 따른다. 작업 레코드에 `role`이 붙고 `agent`는 선택 후보의 실행기다(`role` 없는 작업에는 `role` 키가 없다). 미설정 `paper-analyst`는 연결 에이전트로, 미설정 `paper-verifier`는 `error`로 끝난다. 설정됐지만 준비된 후보가 없으면 그 사유로 `error`다.

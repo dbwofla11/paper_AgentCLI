@@ -32,7 +32,7 @@ python3 .scripts/bin/onboard_research.py
 
 **에이전트 감지 → 로그인 확인 → 연결 설정 저장 → WebUI 실행** 순서로 진행한다. 자동 선택 순서는 Codex → Claude → omp이며, 이전 연결이 있으면 그 선택을 유지한다. CLI가 설치됐지만 로그인하지 않았다면 대화형 터미널에서 공식 로그인 안내를 시작한다.
 
-Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. 심층 리뷰의 방법 구조도에는 사용자 수준 `diagram-design` 스킬과 프로필 `~/.diagram-design/profiles/research-harness.md`가 필요하며, 없으면 리뷰가 실패로 보고된다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. omp에는 별도의 OS 샌드박스 검사가 없다. 설치 방법은 [온보딩 안내](docs/onboarding.md)를 따른다.
+Python 3.10 이상, Codex·Claude·omp 중 하나와 PDF 읽기 도구 `pdftotext`(Poppler)가 필요하다. 심층 리뷰의 방법 구조도에는 사용자 수준 `diagram-design` 스킬과 프로필 `~/.diagram-design/profiles/research-harness.md`가 필요하며, 없으면 리뷰가 실패로 보고된다. 리뷰의 시각 요약(선택)에는 사용자 수준 `visual-explainer` 스킬과 Node.js가 필요하며, 없으면 시각 요약 없이 리뷰가 완료된다. Claude 자동 리뷰에는 `--restricted` 지원 버전과 OS 샌드박스가 필요하다. omp에는 별도의 OS 샌드박스 검사가 없다. 설치 방법은 [온보딩 안내](docs/onboarding.md)를 따른다.
 
 | 명령 | 용도 |
 |---|---|

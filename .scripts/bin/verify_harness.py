@@ -41,7 +41,7 @@ REQUIRED = [
     ROOT / "04-Projects/validation/personas/repro-critic.md",
     ROOT / "04-Projects/validation/personas/novelty-critic.md",
     ROOT / "00-Inbox/concept-candidate-template.md",
-    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "paper-reader", "idea-critic", "graph-extractor", "paper-searcher")),
+    *(ROOT / f".omp/agents/{name}.md" for name in ("paper-analyst", "paper-verifier", "paper-reader", "idea-critic", "graph-extractor", "paper-searcher", "visual-designer")),
     ROOT / ".omp/config.example.yml",
     ROOT / ".research-harness-agent.example.json",
     ROOT / "04-Projects/thought-experiment-runs/PROGRESS_BACKEND.local.example.md",
@@ -196,6 +196,9 @@ def verify() -> int:
     for required_text in ("diagram-design", "self_check.py"):
         if required_text not in review_skill:
             return fail(f"paper review must draw the method figure with the diagram-design skill (missing {required_text!r})")
+    for required_text in ("visual-explainer", "render.mjs"):
+        if required_text not in review_skill:
+            return fail(f"paper review must render the visual summary with the visual-explainer skill (missing {required_text!r})")
     review_template = (ROOT / "90-Templates/paper/review-template.md").read_text(encoding="utf-8")
     if "```mermaid" in review_template:
         return fail("review template must not contain a Mermaid block; the method figure is a diagram-design SVG")

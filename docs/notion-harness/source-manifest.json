@@ -29,7 +29,7 @@
   },
   {
     "path": ".agents/skills/paper-review/SKILL.md",
-    "sha256": "2504bc5b1ceb0c823acc25332e8a3d914bb63df61f6f8cdc84af0e53e10561e9"
+    "sha256": "30e9eaf606cf69d0fddb23149bac680df28b92bc50aee1b0be141ee67c496323"
   },
   {
     "path": ".agents/skills/paper-scheduler/SKILL.md",
@@ -133,7 +133,7 @@
   },
   {
     "path": "AGENTS.md",
-    "sha256": "9d0a5d4edd0e4b647e9fa770bd56f542e7ab014f4780a731c97009b39c2c56a3"
+    "sha256": "3b5bddd0407e86db5532d50042d1bb6c61445a38a682eced4e5b549b91558637"
   },
   {
     "path": "docs/Harness-Graph.md",
@@ -173,11 +173,11 @@
   },
   {
     "path": "docs/onboarding.md",
-    "sha256": "c82c00cd1d97b37870b778d3dce4eb30fda6181840d2c11156994000a120fbfc"
+    "sha256": "5483f0a9fdc8a9593998cc7a7add7a8a95f22999bf8b3cd2edb5eb72c8be9bd6"
   },
   {
     "path": "docs/paper-review-bridge.md",
-    "sha256": "876489fdc443ed47e21886c3891f1f12fb56492787c0f14386e47d69931896f7"
+    "sha256": "3ef09123c0bc27fa1efb67e5caa3de889a4c284bde979a0e2fd218c54a923216"
   },
   {
     "path": "docs/research-harness-installer.md",
@@ -185,6 +185,6 @@
   },
   {
     "path": "docs/research-webui.md",
-    "sha256": "46e3cf652c0dbdaa81e3b5794daf8d34801108b07e2436a1dbc6395ff939e602"
+    "sha256": "ca267cf951f338911d68113e67109e669abc2964266cc1b25e194892fef32816"
   }
 ]

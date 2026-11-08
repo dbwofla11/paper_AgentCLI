@@ -33,7 +33,7 @@ python3 .scripts/bin/research_webui.py check                 # 준비 상태 JSO
 |---|---|
 | `http://127.0.0.1:8765/` | `/100-views/webui/`로 이동 |
 | `http://127.0.0.1:8765/100-views/webui/` | WebUI 첫 화면: 논문 라이브러리 (`#/`, 통계·검색·필터·리뷰 시작) |
-| `…/100-views/webui/#/papers/{slug}` | 논문 리더 (PDF + 리뷰 + 질문 + 리뷰 검증 실행) |
+| `…/100-views/webui/#/papers/{slug}` · `#/papers/{slug}?view=visual` | 논문 리더 (PDF + 리뷰 + 질문 + 리뷰 검증 실행, `view=visual`로 들어오면 왼쪽 영역을 시각 요약으로 한 번 열고 주소에서 `view=visual`을 지운다) |
 | `…/100-views/webui/#/discover` · `#/discover/searches/{id}` · `#/discover?q=…` | 탐색 검색 탭 (검색 양식·검색 기록, 검색 1회의 진행 기록과 후보 카드, `q`로 질의 미리 채움) |
 | `…/100-views/webui/#/discover/daily` · `#/discover/daily/{YYYY-MM-DD}` | 탐색 일일 후보 탭 (날짜별 목록·그날의 후보 카드) |
 | `…/100-views/webui/#/ideas` | 사고실험 (아이디어 노트·심사 레지스트리·실험 기록) |
@@ -47,7 +47,7 @@ python3 .scripts/bin/research_webui.py check                 # 준비 상태 JSO
 
 ## 화면
 
-- **논문 라이브러리 (`#/`)**: 전체 논문·리뷰 완료·읽기 대기·연구 분야·PDF 있음 통계, 연도별·분야별 막대 차트, 검색(제목·저자·주제·초록·요약·학회)과 분야·읽기 상태·연도·PDF 필터. 카드 제목이나 "읽기"는 리더를 연다. "원문"은 원문 주소가 있을 때만 새 탭으로 연다. 두 버튼은 같은 모양(테두리와 옅은 강조색 배경)이고 카드 오른쪽에 세로 가운데로 놓인다. 768px보다 좁으면 카드 아래에 한 줄로 나란히 놓인다. PDF가 없는 논문(탐색에서 Keep만 했거나 메타데이터만 등록한 논문 포함)에는 읽기 상태와 상관없이 "PDF 필요" 배지가 붙는다. PDF가 있고 리뷰가 필요한 논문에는 "리뷰 시작"이 보이며, 리뷰 에이전트가 준비되지 않았으면 이유와 함께 비활성화된다. 진행 중에는 `GET /api/reviews/{slug}`를 3초마다 확인하고(상태 API는 다시 부르지 않는다), 끝나면 목록을 새로 고치고 알림을 띄운다.
+- **논문 라이브러리 (`#/`)**: 전체 논문·리뷰 완료·읽기 대기·연구 분야·PDF 있음 통계, 연도별·분야별 막대 차트, 검색(제목·저자·주제·초록·요약·학회)과 분야·읽기 상태·연도·PDF 필터. 카드 제목이나 "읽기"는 리더를 연다. "원문"은 원문 주소가 있을 때만 새 탭으로 연다. 두 버튼은 같은 모양(테두리와 옅은 강조색 배경)이고 카드 오른쪽에 세로 가운데로 놓인다. 768px보다 좁으면 카드 아래에 한 줄로 나란히 놓인다. PDF가 없는 논문(탐색에서 Keep만 했거나 메타데이터만 등록한 논문 포함)에는 읽기 상태와 상관없이 "PDF 필요" 배지가 붙는다. 시각 요약이 있는 논문에는 "시각 요약" 배지가 붙고, 누르면 리더를 시각 요약 보기로 연다(`#/papers/{slug}?view=visual`). PDF가 있고 리뷰가 필요한 논문에는 "리뷰 시작"이 보이며, 리뷰 에이전트가 준비되지 않았으면 이유와 함께 비활성화된다. 진행 중에는 `GET /api/reviews/{slug}`를 3초마다 확인하고(상태 API는 다시 부르지 않는다), 끝나면 목록을 새로 고치고 알림을 띄운다.
 - **탐색 (`#/discover`)**: 상단 메뉴 "탐색"("논문" 옆). 화면 위의 두 탭(검색·일일 후보)으로 오간다.
   - **검색 탭(`#/discover`)**: 자유 문장 질의(필수, 3–500자), 연도 범위, 편수(1–30, 기본 10), 카테고리 힌트, 기준 논문(라이브러리에서 검색해 최대 3편 선택), "학회 게재 확인된 것만" 스위치로 외부 학술 소스 검색을 시작한다(`POST /api/discovery/searches`). 검색은 `paper-searcher` 역할의 에이전트 작업(`discovery.search`)이라 수 분 걸리고 최대 15분이다. 서버 전체에서 한 번에 하나만 돌며, 진행 중에 다시 시작하면 "다른 검색이 진행 중입니다" 안내가 나온다(리뷰·리더 질문과는 함께 돌 수 있다). 양식 아래 검색 기록은 질의·시각·상태·후보 수를 최신순으로 보여 주고, 진행 중이 아닌 기록은 확인 후 삭제할 수 있다. `#/discover?q=…`로 열면 질의 칸이 미리 채워진다.
   - **검색 결과(`#/discover/searches/{id}`)**: 진행 중에는 작업의 실시간 기록(에이전트가 실행한 `paper.py` 명령 포함)을 보여 주고, 끝나면 검색 보고(실행한 질의·사용한 소스·기준 논문·누락 범위·제외 수·메모)와 후보 카드 목록을 보여 준다. 후보는 관련도(에이전트 순서)·연도·인용 수로 정렬하고, "넘김" 상태 후보는 기본으로 숨기며 "넘긴 후보 표시" 스위치로 함께 볼 수 있다. 실패하면 오류 종류와 메시지를 보이고, 서버가 재시작돼 중단된 검색은 실패로 표시되므로 다시 실행한다.
@@ -67,24 +67,24 @@ python3 .scripts/bin/research_webui.py check                 # 준비 상태 JSO
 - **본문 크기**: 64 KiB 이하, 리뷰 요청은 4096 B 이하다.
 - **CORS 없음**: 다른 출처에 응답을 열어 주지 않는다.
 - **정적 파일**: 허용 폴더(`01-Papers/`, `docs/`, `100-views/` 등)와 루트의 `AGENTS.md`·`CLAUDE.md`·`README.md`만 제공한다. 경로 이탈(`..`, NUL, 대소문자 변형), 저장소 밖을 가리키는 심볼릭 링크, `.git`·`.env*`·`.mcp.json`·`.claude` 같은 개인 설정은 404다. 논문 탐색 캐시(`00-Inbox/discovery/` 아래 파일)도 404이며 API로만 읽는다. 디렉터리 목록은 보여주지 않는다.
-- **보안 헤더**: 모든 응답에 `nosniff`, `no-referrer`, `X-Frame-Options: DENY`를 붙인다. WebUI(`/100-views/webui/`)에는 외부 스크립트·폰트·연결을 막는 CSP를 붙인다.
+- **보안 헤더**: 모든 응답에 `nosniff`, `no-referrer`를 붙이고, 시각 요약(`/api/papers/{slug}/visual`)을 뺀 모든 응답에 `X-Frame-Options: DENY`를 붙인다. WebUI(`/100-views/webui/`)에는 외부 스크립트·폰트·연결을 막는 CSP를 붙인다. 시각 요약 응답의 CSP는 아래 [시각 요약](#시각-요약)의 "보안"을 본다.
 - **에이전트 실행**: 에이전트 CLI는 본인 로그인으로 실행한다. 서버는 계정·토큰을 읽거나 복사하지 않으며, API 키는 아래 "서버의 외부 통신"의 선택 `S2_API_KEY` 하나만 환경변수에서 받아 그 요청 헤더에만 쓴다. 임의 shell 명령이나 파일 경로를 요청으로 받지 않는다. 논문 탐색 검색·등록 작업의 에이전트 CLI만 외부 학술 소스에 접속하며, 허용 도메인은 `.scripts/docs/search-protocol.md` 목록이다([논문 탐색 검색](#논문-탐색-검색)). 등록 작업이 받은 PDF는 서버가 검사한 뒤에만 저장소로 복사한다([논문 탐색 채택](#논문-탐색-채택)).
-- **서버의 외부 통신**: WebUI 서버 프로세스가 직접 외부에 요청하는 것은 인용·피인용 목록(`POST /api/discovery/related`)을 위한 `https://api.semanticscholar.org` references·citations 조회 **한 가지**뿐이다. 서버 전체에서 한 번에 한 요청, 요청 사이 1초 이상, 요청 1회 12초·전체 30초 제한, 10분 캐시를 둔다. 서버를 실행한 환경에 `S2_API_KEY`가 있으면 `paper.py`가 그 요청에만 `x-api-key` 헤더로 붙인다. 키는 저장·기록하지 않고 API 응답이나 브라우저로 보내지 않는다. 그 밖의 외부 접근은 검색·등록 작업의 자식 CLI에서만 일어난다.
+- **서버의 외부 통신**: WebUI 서버 프로세스가 직접 외부에 요청하는 것은 인용·피인용 목록(`POST /api/discovery/related`)을 위한 `https://api.semanticscholar.org` references·citations 조회 **한 가지**뿐이다. 서버 전체에서 한 번에 한 요청, 요청 사이 1초 이상, 요청 1회 12초·전체 30초 제한, 10분 캐시를 둔다. 서버를 실행한 환경에 `S2_API_KEY`가 있으면 `paper.py`가 그 요청에만 `x-api-key` 헤더로 붙인다. 키는 저장·기록하지 않고 API 응답이나 브라우저로 보내지 않는다. 그 밖의 외부 접근은 검색·등록 작업의 자식 CLI와, 시각 요약 페이지·렌더 검사의 Google Fonts 글꼴 요청(`fonts.googleapis.com`, `fonts.gstatic.com`)에서만 일어난다.
 
 ## 작업과 스트리밍
 
 WebUI의 오래 걸리는 작업은 job으로 실행한다. 진행 상황은 `GET /api/jobs/{id}/events` SSE로 받는다. 연결이 끊겨도 브라우저가 `Last-Event-ID`로 이어 받는다. 이어 받을 기록이 이미 버퍼에서 밀려났으면 `gap` 이벤트로 알려 주고, 화면은 기록 누락을 표시한 뒤 최종 `result`의 답을 그대로 보여 준다. 동시에 열 수 있는 스트림은 서버 전체에서 32개이고, 넘으면 503 `too_many_streams`다. 작업은 서버 메모리에만 있어 서버를 끄면 사라진다. 논문 리뷰 큐(`04-Projects/review-queue/queue.json`)는 기존처럼 파일에 남는다.
 
-WebUI가 만드는 작업은 `agent.ping`(에이전트나 리뷰 역할에 짧은 응답 요청), `paper.ask`(논문 리더 질문), `discovery.search`(논문 탐색 검색), `discovery.register`(논문 탐색 등록), `harness.verify`·`harness.tests`(하네스 화면의 검사)다. 작업 화면에서 대상을 "생성 역할 (paper-analyst)", "검증 역할 (paper-verifier)" 또는 준비된 에이전트로 고를 수 있다. 하네스 검사는 `POST /api/harness/checks`로만, 논문 탐색 검색은 `POST /api/discovery/searches`로만, 논문 탐색 등록은 `POST /api/discovery/register`로만 시작하고 `POST /api/jobs`로는 만들 수 없다. 리뷰 검증은 작업 화면이 아니라 논문 리더에서 실행하며, 리뷰 큐 작업이라 상태 화면의 리뷰 대기열에 표시된다.
+WebUI가 만드는 작업은 `agent.ping`(에이전트나 리뷰 역할에 짧은 응답 요청), `paper.ask`(논문 리더 질문), `review.visual`(리더의 시각 요약 만들기), `discovery.search`(논문 탐색 검색), `discovery.register`(논문 탐색 등록), `harness.verify`·`harness.tests`(하네스 화면의 검사)다. 작업 화면에서 대상을 "생성 역할 (paper-analyst)", "검증 역할 (paper-verifier)" 또는 준비된 에이전트로 고를 수 있다. 하네스 검사는 `POST /api/harness/checks`로만, 시각 요약은 `POST /api/papers/{slug}/visual`로만, 논문 탐색 검색은 `POST /api/discovery/searches`로만, 논문 탐색 등록은 `POST /api/discovery/register`로만 시작하고 `POST /api/jobs`로는 만들 수 없다. 리뷰 검증은 작업 화면이 아니라 논문 리더에서 실행하며, 리뷰 큐 작업이라 상태 화면의 리뷰 대기열에 표시된다.
 
 ## 논문 리더
 
-첫 화면 논문 라이브러리에서 PDF가 있는 논문의 제목이나 "읽기"를 누르면 리더가 열린다. 왼쪽은 PDF(pdf.js, 로컬 번들), 오른쪽은 리뷰·질문 패널이다.
+첫 화면 논문 라이브러리에서 PDF가 있는 논문의 제목이나 "읽기"를 누르면 리더가 열린다. 왼쪽은 PDF(pdf.js, 로컬 번들) 또는 [시각 요약](#시각-요약), 오른쪽은 리뷰·질문 패널이다.
 
 - **리뷰 탭**: 5축 리뷰 주장과 근거 위치(`Table 3, p.8` 등)를 보여 준다. 근거 칩이나 `p.N` 링크를 누르면 그 쪽으로 이동해 해당 위치를 깜박인다. PDF 위 하이라이트를 누르면 연결된 리뷰 주장으로 이동한다. 하이라이트는 리뷰 근거 위치(표·그림·절 번호)와 주장 속 영문 용어·수치로 찾으며, 찾지 못하면 쪽 여백 표시로 대신한다. 리뷰 문장이 한국어라 원문 문장 단위로 일치시키지는 않는다.
 - **리뷰 검증**: 리뷰 탭 머리(근거·리뷰 전문·검증 보기 모두)에 검증 상태 배지와 "검증 실행" 버튼이 있다. 검증 보고서가 이미 있으면(리뷰나 PDF가 바뀐 뒤 포함) "다시 검증"이다. 누르면 `POST /api/reviews/{slug}/verify`로 검증 역할(`paper-verifier`)만 실행해 리뷰를 원문 PDF와 대조하고, 리뷰 문서는 바꾸지 않는다. 진행 중에는 그라데이션 진행 막대를 보이고 `GET /api/reviews/{slug}`를 3초마다 확인한다(화면을 떠나면 멈춘다). 끝나면 리뷰 묶음을 다시 불러 배지와 검증 보기를 갱신하고 알림을 띄운다. 리뷰 문서나 PDF가 없거나 검증 역할이 미설정·준비 안 됨이면 버튼이 이유와 함께 비활성화된다. 역할 상태는 앱이 처음 받은 `GET /api/status` 결과를 쓰고 다시 부르지 않는다(실패했을 때만 "다시 확인"으로 한 번 요청한다). 다른 리뷰·검증이 진행 중이면 409 `review_active` 안내가 뜬다.
 - **화면 구성**: 리더에는 전체 머리글이 없고 48px 툴바 하나만 있다(뒤로, 제목, 쪽·확대·영역 캡처·하이라이트, 패널, 연결 점, 메뉴). 폭이 768px보다 좁으면 확대·축소, 폭 맞춤, 영역 캡처, 하이라이트가 "보기 도구" 버튼의 팝오버로 들어가고, 480px보다 좁으면 이전·다음 쪽 버튼도 함께 들어간다. 쪽 번호 입력, 패널, 메뉴는 언제나 툴바에 남는다. 메뉴에서 다른 화면과 테마를 고른다. 폭 맞춤은 쪽 폭을 1100px까지만 키운다. 패널 기본 폭은 520px(최소 360px)이다. PDF 쪽은 다크 테마에서도 흰 바탕이다.
-- **글자 크기**: 패널 머리의 "가" 세 단계(작게·보통·크게)로 리뷰·답변 글자 크기를 바꾼다. 선택은 `research-webui.reader.text-size`에 저장된다.
+- **글자 크기**: 패널 머리의 "가" 세 단계(작게·보통·크게)로 리뷰·답변 글자 크기를 바꾼다. 선택은 `research-webui.reader.text-size`에 저장된다. 시각 요약에는 적용하지 않는다.
 - **텍스트 질문**: PDF에서 문장을 드래그하고 "질문하기"를 누른다.
 - **영역 질문**: 툴바(좁은 화면은 "보기 도구")의 "영역 캡처"(단축키 R)를 켜고 표·그림을 상자로 고른 뒤 "이 영역 질문하기"를 누른다. 서버가 `pdftoppm`으로 그 영역을 PNG로 잘라 에이전트에 넘긴다.
 - **답변**: 스트리밍으로 받으며, 답 속 `p.N`을 누르면 해당 쪽으로 이동한다. 같은 스레드에서 이어 물으면 최근 6턴을 맥락으로 다시 보낸다. 답변 중 취소할 수 있다.
@@ -101,6 +101,44 @@ task:
 ```
 
 답변은 읽기 전용으로 실행한다. 서버가 임시 폴더에 PDF·쪽별 텍스트·리뷰·메타데이터 사본을 만들고, 에이전트에는 읽기 도구(read·grep·glob)만 준다. 저장소 파일은 바뀌지 않는다. 답변 규칙은 `.omp/agents/paper-reader.md`, API는 [API 계약의 논문 리더](../.scripts/docs/webui-api.md#논문-리더)를 본다.
+
+## 시각 요약
+
+리뷰 전체를 그림으로 요약한 HTML 한 장이다. `visual-explainer` 스킬로 만들고 리더 왼쪽 영역에서 원문 PDF와 바꿔 본다. 근거는 리뷰 Markdown뿐이며 리뷰에 없는 사실·수치를 넣지 않는다. `paper-verifier`는 시각 요약을 대조하지 않는다. 리뷰의 방법 구조도(diagram-design SVG)는 그대로 둔다.
+
+- **보기 전환**: 툴바의 `원문 PDF | 시각 요약` 세그먼트로 왼쪽 영역을 바꾼다. 두 보기는 모두 마운트된 채 남아 PDF의 쪽·확대 상태가 유지된다. 시각 요약을 보는 동안 PDF 전용 툴바 컨트롤과 영역 캡처 단축키(R)는 숨거나 비활성화된다. 툴바 전환은 주소를 바꾸지 않고 기억하지 않으므로, 리더는 새로 고침하면 항상 원문 PDF로 연다. 라이브러리 카드의 "시각 요약" 배지(시각 요약이 있을 때만 보임)나 작업 화면의 링크처럼 `#/papers/{slug}?view=visual` 주소로 들어오면 한 번 바로 시각 요약을 보여 주고, 곧바로 주소에서 `?view=visual`을 지운다(방문 기록을 남기지 않는 교체). 그래서 그 뒤 새로 고침해도 원문 PDF로 열린다. 900px 이하에서도 같은 전환을 쓰고, 넓은 그림은 프레임 안에서 옆으로 스크롤한다.
+- **쪽 링크**: 시각 요약 안의 `p.N`을 누르면 원문 PDF로 전환해 그 쪽으로 이동하고 위치를 깜박인다.
+- **새 탭에서 열기**: `/api/papers/{slug}/visual`을 새 탭으로 연다(`noopener noreferrer`).
+- **테마**: 운영체제의 라이트·다크 설정(`prefers-color-scheme`)을 따른다. WebUI 테마를 운영체제와 다르게 고정하면 시각 요약 색이 WebUI와 다를 수 있으며, 둘을 맞추는 동기화는 하지 않는다.
+- **댓글 UI**: visual-explainer 페이지의 문장 선택·댓글(답장) UI는 WebUI에서 숨긴다. 시각 요약에는 선택 질문(`<ve-ask>`)을 만들지 않는다.
+- **상태**: 없으면 "시각 요약 없음"과 "시각 요약 만들기" 버튼을 보인다. 만드는 중에는 작업 진행 기록을 보인다. 시각 요약을 만든 뒤 리뷰가 바뀌었으면(사이드카의 리뷰 SHA-256 ≠ 현재 리뷰 파일) "리뷰 이후 변경됨" 배지와 "다시 만들기"를 보인다. 실패하면 오류 메시지와 "다시 만들기"를 보인다. 여러 논문을 한꺼번에 만드는 기능은 없다.
+
+### 만드는 경로
+
+1. **리뷰 중**: `paper-review` 스킬 5-1단계에서 리뷰 에이전트(`paper-analyst`)가 작업 복사본 루트의 스킬 사본 `.visual-explainer/`로 만든다. 서버는 리뷰 정본 출력을 먼저 게시하고 시각 요약 파일은 그 뒤에 따로 게시한다. 시각 요약이 없거나 서버 검사를 통과하지 못하거나 게시 중 충돌·복사 실패가 나도 리뷰는 완료로 남고, 실제 저장소의 기존 시각 요약 파일은 그대로 둔다. 결과는 리뷰 큐 작업의 `visual`(`published`·`missing`·`rejected`·`conflict`·`failed`와 사유)에 남는다([로컬 리뷰 실행기](paper-review-bridge.md)).
+2. **리더의 "시각 요약 만들기"·"다시 만들기"**: `POST /api/papers/{slug}/visual`로 `review.visual` 작업을 시작한다. `visual-designer` 역할이며, `.omp/config.yml`에 아래처럼 지정하면 그 모델을 쓰고 지정하지 않으면 연결된 에이전트(`.research-harness-agent.json`)의 CLI 기본 모델로 실행한다. 지정했는데 준비된 실행기가 없으면 다른 모델로 바꾸지 않고 작업을 막는다(503 `designer_unavailable`). 상태 화면의 역할 카드가 해석 결과(`/api/status`의 `visual_role`)를 보여 준다.
+
+```yaml
+modelRoles:
+  visual-design: "<provider>/<model>[:effort]"
+task:
+  agentModelOverrides:
+    visual-designer: "@visual-design"
+```
+
+- **작업 공간**: 임시 폴더(`webui-visual-*`)에 리뷰 Markdown 사본 `review.md`와 스킬 사본 `.visual-explainer/`를 둔다. 서버가 실행기별 `visual-explainer` 스킬 디렉터리(omp `~/.omp/agent/skills/visual-explainer/`, Claude Code `~/.claude/skills/visual-explainer/`, Codex `~/.codex/skills/visual-explainer/`)에서 `SKILL.md`와 `kit/render.mjs`를 확인하고, 그 디렉터리를 심볼릭 링크가 아닌 실제 파일로 `.visual-explainer/`에 복사한다(`.git` 제외, `node_modules/playwright-core`가 있으면 포함). 에이전트는 이 사본만 읽고 실행하며 설치된 스킬 디렉터리에는 접근 권한을 받지 않으므로 공용 스킬을 고칠 수 없다. 사본은 게시하지 않고 작업 폴더와 함께 지운다. 에이전트 규칙은 `.omp/agents/visual-designer.md`다. `{slug}-visual.src.html`을 쓰고 `node .visual-explainer/kit/render.mjs`로 렌더하며, `✗`를 고치는 렌더는 모두 3회까지다. 제한 시간은 900초다.
+- **검사·게시**: 서버가 `{slug}-visual.html`을 검사한다(일반 파일, 3 MiB 이하, UTF-8, kit 표지 `<style data-ve-kit>`·`<script data-ve-kit>`, `<ve-ask` 없음). 통과하면 리뷰 옆 `figures/`의 `{slug}-visual.src.html`·`{slug}-visual.html`·시트 PNG와 사이드카 `{slug}-visual.json`(리뷰 SHA-256·생성 시각·출처·실행기·시각 검사 결과)을 원자적으로 바꾼다. 통과하지 못하면 기존 시각 요약을 그대로 둔다. 취소는 게시를 시작하기 전까지만 받는다. 그 전에 취소되거나 서버가 종료되면 아무 파일도 쓰지 않는다. 게시를 시작한 뒤의 취소 요청은 409 `publishing`으로 거부되고, 서버 종료도 게시를 멈추지 않으며, 작업은 완료로 끝난다.
+- **거부**: 리뷰 Markdown이 없으면 409 `review_missing`, 같은 논문의 시각 요약 작업이 진행 중이면 409 `visual_active`, 리뷰 큐에 같은 논문의 리뷰·검증이 대기·진행 중이면 409 `review_active`다. 거꾸로 같은 논문의 시각 요약 작업 중에는 리뷰·검증 요청이 409 `visual_active`로 거부된다. 역할 설정을 읽지 못하면 503 `role_config_error`, 스킬 디렉터리나 `node`가 없으면 503 `visual_unavailable`, 서버 종료 중이면 503 `shutting_down`이다.
+
+### 보안
+
+- **제공 경로**: `GET /api/papers/{slug}/visual`만 리뷰 옆 `figures/{slug}-visual.html`을 `text/html`로 제공한다. 정적 경로의 `01-Papers/reviews/**/figures/`는 계속 404이므로 원본·시트·사이드카는 제공하지 않는다.
+- **CSP**: `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; sandbox allow-scripts`. 인라인 스크립트는 이 페이지 안에서만 돌고, 외부 접속은 Google Fonts(`fonts.googleapis.com` 스타일시트, `fonts.gstatic.com` 글꼴 파일)뿐이다. 이 응답에는 `X-Frame-Options`를 붙이지 않고 `frame-ancestors 'self'`로 같은 출처의 프레임만 허용한다. CSP `sandbox` 때문에 새 탭으로 직접 열어도 불투명 출처라 WebUI의 저장소·API 권한이 없다.
+- **프레임**: 리더는 `sandbox="allow-scripts"`(`allow-same-origin` 없음)와 `referrerpolicy="no-referrer"`로 연다. 그래서 페이지의 `localStorage`는 막히고(kit 메모가 저장되지 않음) 팝업도 열리지 않는다.
+- **서버가 넣는 스크립트**: 서버는 응답의 `</body>` 앞에 고정 스크립트를 넣는다. 이 스크립트는 `data-ve-page="N"` 링크를 누르면 부모 창에 `postMessage({type: "research-webui:visual-page", page: N})`를 보내고, 댓글 UI를 끈다. 부모는 그 프레임에서 왔고 형식이 맞으며 쪽 번호가 1 이상 쪽수 이하 정수인 메시지만 받는다.
+- **남은 위험**: 샌드박스 프레임도 자기 자신을 외부 주소로 이동시킬 수 있다. 페이지 내용은 사용자 리뷰에서 만든 것이고, `no-referrer`라 WebUI 주소는 전달되지 않는다.
+
+자세한 계약은 [API 계약의 시각 요약](../.scripts/docs/webui-api.md#시각-요약)을 본다.
 
 ## 논문 탐색 캐시
 

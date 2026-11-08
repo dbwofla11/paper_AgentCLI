@@ -51,6 +51,19 @@ def diagram_design_checks(root: Path, host: str | None) -> list[tuple[bool, str]
     return results
 
 
+def visual_explainer_checks(host: str | None) -> list[tuple[bool, str]]:
+    """Optional readiness of the review visual summary: host visual-explainer skill and node."""
+    home = Path.home()
+    hosts = [host] if host in HOST_SKILL_DIRS else list(HOST_SKILL_DIRS)
+    skill_dirs = [home / HOST_SKILL_DIRS[name] / "visual-explainer" for name in hosts]
+    shown = ", ".join(f"~/{HOST_SKILL_DIRS[name]}/visual-explainer" for name in hosts)
+    return [
+        (any((path / "SKILL.md").is_file() and (path / "kit/render.mjs").is_file() for path in skill_dirs),
+         f"리뷰 시각 요약용 visual-explainer 스킬(SKILL.md, kit/render.mjs): {shown}"),
+        (shutil.which("node") is not None, "리뷰 시각 요약 렌더용 node(PATH)"),
+    ]
+
+
 def check(root: Path, host: str | None, with_mcp: bool = False,
           with_graphify: bool = False, create_dirs: bool = False) -> list[tuple[str, str]]:
     results = []
@@ -128,6 +141,8 @@ def check(root: Path, host: str | None, with_mcp: bool = False,
     report(shutil.which("uvx") is not None, "MCP 실행용 uvx", optional=not with_mcp)
     report(shutil.which("graphify") is not None, "관계 그래프용 graphify", optional=not with_graphify)
     for ok, message in diagram_design_checks(root, host):
+        report(ok, message, optional=True)
+    for ok, message in visual_explainer_checks(host):
         report(ok, message, optional=True)
     report(bool(os.environ.get("EXA_API_KEY", "").strip()), "선택 검색용 EXA_API_KEY 환경변수 설정 여부", optional=True)
     results.append(("INFO", "로그인·모델 응답·MCP 연결·PDF 페이지 읽기는 에이전트 안에서 별도 확인하세요."))

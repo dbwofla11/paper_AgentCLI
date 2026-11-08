@@ -34,6 +34,8 @@ const EMPTY_TARGETS: readonly PageTarget[] = [];
 export interface PdfPaneHandle {
   /** Scrolls to `page`. `y` (page fraction) aims at a spot; `keys` aim at those highlights once located. */
   scrollToPage: (page: number, options?: { y?: number; keys?: readonly string[] }) => void;
+  /** Focuses the page scroller without moving it (keyboard scrolling continues from the current spot). */
+  focus: () => void;
 }
 
 /** Highlights (`keys`) or a whole page (`page`, for plain `p.N` links) briefly flashing after a jump. */
@@ -287,6 +289,9 @@ export const PdfPane = forwardRef<PdfPaneHandle, PdfPaneProps>(function PdfPane(
         const y = options.y ?? (keys ? firstBoxY(located.current.get(page), keys) : null);
         scrollToFraction(page, y, true);
         pendingScroll.current = keys && y === null ? { page, keys, until: Date.now() + 4000 } : null;
+      },
+      focus() {
+        scrollerRef.current?.focus({ preventScroll: true });
       },
     }),
     [scrollToFraction],

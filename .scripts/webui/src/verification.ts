@@ -7,6 +7,7 @@ export const VERIFY_ERRORS: Record<string, string> = {
   review_missing: '이 논문의 리뷰 문서가 아직 없습니다. 먼저 논문 리뷰를 실행하세요.',
   pdf_missing: '논문 PDF를 찾을 수 없습니다. 원문과 대조하려면 01-Papers/pdfs 안에 PDF가 있어야 합니다.',
   review_active: '다른 논문 리뷰나 검증이 이미 진행 중입니다. 끝난 뒤 다시 실행하세요.',
+  visual_active: '이 논문의 시각 요약을 만드는 중입니다. 끝난 뒤 다시 실행하세요.',
   verifier_unconfigured:
     '검증 역할(paper-verifier)이 설정되지 않았습니다. .omp/config.yml의 task.agentModelOverrides를 확인하세요.',
   verifier_unavailable: '검증 역할의 실행기가 준비되지 않았습니다. 아래 사유를 확인하세요.',

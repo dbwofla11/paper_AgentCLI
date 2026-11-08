@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
+import { ArrowRight, ChartNoAxesCombined, ExternalLink, Sparkles } from 'lucide-react';
 import * as m from 'motion/react-m';
 import type { ApiError } from '../../api/client';
 import type { PaperLabels, PaperSummary, ReviewQueueJob, VerificationStatus } from '../../api/types';
@@ -26,6 +26,7 @@ const VERIFICATION_BADGES: Record<VerificationStatus, { label: string; tone: Ton
 const START_ERRORS: Record<string, string> = {
   review_complete: '이미 리뷰가 끝난 논문입니다. 목록을 새로 고쳤습니다.',
   review_active: '다른 논문 리뷰나 검증이 진행 중입니다. 끝난 뒤 다시 시작하세요.',
+  visual_active: '이 논문의 시각 요약을 만드는 중입니다. 끝난 뒤 다시 시작하세요.',
   agent_unavailable: '리뷰 에이전트나 리뷰 역할이 준비되지 않았습니다. 상태 화면에서 확인하세요.',
   bad_request: '논문 기록이나 PDF를 확인할 수 없습니다.',
 };
@@ -142,6 +143,18 @@ export function PaperCard({ paper, labels, queued, index, entrance, review }: Pa
             <span className="badge" data-tone={paper.has_review ? 'active' : 'neutral'}>
               {paper.has_review ? '리뷰' : '리뷰 없음'}
             </span>
+            {paper.has_visual ? (
+              // Opens the reader on the 시각 요약 (`?view=visual`); the badge sits above the card's stretched link.
+              <a
+                className="badge badge-link"
+                data-tone="active"
+                href={paperHref(paper.slug, 'visual')}
+                aria-describedby={titleId}
+              >
+                <ChartNoAxesCombined aria-hidden="true" />
+                시각 요약
+              </a>
+            ) : null}
             {verification ? (
               <span className="badge" data-tone={verification.tone}>
                 {verification.label}

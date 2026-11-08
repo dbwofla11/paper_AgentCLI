@@ -40,6 +40,29 @@ FIGURE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
 # Paper-discovery cache ``00-Inbox/discovery/<anything>`` (daily digests, search sessions): read
 # only through ``/api/discovery/*``, never served statically. The folder itself has no index.
 DISCOVERY_CACHE = ("00-inbox", "discovery")
+# Visual summary (visual-explainer page) beside a review: ``<review dir>/figures/{slug}-visual.*``.
+# Agents may write the source, the rendered page, and look sheets (``visual_output_ok``); the
+# server alone writes the sidecar ``{slug}-visual.json``. Only the rendered page is served, by
+# ``GET /api/papers/{slug}/visual`` with ``VISUAL_CSP``: inline kit script/style run in an opaque
+# origin (``sandbox allow-scripts``), only Google Fonts load, and only the WebUI may frame it.
+VISUAL_NAME = "{slug}-visual"
+VISUAL_CSP = ("default-src 'none'; script-src 'unsafe-inline'; "
+              "style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+              "img-src data: blob:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; "
+              "form-action 'none'; sandbox allow-scripts")
+VISUAL_ROUTE = re.compile(r"/api/papers/[^/]+/visual")
+
+
+def visual_name(slug: str) -> str:
+    """File stem of a paper's visual summary: ``{slug}-visual``."""
+    return VISUAL_NAME.format(slug=slug)
+
+
+def visual_output_ok(slug: str, name: str) -> bool:
+    """True for an agent-written visual summary file: ``{slug}-visual.src.html``, ``.html``,
+    ``.sheet.png`` or ``.sheet-N.png`` (lowercase only)."""
+    pattern = re.escape(visual_name(slug)) + r"\.(?:src\.html|html|sheet(?:-\d+)?\.png)"
+    return re.fullmatch(pattern, name) is not None
 
 
 def figure_name_ok(slug: str, name: str, extensions: Iterable[str] = ("svg",)) -> bool:
@@ -151,9 +174,13 @@ def parse_json(body: bytes) -> dict:
 
 
 def response_headers(route: str) -> list[tuple[str, str]]:
-    """Headers added to every response; ``route`` is the percent-decoded request path."""
-    headers = [("X-Content-Type-Options", "nosniff"), ("Referrer-Policy", "no-referrer"),
-               ("X-Frame-Options", "DENY")]
+    """Headers added to every response; ``route`` is the percent-decoded request path.
+
+    The visual summary route omits ``X-Frame-Options`` (the WebUI frames it); its own
+    ``VISUAL_CSP`` ``frame-ancestors 'self'`` limits who may."""
+    headers = [("X-Content-Type-Options", "nosniff"), ("Referrer-Policy", "no-referrer")]
+    if VISUAL_ROUTE.fullmatch(route) is None:
+        headers.append(("X-Frame-Options", "DENY"))
     if route == "/api" or route.startswith("/api/"):
         headers.append(("Cache-Control", "no-store"))
     if route.startswith(WEBUI_PREFIX) or route == WEBUI_PREFIX.rstrip("/"):

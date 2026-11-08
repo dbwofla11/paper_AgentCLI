@@ -145,7 +145,12 @@ STAGING_IGNORES = (".git", "__pycache__", "*.pyc", "pdfs", ".mcp.json",
 
 
 def staging_inventory(root: Path) -> set[Path]:
-    """List safe files, including graph artifacts and permitted local settings."""
+    """List safe files, including graph artifacts and permitted local settings.
+
+    The personal paper records (`01-Papers/library/`, `01-Papers/reviews/` with its figures,
+    `01-Papers/index.md`) are gitignored but every review job reads and rewrites them, so they
+    are listed explicitly; PDFs and reader threads stay excluded (`STAGING_IGNORES`).
+    """
     def allowed(relative: Path) -> bool:
         return all(not any(fnmatch.fnmatchcase(part, pattern) for pattern in STAGING_IGNORES)
                    for part in relative.parts)
@@ -170,6 +175,10 @@ def staging_inventory(root: Path) -> set[Path]:
             if directory.is_dir():
                 paths.update(path.relative_to(root) for path in directory.glob("*.local.md"))
         collect_tree(root / "graphify-out")
+        collect_tree(root / "01-Papers/library")
+        collect_tree(root / "01-Papers/reviews")
+        if os.path.lexists(root / "01-Papers/index.md"):
+            paths.add(Path("01-Papers/index.md"))
     else:
         collect_tree(root)
 

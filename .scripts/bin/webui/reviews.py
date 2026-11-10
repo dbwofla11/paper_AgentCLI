@@ -947,7 +947,11 @@ def review_worker(job_id: str, slug: str, timeout: int) -> None:
             if updated.get("source", {}).get("pdf_path") != record.get("source", {}).get("pdf_path"):
                 raise RuntimeError("staged review changed the paper's canonical PDF source")
             if updated.get("structured_review_status") != "complete":
-                raise RuntimeError("paper JSON did not reach structured_review_status=complete")
+                detail = last_message.read_text(encoding="utf-8", errors="replace").strip() if last_message.is_file() else ""
+                message = "paper JSON did not reach structured_review_status=complete"
+                if detail:
+                    message += "\n리뷰 작업자의 마지막 응답: " + detail[-3000:]
+                raise RuntimeError(message)
             validation = subprocess.run([sys.executable, str(stage / ".scripts/bin/paper_record.py"), "validate", str(staged_record_path)], capture_output=True, text=True, check=False)
             if validation.returncode:
                 raise RuntimeError("staged paper JSON validation failed: " + validation.stdout + validation.stderr)
